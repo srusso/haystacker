@@ -19,6 +19,6 @@ class NotClause(val underlyingClause: HslClause): HslClause {
 
 }
 
-class HslNodeClause(val symbol: Symbol, val operator: Operator, val value: String): HslClause {
+class HslNodeClause<T>(val symbol: Symbol, val operator: Operator, val value: T): HslClause {
 
 }

@@ -12,6 +12,7 @@
         <kotlin.version>1.4.21</kotlin.version>
         <jupiter.version>5.7.0</jupiter.version>
         <spring.version>5.3.2</spring.version>
+        <jparsec.version>3.1</jparsec.version>
     </properties>
 
     <dependencies>
@@ -20,6 +21,13 @@
             <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>${kotlin.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jparsec</groupId>
+            <artifactId>jparsec</artifactId>
+            <version>${jparsec.version}</version>
+        </dependency>
+
+        <!--TEST-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

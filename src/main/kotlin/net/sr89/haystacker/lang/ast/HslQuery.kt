@@ -15,6 +15,6 @@ class HslOrClause(val left: HslClause, val right: HslClause): HslClause {
 
 }
 
-class HslNodeClause<T>(val symbol: Symbol, val operator: Operator, val value: T): HslClause {
+class HslNodeClause(val symbol: Symbol, val operator: Operator, val value: Any): HslClause {
 
 }

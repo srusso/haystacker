@@ -16,7 +16,7 @@ class HslParserTest {
 
     private val parser = HslParser()
 
-    private fun <T> HslNodeClause<*>.isNodeClause(symbol: Symbol, operator: Operator, value: T) {
+    private fun <T> HslNodeClause.isNodeClause(symbol: Symbol, operator: Operator, value: T) {
         assertEquals(symbol, this.symbol)
         assertEquals(operator, this.operator)
         assertEquals(value, this.value)

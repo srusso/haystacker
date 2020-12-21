@@ -8,14 +8,10 @@ interface HslClause: HslQuery {
 
 }
 
-class AndClause(val left: HslClause, val right: HslClause) : HslClause {
+class HslAndClause(val left: HslClause, val right: HslClause) : HslClause {
 }
 
-class OrClause(val left: HslClause, val right: HslClause): HslClause {
-
-}
-
-class NotClause(val underlyingClause: HslClause): HslClause {
+class HslOrClause(val left: HslClause, val right: HslClause): HslClause {
 
 }
 

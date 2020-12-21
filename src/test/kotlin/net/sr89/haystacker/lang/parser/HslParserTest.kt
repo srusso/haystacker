@@ -162,4 +162,44 @@ class HslParserTest {
                     }
             }
     }
+
+    @Test
+    fun andHasPrecedenceOverOr() {
+        val query = parser.parse("created < \"$date\" AND created < \"$date\" OR name = \"file.txt\"")
+
+        having(query)
+            .ofType(HslOrClause::class)
+            .then {
+                having(it.left)
+                    .ofType(HslAndClause::class)
+                    .then {
+                    }
+
+                having(it.right)
+                    .ofType(HslNodeClause::class)
+                    .then {right ->
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, "\"file.txt\"")
+                    }
+            }
+    }
+
+    @Test
+    fun parensForcePrecedence() {
+        val query = parser.parse("created < \"$date\" AND (created < \"$date\" OR name = \"file.txt\")")
+
+        having(query)
+            .ofType(HslAndClause::class)
+            .then {
+                having(it.left)
+                    .ofType(HslNodeClause::class)
+                    .then {left ->
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, LocalDate.parse(date))
+                    }
+
+                having(it.right)
+                    .ofType(HslOrClause::class)
+                    .then {
+                    }
+            }
+    }
 }

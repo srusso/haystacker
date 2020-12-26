@@ -7,15 +7,22 @@ import net.sr89.haystacker.lang.ast.Symbol
 import org.jparsec.Parser
 import org.jparsec.Parsers
 import org.jparsec.Scanners
+import org.jparsec.Scanners.isChar
 import org.jparsec.Terminals
 
 class HslParser {
     private val symbolParser: Parser<Symbol> =
         Scanners.stringCaseInsensitive("name").map { Symbol.NAME }
+                .or(Scanners.stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
+                .or(Scanners.stringCaseInsensitive("size").map { Symbol.SIZE })
+                .or(Scanners.stringCaseInsensitive("created").map { Symbol.CREATED })
 
     private val operatorParser: Parser<Operator> =
-        Scanners.isChar('<').map { Operator.LESS }
-            .or(Scanners.isChar('=').map { Operator.EQUALS })
+        isChar('<').followedBy(isChar('=')).map { Operator.LESS_OR_EQUAL }
+            .or(isChar('>').followedBy(isChar('=')).map { Operator.GREATER_OR_EQUAL })
+            .or(isChar('=').map { Operator.EQUALS })
+            .or(isChar('>').map { Operator.GREATER })
+            .or(isChar('<').map { Operator.LESS })
 
     private val valueParser: Parser<Any> = Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
         .map { s -> s.toString() }

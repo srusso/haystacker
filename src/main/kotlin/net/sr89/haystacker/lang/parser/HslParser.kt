@@ -12,8 +12,6 @@ import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
 
 class HslParser {
-
-
     private val symbolParser: Parser<Symbol> =
         stringCaseInsensitive("name").map { Symbol.NAME }
             .or(stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
@@ -37,9 +35,8 @@ class HslParser {
             .map { o -> o.orElse("") }
     ) { a, b -> a.text() + b }
 
-    val valueParser: Parser<String> =
+    private val valueParser: Parser<String> =
         Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER.or(dataSizeParser)
-        .map { s -> s.toString() }
 
     private val nodeClauseParser: Parser<HslNodeClause> = Parsers.sequence(
         symbolParser.followedBy(Scanners.WHITESPACES.skipMany()),

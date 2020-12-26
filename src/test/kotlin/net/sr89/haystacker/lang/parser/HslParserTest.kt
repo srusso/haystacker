@@ -30,13 +30,24 @@ class HslParserTest {
     }
 
     @Test
-    fun sizeGreaterThanBClause() {
+    fun sizeAssumesBytesIfNoUnitSpecified() {
         val query = parser.parse("size > 23")
 
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, DataSize.ofBytes(23))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofBytes(23)))
+            }
+    }
+
+    @Test
+    fun sizeGreaterThanBClause() {
+        val query = parser.parse("size > 23b")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofBytes(23)))
             }
     }
 
@@ -47,7 +58,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, DataSize.ofKilobytes(23))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofKilobytes(23)))
             }
     }
 
@@ -58,7 +69,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, DataSize.ofMegabytes(23))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofMegabytes(23)))
             }
     }
 
@@ -69,7 +80,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, DataSize.ofGigabytes(23))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofGigabytes(23)))
             }
     }
 

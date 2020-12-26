@@ -8,15 +8,17 @@ import org.jparsec.Parser
 import org.jparsec.Parsers
 import org.jparsec.Scanners
 import org.jparsec.Scanners.isChar
+import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
-import org.jparsec.functors.Map3
 
 class HslParser {
+
+
     private val symbolParser: Parser<Symbol> =
-        Scanners.stringCaseInsensitive("name").map { Symbol.NAME }
-            .or(Scanners.stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
-            .or(Scanners.stringCaseInsensitive("size").map { Symbol.SIZE })
-            .or(Scanners.stringCaseInsensitive("created").map { Symbol.CREATED })
+        stringCaseInsensitive("name").map { Symbol.NAME }
+            .or(stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
+            .or(stringCaseInsensitive("size").map { Symbol.SIZE })
+            .or(stringCaseInsensitive("created").map { Symbol.CREATED })
 
     private val operatorParser: Parser<Operator> =
         isChar('<').followedBy(isChar('=')).map { Operator.LESS_OR_EQUAL }
@@ -25,7 +27,18 @@ class HslParser {
             .or(isChar('>').map { Operator.GREATER })
             .or(isChar('<').map { Operator.LESS })
 
-    private val valueParser: Parser<Any> = Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
+    private val dataSizeParser: Parser<String> = Parsers.sequence(
+        Terminals.IntegerLiteral.TOKENIZER,
+        stringCaseInsensitive("kb").map { "KB" }
+            .or(stringCaseInsensitive("mb").map { "MB" })
+            .or(stringCaseInsensitive("gb").map { "GB" })
+            .or(isChar('b').map { "" })
+            .asOptional()
+            .map { o -> o.orElse("") }
+    ) { a, b -> a.text() + b }
+
+    val valueParser: Parser<String> =
+        Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER.or(dataSizeParser)
         .map { s -> s.toString() }
 
     private val nodeClauseParser: Parser<HslNodeClause> = Parsers.sequence(

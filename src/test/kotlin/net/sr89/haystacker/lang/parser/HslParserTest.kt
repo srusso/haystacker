@@ -84,7 +84,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, LocalDate.parse(date))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslDate(LocalDate.parse(date)))
             }
     }
 
@@ -95,7 +95,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER_OR_EQUAL, LocalDate.parse(date))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER_OR_EQUAL, HslDate(LocalDate.parse(date)))
             }
     }
 
@@ -106,7 +106,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.LESS_OR_EQUAL, LocalDate.parse(date))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.LESS_OR_EQUAL, HslDate(LocalDate.parse(date)))
             }
     }
 
@@ -117,7 +117,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.CREATED, Operator.LESS, LocalDate.parse(date))
+                it.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
             }
     }
 
@@ -131,7 +131,7 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, LocalDate.parse(date))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
                     }
 
                 having(it.right)
@@ -152,7 +152,7 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, LocalDate.parse(date))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
                     }
 
                 having(it.right)
@@ -193,7 +193,7 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, LocalDate.parse(date))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
                     }
 
                 having(it.right)

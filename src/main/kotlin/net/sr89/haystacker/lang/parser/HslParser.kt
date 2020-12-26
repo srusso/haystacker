@@ -9,13 +9,14 @@ import org.jparsec.Parsers
 import org.jparsec.Scanners
 import org.jparsec.Scanners.isChar
 import org.jparsec.Terminals
+import org.jparsec.functors.Map3
 
 class HslParser {
     private val symbolParser: Parser<Symbol> =
         Scanners.stringCaseInsensitive("name").map { Symbol.NAME }
-                .or(Scanners.stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
-                .or(Scanners.stringCaseInsensitive("size").map { Symbol.SIZE })
-                .or(Scanners.stringCaseInsensitive("created").map { Symbol.CREATED })
+            .or(Scanners.stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
+            .or(Scanners.stringCaseInsensitive("size").map { Symbol.SIZE })
+            .or(Scanners.stringCaseInsensitive("created").map { Symbol.CREATED })
 
     private val operatorParser: Parser<Operator> =
         isChar('<').followedBy(isChar('=')).map { Operator.LESS_OR_EQUAL }
@@ -31,7 +32,8 @@ class HslParser {
         symbolParser.followedBy(Scanners.WHITESPACES.skipMany()),
         operatorParser.followedBy(Scanners.WHITESPACES.skipMany()),
         valueParser.followedBy(Scanners.WHITESPACES.skipMany()),
-        ::HslNodeClause)
+        ::buildHslNodeClause
+    )
 
     fun parse(queryString: String): HslQuery {
         return nodeClauseParser.parse(queryString)

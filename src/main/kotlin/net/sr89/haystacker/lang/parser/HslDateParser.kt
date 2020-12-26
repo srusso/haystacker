@@ -1,12 +1,15 @@
 package net.sr89.haystacker.lang.parser
 
+import net.sr89.haystacker.lang.ast.HslDate
+import net.sr89.haystacker.lang.ast.HslDateTime
+import net.sr89.haystacker.lang.ast.HslInstant
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoField
 
-private fun isDateTime(date: Any): HslDateTime? {
+private fun isDateTime(date: Any): HslInstant? {
     val parsers = listOf(
         DateTimeFormatter.ISO_INSTANT,
         DateTimeFormatter.ISO_OFFSET_DATE_TIME
@@ -26,7 +29,7 @@ private fun isDateTime(date: Any): HslDateTime? {
     return null
 }
 
-private fun isDate(date: Any): HslDateTime? {
+private fun isDate(date: Any): HslDate? {
     return try {
         HslDate(LocalDate.parse(date.toString()))
     } catch (e: DateTimeParseException) {

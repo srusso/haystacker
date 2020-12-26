@@ -1,10 +1,6 @@
 package net.sr89.haystacker.lang.parser
 
-import net.sr89.haystacker.lang.ast.HslAndClause
-import net.sr89.haystacker.lang.ast.HslNodeClause
-import net.sr89.haystacker.lang.ast.HslOrClause
-import net.sr89.haystacker.lang.ast.Operator
-import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.lang.ast.*
 import net.sr89.haystacker.test.common.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

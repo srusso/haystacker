@@ -25,7 +25,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.NAME, Operator.EQUALS, "file.txt")
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
             }
     }
 

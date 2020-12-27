@@ -80,7 +80,7 @@ class HslParser {
 
     private fun parser(): Parser<HslClause> {
         val ref = Parser.newReference<HslClause>()
-        val term = ref.lazy().between(isChar('('), isChar(')')).or(nodeClauseParser)
+        val term = ref.lazy().between(isChar('(').followedBy(whitespaces), isChar(')')).or(nodeClauseParser)
 
         val parser = OperatorTable<HslClause>()
             .infixl(stringCaseInsensitive("AND").followedBy(whitespaces).retn(BiFunction(::HslAndClause)), 20)

@@ -252,7 +252,7 @@ class HslParserTest {
 
     @Test
     fun spacesAreIgnored() {
-        val query = parser.parse("  created  <   '$date'     AND    (created   <   '$date'   OR  name   =   \"file.txt\" ) ")
+        val query = parser.parse("  created  <   '$date'     AND    (  created   <   '$date'   OR  name   =   \"file.txt\"  ) ")
 
         having(query)
             .ofType(HslAndClause::class)

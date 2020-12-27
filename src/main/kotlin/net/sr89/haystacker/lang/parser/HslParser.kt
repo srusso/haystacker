@@ -26,6 +26,7 @@ import org.springframework.util.unit.DataSize
 import java.util.function.BiFunction
 
 class HslParser {
+    private val validDataSizeUnits = listOf("kb", "mb", "gb", "b")
 
     private val stringPattern =
         Patterns.isChar(IS_ALPHA_NUMERIC)
@@ -52,12 +53,13 @@ class HslParser {
 
     private val dataSizeParser: Parser<HslValue> = Parsers.sequence(
         Terminals.IntegerLiteral.TOKENIZER,
-        stringCaseInsensitive("kb").source()
-            .or(stringCaseInsensitive("mb").source())
-            .or(stringCaseInsensitive("gb").source())
-            .or(isChar('b').map { "" })
+        stringCaseInsensitive("kb")
+            .or(stringCaseInsensitive("mb"))
+            .or(stringCaseInsensitive("gb"))
+            .or(stringCaseInsensitive("b"))
+            .source()
             .asOptional()
-            .map { o -> o.orElse("") }
+            .map { o -> o.orElse("b") }
     ) { a, b -> a.text() + b }
         .map(String::toUpperCase)
         .map(DataSize::parse)

@@ -16,26 +16,21 @@ import org.jparsec.Scanners.string
 import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
 import org.jparsec.Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
-import org.jparsec.pattern.CharPredicates.IS_ALPHA
+import org.jparsec.Terminals.StringLiteral.SINGLE_QUOTE_TOKENIZER
 import org.jparsec.pattern.CharPredicates.IS_ALPHA_NUMERIC
 import org.jparsec.pattern.Patterns
 import java.util.function.BiFunction
 
 class HslParser {
 
-    // starts with either an alphabetic character or a dit (think .gitignore)
-    private val filenamePattern = (Patterns.isChar(IS_ALPHA)
-        .or(Patterns.isChar('.')))
-        .next(
-            // and continues with either alphanumeric characters or dots or other selected special characters
-            (Patterns.isChar(IS_ALPHA_NUMERIC)
-                .or(Patterns.isChar('.')))
+    private val stringPattern =
+            Patterns.isChar(IS_ALPHA_NUMERIC)
+                .or(Patterns.isChar('.'))
                 .or(Patterns.among("-_"))
                 .many()
-        )
 
     private val filenameScanner: Parser<String> = DOUBLE_QUOTE_TOKENIZER
-        .or(filenamePattern.toScanner("filename").source())
+        .or(stringPattern.toScanner("filename").source())
 
     private val symbolParser: Parser<Symbol> =
         stringCaseInsensitive("name").map { Symbol.NAME }
@@ -60,9 +55,9 @@ class HslParser {
             .map { o -> o.orElse("") }
     ) { a, b -> a.text() + b }
 
-    private val valueParser: Parser<String> =
-        filenameScanner
-            .or(dataSizeParser)
+    private val dateParser: Parser<String> = SINGLE_QUOTE_TOKENIZER
+
+    private val valueParser: Parser<String> = dataSizeParser.or(dateParser).or(filenameScanner)
 
     private val whitespaces: Parser<Void> = Scanners.WHITESPACES.skipMany()
 

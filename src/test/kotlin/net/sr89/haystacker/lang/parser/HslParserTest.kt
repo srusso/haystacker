@@ -115,7 +115,7 @@ class HslParserTest {
 
     @Test
     fun lastModifiedGreaterThanDate() {
-        val query = parser.parse("last_modified > \"$date\"")
+        val query = parser.parse("last_modified > '$date'")
 
         having(query)
             .ofType(HslNodeClause::class)
@@ -126,7 +126,7 @@ class HslParserTest {
 
     @Test
     fun lastModifiedGreaterOrEqualThanDate() {
-        val query = parser.parse("last_modified >= \"$date\"")
+        val query = parser.parse("last_modified >= '$date'")
 
         having(query)
             .ofType(HslNodeClause::class)
@@ -137,7 +137,7 @@ class HslParserTest {
 
     @Test
     fun lastModifiedLessOrEqualThanDate() {
-        val query = parser.parse("last_modified <= \"$date\"")
+        val query = parser.parse("last_modified <= '$date'")
 
         having(query)
             .ofType(HslNodeClause::class)
@@ -148,7 +148,7 @@ class HslParserTest {
 
     @Test
     fun createdLessThanDate() {
-        val query = parser.parse("created < \"$date\"")
+        val query = parser.parse("created < '$date'")
 
         having(query)
             .ofType(HslNodeClause::class)
@@ -159,7 +159,7 @@ class HslParserTest {
 
     @Test
     fun andClause() {
-        val query = parser.parse("created < \"$date\" AND name = \"file.txt\"")
+        val query = parser.parse("created < '$date' AND name = \"file.txt\"")
 
         having(query)
             .ofType(HslAndClause::class)
@@ -180,7 +180,7 @@ class HslParserTest {
 
     @Test
     fun orClause() {
-        val query = parser.parse("created < \"$date\" OR name = \"file.txt\"")
+        val query = parser.parse("created < '$date' OR name = \"file.txt\"")
 
         having(query)
             .ofType(HslOrClause::class)
@@ -201,7 +201,7 @@ class HslParserTest {
 
     @Test
     fun andHasPrecedenceOverOr() {
-        val query = parser.parse("created < \"$date\" AND created < \"$date\" OR name = \"file.txt\"")
+        val query = parser.parse("created < '$date' AND created < '$date' OR name = \"file.txt\"")
 
         having(query)
             .ofType(HslOrClause::class)
@@ -221,7 +221,7 @@ class HslParserTest {
 
     @Test
     fun parensForcePrecedence() {
-        val query = parser.parse("created < \"$date\" AND (created < \"$date\" OR name = \"file.txt\")")
+        val query = parser.parse("created < '$date' AND (created < '$date' OR name = \"file.txt\")")
 
         having(query)
             .ofType(HslAndClause::class)

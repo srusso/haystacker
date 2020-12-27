@@ -1,7 +1,5 @@
 package net.sr89.haystacker.lang.parser
 
-import java.lang.RuntimeException
-
 fun hslParseException(message: String): HslException {
     return HslParseException(message)
 }

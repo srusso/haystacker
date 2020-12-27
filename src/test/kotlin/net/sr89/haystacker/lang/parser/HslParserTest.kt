@@ -114,6 +114,17 @@ class HslParserTest {
     }
 
     @Test
+    fun sizeGreaterThanTBClause() {
+        val query = parser.parse("size > 23tb")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofTerabytes(23)))
+            }
+    }
+
+    @Test
     fun lastModifiedGreaterThanDate() {
         val query = parser.parse("last_modified > '$date'")
 

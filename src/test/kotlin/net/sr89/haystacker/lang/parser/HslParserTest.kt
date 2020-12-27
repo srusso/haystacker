@@ -144,7 +144,7 @@ class HslParserTest {
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, "\"file.txt\"")
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
                     }
             }
     }
@@ -165,7 +165,7 @@ class HslParserTest {
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, "\"file.txt\"")
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
                     }
             }
     }
@@ -185,7 +185,7 @@ class HslParserTest {
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, "\"file.txt\"")
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
                     }
             }
     }

@@ -1,15 +1,10 @@
 package net.sr89.haystacker.lang.parser
 
-import net.sr89.haystacker.lang.ast.HslNodeClause
-import net.sr89.haystacker.lang.ast.HslQuery
-import net.sr89.haystacker.lang.ast.Operator
-import net.sr89.haystacker.lang.ast.Symbol
-import org.jparsec.Parser
-import org.jparsec.Parsers
-import org.jparsec.Scanners
+import net.sr89.haystacker.lang.ast.*
+import org.jparsec.*
 import org.jparsec.Scanners.isChar
 import org.jparsec.Scanners.stringCaseInsensitive
-import org.jparsec.Terminals
+import java.util.function.BiFunction
 
 class HslParser {
     private val symbolParser: Parser<Symbol> =
@@ -38,14 +33,30 @@ class HslParser {
     private val valueParser: Parser<String> =
         Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER.or(dataSizeParser)
 
+    private val whitespaces: Parser<Void> = Scanners.WHITESPACES.skipMany()
+
     private val nodeClauseParser: Parser<HslNodeClause> = Parsers.sequence(
-        symbolParser.followedBy(Scanners.WHITESPACES.skipMany()),
-        operatorParser.followedBy(Scanners.WHITESPACES.skipMany()),
-        valueParser.followedBy(Scanners.WHITESPACES.skipMany()),
-        ::buildHslNodeClause
-    )
+        whitespaces,
+        symbolParser.followedBy(whitespaces),
+        operatorParser.followedBy(whitespaces),
+        valueParser.followedBy(whitespaces)
+    ) { _: Void?, symbol: Symbol, operator: Operator, value: String ->
+        buildHslNodeClause(symbol, operator, value) }
+
+    private fun parser(): Parser<HslClause> {
+        val ref = Parser.newReference<HslClause>()
+        val term = ref.lazy().between(isChar('('), isChar(')')).or(nodeClauseParser)
+
+        val parser = OperatorTable<HslClause>()
+            .infixl(stringCaseInsensitive("AND").retn(BiFunction(::HslAndClause)), 20)
+            .infixl(stringCaseInsensitive("OR").retn(BiFunction(::HslOrClause)), 10)
+            .build(term)
+
+        ref.set(parser)
+        return parser
+    }
 
     fun parse(queryString: String): HslQuery {
-        return nodeClauseParser.parse(queryString)
+        return parser().parse(queryString)
     }
 }

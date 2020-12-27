@@ -1,9 +1,19 @@
 package net.sr89.haystacker.lang.parser
 
-import net.sr89.haystacker.lang.ast.*
-import org.jparsec.*
+import net.sr89.haystacker.lang.ast.HslAndClause
+import net.sr89.haystacker.lang.ast.HslClause
+import net.sr89.haystacker.lang.ast.HslNodeClause
+import net.sr89.haystacker.lang.ast.HslOrClause
+import net.sr89.haystacker.lang.ast.HslQuery
+import net.sr89.haystacker.lang.ast.Operator
+import net.sr89.haystacker.lang.ast.Symbol
+import org.jparsec.OperatorTable
+import org.jparsec.Parser
+import org.jparsec.Parsers
+import org.jparsec.Scanners
 import org.jparsec.Scanners.isChar
 import org.jparsec.Scanners.stringCaseInsensitive
+import org.jparsec.Terminals
 import java.util.function.BiFunction
 
 class HslParser {
@@ -36,20 +46,18 @@ class HslParser {
     private val whitespaces: Parser<Void> = Scanners.WHITESPACES.skipMany()
 
     private val nodeClauseParser: Parser<HslNodeClause> = Parsers.sequence(
-        whitespaces,
         symbolParser.followedBy(whitespaces),
         operatorParser.followedBy(whitespaces),
-        valueParser.followedBy(whitespaces)
-    ) { _: Void?, symbol: Symbol, operator: Operator, value: String ->
-        buildHslNodeClause(symbol, operator, value) }
+        valueParser.followedBy(whitespaces),
+        ::buildHslNodeClause)
 
     private fun parser(): Parser<HslClause> {
         val ref = Parser.newReference<HslClause>()
         val term = ref.lazy().between(isChar('('), isChar(')')).or(nodeClauseParser)
 
         val parser = OperatorTable<HslClause>()
-            .infixl(stringCaseInsensitive("AND").retn(BiFunction(::HslAndClause)), 20)
-            .infixl(stringCaseInsensitive("OR").retn(BiFunction(::HslOrClause)), 10)
+            .infixl(stringCaseInsensitive("AND").followedBy(whitespaces).retn(BiFunction(::HslAndClause)), 20)
+            .infixl(stringCaseInsensitive("OR").followedBy(whitespaces).retn(BiFunction(::HslOrClause)), 10)
             .build(term)
 
         ref.set(parser)

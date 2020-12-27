@@ -92,6 +92,6 @@ class HslParser {
     }
 
     fun parse(queryString: String): HslQuery {
-        return parser().parse(queryString)
+        return parser().parse(queryString.trim())
     }
 }

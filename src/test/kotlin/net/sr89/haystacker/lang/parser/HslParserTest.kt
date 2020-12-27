@@ -249,4 +249,24 @@ class HslParserTest {
                     }
             }
     }
+
+    @Test
+    fun spacesAreIgnored() {
+        val query = parser.parse("created  <   '$date'     AND    (created   <   '$date'   OR  name   =   \"file.txt\" )")
+
+        having(query)
+            .ofType(HslAndClause::class)
+            .then {
+                having(it.left)
+                    .ofType(HslNodeClause::class)
+                    .then {left ->
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                    }
+
+                having(it.right)
+                    .ofType(HslOrClause::class)
+                    .then {
+                    }
+            }
+    }
 }

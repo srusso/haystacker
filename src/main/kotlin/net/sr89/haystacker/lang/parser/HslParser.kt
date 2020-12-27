@@ -12,6 +12,7 @@ import org.jparsec.Parser
 import org.jparsec.Parsers
 import org.jparsec.Scanners
 import org.jparsec.Scanners.isChar
+import org.jparsec.Scanners.string
 import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
 import java.util.function.BiFunction
@@ -24,8 +25,8 @@ class HslParser {
             .or(stringCaseInsensitive("created").map { Symbol.CREATED })
 
     private val operatorParser: Parser<Operator> =
-        isChar('<').followedBy(isChar('=')).map { Operator.LESS_OR_EQUAL }
-            .or(isChar('>').followedBy(isChar('=')).map { Operator.GREATER_OR_EQUAL })
+        string("<=").map { Operator.LESS_OR_EQUAL }
+            .or(string(">=").map { Operator.GREATER_OR_EQUAL })
             .or(isChar('=').map { Operator.EQUALS })
             .or(isChar('>').map { Operator.GREATER })
             .or(isChar('<').map { Operator.LESS })

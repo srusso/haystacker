@@ -2,9 +2,12 @@ package net.sr89.haystacker.lang.parser
 
 import net.sr89.haystacker.lang.ast.HslAndClause
 import net.sr89.haystacker.lang.ast.HslClause
+import net.sr89.haystacker.lang.ast.HslDataSize
 import net.sr89.haystacker.lang.ast.HslNodeClause
 import net.sr89.haystacker.lang.ast.HslOrClause
 import net.sr89.haystacker.lang.ast.HslQuery
+import net.sr89.haystacker.lang.ast.HslString
+import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
 import org.jparsec.OperatorTable
@@ -19,18 +22,20 @@ import org.jparsec.Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
 import org.jparsec.Terminals.StringLiteral.SINGLE_QUOTE_TOKENIZER
 import org.jparsec.pattern.CharPredicates.IS_ALPHA_NUMERIC
 import org.jparsec.pattern.Patterns
+import org.springframework.util.unit.DataSize
 import java.util.function.BiFunction
 
 class HslParser {
 
     private val stringPattern =
-            Patterns.isChar(IS_ALPHA_NUMERIC)
-                .or(Patterns.isChar('.'))
-                .or(Patterns.among("-_"))
-                .many()
+        Patterns.isChar(IS_ALPHA_NUMERIC)
+            .or(Patterns.isChar('.'))
+            .or(Patterns.among("-_"))
+            .many()
 
-    private val filenameScanner: Parser<String> = DOUBLE_QUOTE_TOKENIZER
+    private val filenameScanner: Parser<HslValue> = DOUBLE_QUOTE_TOKENIZER
         .or(stringPattern.toScanner("filename").source())
+        .map(::HslString)
 
     private val symbolParser: Parser<Symbol> =
         stringCaseInsensitive("name").map { Symbol.NAME }
@@ -45,19 +50,25 @@ class HslParser {
             .or(isChar('>').map { Operator.GREATER })
             .or(isChar('<').map { Operator.LESS })
 
-    private val dataSizeParser: Parser<String> = Parsers.sequence(
+    private val dataSizeParser: Parser<HslValue> = Parsers.sequence(
         Terminals.IntegerLiteral.TOKENIZER,
-        stringCaseInsensitive("kb").map { "KB" }
-            .or(stringCaseInsensitive("mb").map { "MB" })
-            .or(stringCaseInsensitive("gb").map { "GB" })
+        stringCaseInsensitive("kb").source()
+            .or(stringCaseInsensitive("mb").source())
+            .or(stringCaseInsensitive("gb").source())
             .or(isChar('b').map { "" })
             .asOptional()
             .map { o -> o.orElse("") }
     ) { a, b -> a.text() + b }
+        .map(String::toUpperCase)
+        .map(DataSize::parse)
+        .map(::HslDataSize)
 
-    private val dateParser: Parser<String> = SINGLE_QUOTE_TOKENIZER
+    private val dateParser: Parser<HslValue> = SINGLE_QUOTE_TOKENIZER
+        .map(::parseHslDateTime)
 
-    private val valueParser: Parser<String> = dataSizeParser.or(dateParser).or(filenameScanner)
+    private val valueParser: Parser<HslValue> = dataSizeParser
+        .or(dateParser)
+        .or(filenameScanner)
 
     private val whitespaces: Parser<Void> = Scanners.WHITESPACES.skipMany()
 
@@ -65,7 +76,7 @@ class HslParser {
         symbolParser.followedBy(whitespaces),
         operatorParser.followedBy(whitespaces),
         valueParser.followedBy(whitespaces),
-        ::buildHslNodeClause
+        ::HslNodeClause
     )
 
     private fun parser(): Parser<HslClause> {

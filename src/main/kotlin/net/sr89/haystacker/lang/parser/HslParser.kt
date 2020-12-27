@@ -15,9 +15,25 @@ import org.jparsec.Scanners.isChar
 import org.jparsec.Scanners.string
 import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
+import org.jparsec.pattern.CharPredicates
+import org.jparsec.pattern.Patterns
 import java.util.function.BiFunction
 
 class HslParser {
+
+    // starts with either an alphabetic character or a dit (think .gitignore)
+    private val filenamePattern = (Patterns.isChar(CharPredicates.IS_ALPHA)
+        .or(Patterns.isChar('.')))
+        .next(
+            // and continues with either alphanumeric characters or dots or other selected special characters
+            (Patterns.isChar(CharPredicates.IS_ALPHA_NUMERIC)
+                .or(Patterns.isChar('.')))
+                .or(Patterns.among("-_"))
+                .many()
+        )
+
+    private val filenameScanner = filenamePattern.toScanner("filename").source()
+
     private val symbolParser: Parser<Symbol> =
         stringCaseInsensitive("name").map { Symbol.NAME }
             .or(stringCaseInsensitive("last_modified").map { Symbol.LAST_MODIFIED })
@@ -42,7 +58,9 @@ class HslParser {
     ) { a, b -> a.text() + b }
 
     private val valueParser: Parser<String> =
-        Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER.or(dataSizeParser)
+        Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
+            .or(filenameScanner)
+            .or(dataSizeParser)
 
     private val whitespaces: Parser<Void> = Scanners.WHITESPACES.skipMany()
 
@@ -50,7 +68,8 @@ class HslParser {
         symbolParser.followedBy(whitespaces),
         operatorParser.followedBy(whitespaces),
         valueParser.followedBy(whitespaces),
-        ::buildHslNodeClause)
+        ::buildHslNodeClause
+    )
 
     private fun parser(): Parser<HslClause> {
         val ref = Parser.newReference<HslClause>()

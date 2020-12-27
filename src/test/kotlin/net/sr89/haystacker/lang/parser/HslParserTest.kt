@@ -1,6 +1,13 @@
 package net.sr89.haystacker.lang.parser
 
-import net.sr89.haystacker.lang.ast.*
+import net.sr89.haystacker.lang.ast.HslAndClause
+import net.sr89.haystacker.lang.ast.HslDataSize
+import net.sr89.haystacker.lang.ast.HslDate
+import net.sr89.haystacker.lang.ast.HslNodeClause
+import net.sr89.haystacker.lang.ast.HslOrClause
+import net.sr89.haystacker.lang.ast.HslString
+import net.sr89.haystacker.lang.ast.Operator
+import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.test.common.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -19,8 +26,30 @@ class HslParserTest {
     }
 
     @Test
+    fun nameEqualToClauseWithSpacesInFilename() {
+        val query = parser.parse("name = \"name with spaces.txt\"")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("name with spaces.txt"))
+            }
+    }
+
+    @Test
     fun nameEqualToClause() {
         val query = parser.parse("name = \"file.txt\"")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+            }
+    }
+
+    @Test
+    fun nameEqualToClauseNoQuotes() {
+        val query = parser.parse("name = file.txt")
 
         having(query)
             .ofType(HslNodeClause::class)

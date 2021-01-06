@@ -14,6 +14,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode
 import org.apache.lucene.index.Term
 import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.IndexSearcher
+import org.apache.lucene.search.Query
 import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.Directory
 import org.apache.lucene.store.FSDirectory
@@ -50,12 +51,17 @@ class IndexManager {
     }
 
     fun searchIndex(indexPath: String, query: String): TopDocs {
+        val analyzer: Analyzer = StandardAnalyzer()
+        val parser = QueryParser("", analyzer)
+
+        return searchIndex(indexPath, parser.parse(query))
+    }
+
+    fun searchIndex(indexPath: String, query: Query): TopDocs {
         val reader: IndexReader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)))
         val searcher = IndexSearcher(reader)
-        val analyzer: Analyzer = StandardAnalyzer()
-        val parser = QueryParser("path", analyzer)
 
-        return searcher.search(parser.parse(query), 5)
+        return searcher.search(query, 5)
     }
 
     fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {

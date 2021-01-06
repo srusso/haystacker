@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.test.common.timeAction
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
@@ -10,7 +11,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 import kotlin.test.assertTrue
 
 internal class IndexManagerTest {
@@ -36,16 +36,17 @@ internal class IndexManagerTest {
             manager.createIndexWriter(tempDir.toString()).use {
                 for (i in 0..directoryDepth) {
                     val directory = randomPath(10)
+
+                    if (i % 10 == 0) {
+                        println("Creating document ${i * filesPerDirectory} out of ${directoryDepth * filesPerDirectory}")
+                    }
+
                     for (j in 0..filesPerDirectory) {
                         val fileName = randomString(10)
                         val path = Path.of(directory.toString(), fileName)
                         val document = testDocument(path.toString(), (i * j).toLong())
                         val documentId = Term("path", path.toString())
                         manager.addDocumentToIndex(it, document, documentId)
-
-                        if ((i * j % 1000) == 0) {
-                            println("Progress: ${i * filesPerDirectory + j} out of ${directoryDepth * filesPerDirectory}")
-                        }
 
                         if (i * j == 40) {
                             fileToFind = fileName
@@ -55,21 +56,25 @@ internal class IndexManagerTest {
                 }
             }
 
-            val start = System.currentTimeMillis()
-            findDocuments(tempDir, fileToFind!!, pathToFind!!)
-            val end = System.currentTimeMillis()
-            println("Took ${Duration.ofMillis(end - start).toMillis()} ms to find documents")
+            timeAction({findDocumentsByPath(tempDir, fileToFind!!, pathToFind!!)}, "Find documents by path")
+            timeAction({findDocumentsByLongRange(tempDir)}, "Find documents by long range")
         } finally {
             tempDir.deleteRecursively()
         }
     }
 
-    private fun findDocuments(tempDir: File, fileToFind: String, pathToFind: Path) {
+    private fun findDocumentsByPath(tempDir: File, fileToFind: String, pathToFind: Path) {
         val foundByFileName = manager.searchIndex(tempDir.toString(), "path:${fileToFind}")
         val foundByPathPart = manager.searchIndex(tempDir.toString(), "path:${pathToFind.parent.parent.parent.fileName}")
 
-        assertTrue(foundByFileName.totalHits.value >= 1L, "At leat one file should be found by filename")
-        assertTrue(foundByPathPart.totalHits.value >= 1L, "At leat one file should be found by path part")
+        assertTrue(foundByFileName.totalHits.value >= 1L, "At least one file should be found by filename")
+        assertTrue(foundByPathPart.totalHits.value >= 1L, "At least one file should be found by path part")
+    }
+
+    private fun findDocumentsByLongRange(tempDir: File) {
+        val foundByRange = manager.searchIndex(tempDir.toString(), LongPoint.newRangeQuery("modified", 1010, 40000))
+
+        assertTrue(foundByRange.totalHits.value >= 1L, "At least one file should be found by range")
     }
 
     @Test

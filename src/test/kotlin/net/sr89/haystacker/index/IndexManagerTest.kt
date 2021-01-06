@@ -6,9 +6,11 @@ import org.apache.lucene.document.LongPoint
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.Term
 import org.junit.jupiter.api.Test
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Duration
 import kotlin.test.assertTrue
 
 internal class IndexManagerTest {
@@ -24,20 +26,26 @@ internal class IndexManagerTest {
     @Test
     internal fun indexManyDocuments() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
+        val directoryDepth = 100
+        val filesPerDirectory = 10000
 
         try {
             var fileToFind: String? = null
             var pathToFind: Path? = null
 
             manager.createIndexWriter(tempDir.toString()).use {
-                for (i in 0..10) {
+                for (i in 0..directoryDepth) {
                     val directory = randomPath(10)
-                    for (j in 0..10) {
+                    for (j in 0..filesPerDirectory) {
                         val fileName = randomString(10)
                         val path = Path.of(directory.toString(), fileName)
                         val document = testDocument(path.toString(), (i * j).toLong())
                         val documentId = Term("path", path.toString())
                         manager.addDocumentToIndex(it, document, documentId)
+
+                        if ((i * j % 1000) == 0) {
+                            println("Progress: ${i * filesPerDirectory + j} out of ${directoryDepth * filesPerDirectory}")
+                        }
 
                         if (i * j == 40) {
                             fileToFind = fileName
@@ -47,14 +55,21 @@ internal class IndexManagerTest {
                 }
             }
 
-            val foundByFileName = manager.searchIndex(tempDir.toString(), "path:${fileToFind!!}")
-            val foundByPathPart = manager.searchIndex(tempDir.toString(), "path:${pathToFind!!.parent.parent.parent.fileName}")
-
-            assertTrue(foundByFileName.totalHits.value >= 1L, "At leat one file should be found by filename")
-            assertTrue(foundByPathPart.totalHits.value >= 1L, "At leat one file should be found by path part")
+            val start = System.currentTimeMillis()
+            findDocuments(tempDir, fileToFind!!, pathToFind!!)
+            val end = System.currentTimeMillis()
+            println("Took ${Duration.ofMillis(end - start).toMillis()} ms to find documents")
         } finally {
             tempDir.deleteRecursively()
         }
+    }
+
+    private fun findDocuments(tempDir: File, fileToFind: String, pathToFind: Path) {
+        val foundByFileName = manager.searchIndex(tempDir.toString(), "path:${fileToFind}")
+        val foundByPathPart = manager.searchIndex(tempDir.toString(), "path:${pathToFind.parent.parent.parent.fileName}")
+
+        assertTrue(foundByFileName.totalHits.value >= 1L, "At leat one file should be found by filename")
+        assertTrue(foundByPathPart.totalHits.value >= 1L, "At leat one file should be found by path part")
     }
 
     @Test

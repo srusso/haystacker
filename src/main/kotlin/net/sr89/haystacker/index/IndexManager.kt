@@ -12,7 +12,6 @@ import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.index.IndexWriterConfig.OpenMode
 import org.apache.lucene.index.Term
-import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TopDocs
@@ -48,13 +47,6 @@ class IndexManager {
             // path, if present:
             writer.updateDocument(documentId, document)
         }
-    }
-
-    fun searchIndex(indexPath: String, query: String): TopDocs {
-        val analyzer: Analyzer = StandardAnalyzer()
-        val parser = QueryParser("", analyzer)
-
-        return searchIndex(indexPath, parser.parse(query))
     }
 
     fun searchIndex(indexPath: String, query: Query): TopDocs {

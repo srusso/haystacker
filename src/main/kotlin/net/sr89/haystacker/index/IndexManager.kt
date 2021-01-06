@@ -49,21 +49,13 @@ class IndexManager {
         }
     }
 
-    fun searchIndex(indexPath: String, query: String) {
+    fun searchIndex(indexPath: String, query: String): TopDocs {
         val reader: IndexReader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)))
         val searcher = IndexSearcher(reader)
         val analyzer: Analyzer = StandardAnalyzer()
         val parser = QueryParser("path", analyzer)
 
-        val results: TopDocs = searcher.search(parser.parse(query), 5)
-        val hits = results.scoreDocs
-
-        val numTotalHits = Math.toIntExact(results.totalHits.value)
-        println("$numTotalHits total matching documents")
-
-        for (hit in hits) {
-            println("hit = " + searcher.doc(hit.doc).get("path"))
-        }
+        return searcher.search(parser.parse(query), 5)
     }
 
     fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {

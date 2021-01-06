@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.test.assertTrue
 
 internal class IndexManagerTest {
     val manager: IndexManager = IndexManager()
@@ -22,35 +23,38 @@ internal class IndexManagerTest {
 
     @Test
     internal fun indexManyDocuments() {
-        val tempDir = Files.createTempDirectory("tdir")
+        val tempDir = Files.createTempDirectory("tdir").toFile()
 
-        var fileToFind: String? = null
-        var pathToFind: Path? = null
+        try {
+            var fileToFind: String? = null
+            var pathToFind: Path? = null
 
-        val writer = manager.createIndexWriter(tempDir.toString())
+            manager.createIndexWriter(tempDir.toString()).use {
+                for (i in 0..10) {
+                    val directory = randomPath(10)
+                    for (j in 0..10) {
+                        val fileName = randomString(10)
+                        val path = Path.of(directory.toString(), fileName)
+                        val document = testDocument(path.toString(), (i * j).toLong())
+                        val documentId = Term("path", path.toString())
+                        manager.addDocumentToIndex(it, document, documentId)
 
-        for (i in 0..10) {
-            val directory = randomPath(10)
-            for (j in 0..10) {
-                val fileName = randomString(10)
-                val path = Path.of(directory.toString(), fileName)
-                val document = testDocument(path.toString(), (i * j).toLong())
-                val documentId = Term("path", path.toString())
-                manager.addDocumentToIndex(writer, document, documentId)
-
-                if (i * j == 40) {
-                    fileToFind = fileName
-                    pathToFind = path
+                        if (i * j == 40) {
+                            fileToFind = fileName
+                            pathToFind = path
+                        }
+                    }
                 }
             }
+
+            val foundByFileName = manager.searchIndex(tempDir.toString(), "path:${fileToFind!!}")
+            val foundByPathPart = manager.searchIndex(tempDir.toString(), "path:${pathToFind!!.parent.parent.parent.fileName}")
+
+            assertTrue(foundByFileName.totalHits.value >= 1L, "At leat one file should be found by filename")
+            assertTrue(foundByPathPart.totalHits.value >= 1L, "At leat one file should be found by path part")
+        } finally {
+            tempDir.deleteRecursively()
         }
-
-        writer.close()
-
-        manager.searchIndex(tempDir.toString(), "path:${fileToFind!!}")
-        manager.searchIndex(tempDir.toString(), "path:${pathToFind!!.parent.parent.parent.fileName}")
-
-        Files.delete(Paths.get(tempDir.toUri()))
     }
 
     @Test

@@ -37,6 +37,18 @@ class IndexManager {
         return IndexWriter(dir, iwc)
     }
 
+    fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
+        if (writer.config.openMode == OpenMode.CREATE) {
+            // New index, so we just add the document (no old document can be there):
+            writer.addDocument(document)
+        } else {
+            // Existing index (an old copy of this document may have been indexed) so
+            // we use updateDocument instead to replace the old one matching the exact
+            // path, if present:
+            writer.updateDocument(documentId, document)
+        }
+    }
+
     fun searchIndex(indexPath: String, query: String) {
         val reader: IndexReader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)))
         val searcher = IndexSearcher(reader)
@@ -54,12 +66,14 @@ class IndexManager {
         }
     }
 
-    fun indexDocs(writer: IndexWriter, path: Path) {
+    fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
                 override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
                     try {
-                        indexDoc(writer, file, attrs.lastModifiedTime().toMillis())
+                        val document = createDocumentForFile(file, attrs.lastModifiedTime().toMillis())
+                        val documentId = Term("path", file.toString())
+                        addDocumentToIndex(writer, document, documentId)
                     } catch (ignore: IOException) {
                         // don't index files that can't be read.
                     }
@@ -67,31 +81,21 @@ class IndexManager {
                 }
             })
         } else {
-            indexDoc(writer, path, Files.getLastModifiedTime(path).toMillis())
+            val document = createDocumentForFile(path, Files.getLastModifiedTime(path).toMillis())
+            val documentId = Term("path", path.toString())
+            addDocumentToIndex(writer, document, documentId)
         }
     }
 
-    private fun indexDoc(writer: IndexWriter, file: Path, lastModified: Long) {
-        Files.newInputStream(file).use { stream ->
-            val doc = Document()
+    private fun createDocumentForFile(file: Path, lastModified: Long): Document {
+        val doc = Document()
 
-            val pathField: Field = TextField("path", file.toString(), Field.Store.YES)
-            doc.add(pathField)
+        val pathField: Field = TextField("path", file.toString(), Field.Store.YES)
+        doc.add(pathField)
 
-            // TODO: PointRangeQuery can be used to search this
-            doc.add(LongPoint("modified", lastModified))
+        // TODO: PointRangeQuery can be used to search this
+        doc.add(LongPoint("modified", lastModified))
 
-            if (writer.config.openMode == OpenMode.CREATE) {
-                // New index, so we just add the document (no old document can be there):
-                println("adding $file")
-                writer.addDocument(doc)
-            } else {
-                // Existing index (an old copy of this document may have been indexed) so
-                // we use updateDocument instead to replace the old one matching the exact
-                // path, if present:
-                println("updating $file")
-                writer.updateDocument(Term("path", file.toString()), doc)
-            }
-        }
+        return doc
     }
 }

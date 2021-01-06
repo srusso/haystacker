@@ -9,7 +9,7 @@ internal class IndexManagerTest {
     @Test
     internal fun indexDirectory() {
         manager.createIndexWriter("target/lucene-index").use {
-            writer -> manager.indexDocs(writer, Paths.get("D:\\random"))
+            writer -> manager.indexDirectoryRecursively(writer, Paths.get("D:\\random"))
         }
     }
 

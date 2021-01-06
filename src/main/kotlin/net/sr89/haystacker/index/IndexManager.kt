@@ -24,29 +24,17 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.Date
 
 class IndexManager {
     val analyzer: Analyzer = StandardAnalyzer()
 
-    fun createIndex(indexPath: String, docDir: String) {
-        val start = Date()
-        try {
-            println("Indexing to directory '$indexPath'...")
-            val dir: Directory = FSDirectory.open(Paths.get(indexPath))
+    fun createIndexWriter(indexPath: String): IndexWriter {
+        val dir: Directory = FSDirectory.open(Paths.get(indexPath))
 
-            val iwc = IndexWriterConfig(analyzer)
-            iwc.openMode = OpenMode.CREATE_OR_APPEND
+        val iwc = IndexWriterConfig(analyzer)
+        iwc.openMode = OpenMode.CREATE_OR_APPEND
 
-            val writer = IndexWriter(dir, iwc)
-            indexDocs(writer, Paths.get(docDir))
-
-            writer.close()
-            val end = Date()
-            println((end.time - start.time).toString() + " total milliseconds")
-        } catch (e: IOException) {
-            println(""" caught a ${e.javaClass} with message: ${e.message}""")
-        }
+        return IndexWriter(dir, iwc)
     }
 
     fun searchIndex(indexPath: String, query: String) {
@@ -66,7 +54,7 @@ class IndexManager {
         }
     }
 
-    private fun indexDocs(writer: IndexWriter, path: Path) {
+    fun indexDocs(writer: IndexWriter, path: Path) {
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
                 override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {

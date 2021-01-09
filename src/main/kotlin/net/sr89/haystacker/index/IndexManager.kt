@@ -12,11 +12,9 @@ import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.index.IndexWriterConfig.OpenMode
 import org.apache.lucene.index.Term
-import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TopDocs
-import org.apache.lucene.store.Directory
 import org.apache.lucene.store.FSDirectory
 import java.io.IOException
 import java.nio.file.FileVisitResult
@@ -26,16 +24,22 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
-class IndexManager {
+class IndexManager(val indexPath: String) {
     val analyzer: Analyzer = StandardAnalyzer()
 
-    fun createIndexWriter(indexPath: String): IndexWriter {
-        val dir: Directory = FSDirectory.open(Paths.get(indexPath))
+    var indexDirectory: FSDirectory? = null
+    var reader: IndexReader? = null
+    var searcher: IndexSearcher? = null
+
+    fun createIndexWriter(): IndexWriter {
+        if (indexDirectory == null) {
+            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+        }
 
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE_OR_APPEND
 
-        return IndexWriter(dir, iwc)
+        return IndexWriter(indexDirectory!!, iwc)
     }
 
     fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
@@ -50,18 +54,23 @@ class IndexManager {
         }
     }
 
-    fun searchIndex(indexPath: String, query: String): TopDocs {
-        val analyzer: Analyzer = StandardAnalyzer()
-        val parser = QueryParser("", analyzer)
+    fun searchIndex(query: Query): TopDocs {
+        initSearcher()
 
-        return searchIndex(indexPath, parser.parse(query))
+        return searcher!!.search(query, 5)
     }
 
-    fun searchIndex(indexPath: String, query: Query): TopDocs {
-        val reader: IndexReader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)))
-        val searcher = IndexSearcher(reader)
+    fun fetchDocument(docID: Int): Document? {
+        initSearcher()
 
-        return searcher.search(query, 5)
+        return searcher!!.doc(docID)
+    }
+
+    private fun initSearcher() {
+        if (searcher == null) {
+            reader = DirectoryReader.open(indexDirectory)
+            searcher = IndexSearcher(reader)
+        }
     }
 
     fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {
@@ -91,7 +100,6 @@ class IndexManager {
         val pathField: Field = TextField("path", file.toString(), Field.Store.YES)
         doc.add(pathField)
 
-        // TODO: PointRangeQuery can be used to search this
         doc.add(LongPoint("modified", lastModified))
 
         return doc

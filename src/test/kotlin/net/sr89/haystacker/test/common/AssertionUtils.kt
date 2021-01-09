@@ -1,11 +1,15 @@
 package net.sr89.haystacker.test.common
 
+import net.sr89.haystacker.index.IndexManager
+import org.apache.lucene.document.Document
 import org.apache.lucene.index.Term
+import org.apache.lucene.search.ScoreDoc
 import org.apache.lucene.search.TopDocs
 import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CastableObject(private val obj: Any) {
     fun <T : Any> ofType(clazz: KClass<T>): CastObject<T> {
@@ -30,12 +34,21 @@ fun timeAction(action: () -> Unit, actionName: String) {
     println("$actionName took ${Duration.ofMillis(end - start).toMillis()} ms")
 }
 
-fun TopDocs.including(term: Term) {
+class ResultAssertions(val foundDocuments: List<Document>) {
+    fun includingDocumentWith(term: Term) {
+        val elements = foundDocuments
+            .mapNotNull { d -> d.get(term.field()) }
+            .filter { binaryValue -> binaryValue == term.text() }
+            .toList()
 
-
+        assertTrue(elements.isNotEmpty(), "Expected term $term")
+    }
 }
 
-fun hasHits(docs: TopDocs, hits: Int): TopDocs {
+fun hasHits(manager: IndexManager, docs: TopDocs, hits: Int): ResultAssertions {
     assertEquals(docs.totalHits.value, hits.toLong())
-    return docs
+
+    return ResultAssertions(
+        docs.scoreDocs.map(ScoreDoc::doc).mapNotNull(manager::fetchDocument).toList()
+    )
 }

@@ -1,7 +1,6 @@
 package net.sr89.haystacker.index
 
 import net.sr89.haystacker.test.common.hasHits
-import net.sr89.haystacker.test.common.including
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
@@ -43,12 +42,13 @@ internal class IndexManagerTest {
             val foundByLongRange = manager.searchIndex(LongPoint.newRangeQuery(longKey, 40, 60))
             val foundByLongEquality = manager.searchIndex(LongPoint.newExactQuery(longKey, 50))
 
-            hasHits(foundByString, 1)
-                .including(Term(stringKey, "myString"))
-            hasHits(foundByFileName, 1)
-            hasHits(foundByInPath, 1)
-            hasHits(foundByLongRange, 2)
-            hasHits(foundByLongEquality, 2)
+            hasHits(manager, foundByString, 1)
+                .includingDocumentWith(Term(stringKey, "myString"))
+            hasHits(manager, foundByFileName, 1)
+                .includingDocumentWith(Term(stringKey, "C://path/to/FILE.txt"))
+            hasHits(manager, foundByInPath, 1)
+            hasHits(manager, foundByLongRange, 2)
+            hasHits(manager, foundByLongEquality, 2)
         } finally {
             tempDir.deleteRecursively()
         }

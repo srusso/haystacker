@@ -27,12 +27,19 @@ import java.nio.file.attribute.BasicFileAttributes
 class IndexManager(val indexPath: String) {
     val analyzer: Analyzer = StandardAnalyzer()
 
+    var indexDirectory: FSDirectory? = null
+    var reader: IndexReader? = null
+    var searcher: IndexSearcher? = null
+
     fun createIndexWriter(): IndexWriter {
-        val indexDirectory: FSDirectory = FSDirectory.open(Paths.get(indexPath))
+        if (indexDirectory == null) {
+            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+        }
+
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE_OR_APPEND
 
-        return IndexWriter(indexDirectory, iwc)
+        return IndexWriter(indexDirectory!!, iwc)
     }
 
     fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
@@ -48,11 +55,22 @@ class IndexManager(val indexPath: String) {
     }
 
     fun searchIndex(query: Query): TopDocs {
-        val indexDirectory: FSDirectory = FSDirectory.open(Paths.get(indexPath))
-        val reader: IndexReader = DirectoryReader.open(indexDirectory)
-        val searcher = IndexSearcher(reader)
+        initSearcher()
 
-        return searcher.search(query, 5)
+        return searcher!!.search(query, 5)
+    }
+
+    fun fetchDocument(docID: Int): Document? {
+        initSearcher()
+
+        return searcher!!.doc(docID)
+    }
+
+    private fun initSearcher() {
+        if (searcher == null) {
+            reader = DirectoryReader.open(indexDirectory)
+            searcher = IndexSearcher(reader)
+        }
     }
 
     fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {

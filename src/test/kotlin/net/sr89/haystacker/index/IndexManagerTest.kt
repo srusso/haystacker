@@ -1,19 +1,20 @@
 package net.sr89.haystacker.index
 
-import net.sr89.haystacker.test.common.timeAction
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.Term
+import org.apache.lucene.search.TermQuery
 import org.junit.jupiter.api.Test
-import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.test.assertTrue
 
 internal class IndexManagerTest {
+    val stringKey = "stringValue"
+    val longKey = "longValue"
+
     val manager: IndexManager = IndexManager()
 
     @Test
@@ -24,87 +25,37 @@ internal class IndexManagerTest {
     }
 
     @Test
-    internal fun indexManyDocuments() {
+    internal fun indexDocumentsAndSearch() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
-        val directoryDepth = 100
-        val filesPerDirectory = 10000
 
         try {
-            var fileToFind: String? = null
-            var pathToFind: Path? = null
-
             manager.createIndexWriter(tempDir.toString()).use {
-                for (i in 0..directoryDepth) {
-                    val directory = randomPath(10)
-
-                    if (i % 10 == 0) {
-                        println("Creating document ${i * filesPerDirectory} out of ${directoryDepth * filesPerDirectory}")
-                    }
-
-                    for (j in 0..filesPerDirectory) {
-                        val fileName = randomString(10)
-                        val path = Path.of(directory.toString(), fileName)
-                        val document = testDocument(path.toString(), (i * j).toLong())
-                        val documentId = Term("path", path.toString())
-                        manager.addDocumentToIndex(it, document, documentId)
-
-                        if (i * j == 40) {
-                            fileToFind = fileName
-                            pathToFind = path
-                        }
-                    }
-                }
+                val document = testDocument("myString", 50L)
+                val documentId = Term(stringKey, "myString")
+                manager.addDocumentToIndex(it, document, documentId)
             }
 
-            timeAction({findDocumentsByPath(tempDir, fileToFind!!, pathToFind!!)}, "Find documents by path")
-            timeAction({findDocumentsByLongRange(tempDir)}, "Find documents by long range")
+            val foundByString = manager.searchIndex(tempDir.toString(), TermQuery(Term(stringKey, "myString".toLowerCase())))
+            val foundByRange = manager.searchIndex(tempDir.toString(), LongPoint.newRangeQuery(longKey, 40, 60))
+
+            assertTrue(foundByString.totalHits.value == 1L, "One document should be found by string term")
+            assertTrue(foundByRange.totalHits.value == 1L, "One document should be found by range")
         } finally {
             tempDir.deleteRecursively()
         }
     }
 
-    private fun findDocumentsByPath(tempDir: File, fileToFind: String, pathToFind: Path) {
-        val foundByFileName = manager.searchIndex(tempDir.toString(), "path:${fileToFind}")
-        val foundByPathPart = manager.searchIndex(tempDir.toString(), "path:${pathToFind.parent.parent.parent.fileName}")
-
-        assertTrue(foundByFileName.totalHits.value >= 1L, "At least one file should be found by filename")
-        assertTrue(foundByPathPart.totalHits.value >= 1L, "At least one file should be found by path part")
-    }
-
-    private fun findDocumentsByLongRange(tempDir: File) {
-        val foundByRange = manager.searchIndex(tempDir.toString(), LongPoint.newRangeQuery("modified", 1010, 40000))
-
-        assertTrue(foundByRange.totalHits.value >= 1L, "At least one file should be found by range")
-    }
-
     @Test
     internal fun searchIndex() {
-        manager.searchIndex("target/lucene-index", "path:IndexManager")
+        manager.searchIndex("target/lucene-index", TermQuery(Term("path", "IndexManager".toLowerCase())))
     }
 
-    private fun testDocument(path: String, number: Long): Document {
+    private fun testDocument(stringValue: String, longValue: Long): Document {
         val doc = Document()
 
-        doc.add(TextField("path", path, Field.Store.YES))
-        doc.add(LongPoint("modified", number))
+        doc.add(TextField(stringKey, stringValue, Field.Store.YES))
+        doc.add(LongPoint(longKey, longValue))
 
         return doc
-    }
-
-    fun randomPath(length: Int): Path {
-        val pathParts = listOf("part", "directory", "orange", "random", "icecream", "files", "mystuff", "things", "items", "objects")
-
-        return (1..length)
-            .map { pathParts.random() }
-            .fold(Paths.get("")) { currPath, next ->
-                Path.of(currPath.toString(), next)
-            }
-    }
-
-    fun randomString(length: Int): String {
-        val charset = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789"
-        return (1..length)
-            .map { charset.random() }
-            .joinToString("")
     }
 }

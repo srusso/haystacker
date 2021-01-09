@@ -1,8 +1,10 @@
 package net.sr89.haystacker.test.common
 
+import org.apache.lucene.search.TopDocs
 import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
+import kotlin.test.assertEquals
 
 class CastableObject(private val obj: Any) {
     fun <T : Any> ofType(clazz: KClass<T>): CastObject<T> {
@@ -25,4 +27,8 @@ fun timeAction(action: () -> Unit, actionName: String) {
     action.invoke()
     val end = System.currentTimeMillis()
     println("$actionName took ${Duration.ofMillis(end - start).toMillis()} ms")
+}
+
+fun hasHits(docs: TopDocs, hits: Int) {
+    assertEquals(docs.totalHits.value, hits.toLong())
 }

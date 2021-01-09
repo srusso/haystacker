@@ -15,7 +15,6 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TopDocs
-import org.apache.lucene.store.Directory
 import org.apache.lucene.store.FSDirectory
 import java.io.IOException
 import java.nio.file.FileVisitResult
@@ -25,16 +24,15 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
-class IndexManager {
+class IndexManager(val indexPath: String) {
     val analyzer: Analyzer = StandardAnalyzer()
 
-    fun createIndexWriter(indexPath: String): IndexWriter {
-        val dir: Directory = FSDirectory.open(Paths.get(indexPath))
-
+    fun createIndexWriter(): IndexWriter {
+        val indexDirectory: FSDirectory = FSDirectory.open(Paths.get(indexPath))
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE_OR_APPEND
 
-        return IndexWriter(dir, iwc)
+        return IndexWriter(indexDirectory, iwc)
     }
 
     fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
@@ -49,8 +47,9 @@ class IndexManager {
         }
     }
 
-    fun searchIndex(indexPath: String, query: Query): TopDocs {
-        val reader: IndexReader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)))
+    fun searchIndex(query: Query): TopDocs {
+        val indexDirectory: FSDirectory = FSDirectory.open(Paths.get(indexPath))
+        val reader: IndexReader = DirectoryReader.open(indexDirectory)
         val searcher = IndexSearcher(reader)
 
         return searcher.search(query, 5)
@@ -83,7 +82,6 @@ class IndexManager {
         val pathField: Field = TextField("path", file.toString(), Field.Store.YES)
         doc.add(pathField)
 
-        // TODO: PointRangeQuery can be used to search this
         doc.add(LongPoint("modified", lastModified))
 
         return doc

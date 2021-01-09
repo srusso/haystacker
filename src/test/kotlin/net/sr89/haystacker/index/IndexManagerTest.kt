@@ -1,6 +1,7 @@
 package net.sr89.haystacker.index
 
 import net.sr89.haystacker.test.common.hasHits
+import net.sr89.haystacker.test.common.including
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
@@ -16,11 +17,11 @@ internal class IndexManagerTest {
     val stringKey = "stringValue"
     val longKey = "longValue"
 
-    val manager: IndexManager = IndexManager()
-
     @Test
     internal fun indexDirectory() {
-        manager.createIndexWriter("target/lucene-index").use { writer ->
+        val manager = IndexManager("target/lucene-index")
+
+        manager.createIndexWriter().use { writer ->
             manager.indexDirectoryRecursively(writer, Paths.get("./"))
         }
     }
@@ -28,20 +29,22 @@ internal class IndexManagerTest {
     @Test
     internal fun indexDocumentsAndSearch() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
+        val manager = IndexManager(tempDir.toString())
 
         try {
-            manager.createIndexWriter(tempDir.toString()).use {
-                addDocumentToIndex(it, "myString", 50L)
-                addDocumentToIndex(it, "C://path/to/FILE.txt", 50L)
+            manager.createIndexWriter().use {
+                addDocumentToIndex(manager, it, "myString", 50L)
+                addDocumentToIndex(manager, it, "C://path/to/FILE.txt", 50L)
             }
 
-            val foundByString = manager.searchIndex(tempDir.toString(), TermQuery(Term(stringKey, "myString".toLowerCase())))
-            val foundByFileName = manager.searchIndex(tempDir.toString(), TermQuery(Term(stringKey, "FILE.txt".toLowerCase())))
-            val foundByInPath = manager.searchIndex(tempDir.toString(), TermQuery(Term(stringKey, "to".toLowerCase())))
-            val foundByLongRange = manager.searchIndex(tempDir.toString(), LongPoint.newRangeQuery(longKey, 40, 60))
-            val foundByLongEquality = manager.searchIndex(tempDir.toString(), LongPoint.newExactQuery(longKey, 50))
+            val foundByString = manager.searchIndex(TermQuery(Term(stringKey, "myString".toLowerCase())))
+            val foundByFileName = manager.searchIndex(TermQuery(Term(stringKey, "FILE.txt".toLowerCase())))
+            val foundByInPath = manager.searchIndex(TermQuery(Term(stringKey, "to".toLowerCase())))
+            val foundByLongRange = manager.searchIndex(LongPoint.newRangeQuery(longKey, 40, 60))
+            val foundByLongEquality = manager.searchIndex(LongPoint.newExactQuery(longKey, 50))
 
             hasHits(foundByString, 1)
+                .including(Term(stringKey, "myString"))
             hasHits(foundByFileName, 1)
             hasHits(foundByInPath, 1)
             hasHits(foundByLongRange, 2)
@@ -51,12 +54,7 @@ internal class IndexManagerTest {
         }
     }
 
-    @Test
-    internal fun searchIndex() {
-        manager.searchIndex("target/lucene-index", TermQuery(Term("path", "IndexManager".toLowerCase())))
-    }
-
-    private fun addDocumentToIndex(it: IndexWriter, stringValue: String, longValue: Long) {
+    private fun addDocumentToIndex(manager: IndexManager, it: IndexWriter, stringValue: String, longValue: Long) {
         val document = testDocument(stringValue, longValue)
         val documentId = Term(stringKey, stringValue)
         manager.addDocumentToIndex(it, document, documentId)

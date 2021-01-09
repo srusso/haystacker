@@ -1,5 +1,6 @@
 package net.sr89.haystacker.test.common
 
+import org.apache.lucene.index.Term
 import org.apache.lucene.search.TopDocs
 import java.time.Duration
 import kotlin.reflect.KClass
@@ -29,6 +30,12 @@ fun timeAction(action: () -> Unit, actionName: String) {
     println("$actionName took ${Duration.ofMillis(end - start).toMillis()} ms")
 }
 
-fun hasHits(docs: TopDocs, hits: Int) {
+fun TopDocs.including(term: Term) {
+
+
+}
+
+fun hasHits(docs: TopDocs, hits: Int): TopDocs {
     assertEquals(docs.totalHits.value, hits.toLong())
+    return docs
 }

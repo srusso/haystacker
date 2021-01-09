@@ -8,18 +8,17 @@ import org.apache.lucene.document.TextField
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.TermQuery
 import org.junit.jupiter.api.Test
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.test.assertTrue
 
 internal class IndexManagerPerformanceTest {
-    val manager: IndexManager = IndexManager()
 
     @Test
     internal fun indexManyDocuments() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
+        val manager = IndexManager(tempDir.toString())
         val directoryDepth = 100
         val filesPerDirectory = 10000
 
@@ -27,7 +26,7 @@ internal class IndexManagerPerformanceTest {
             var fileToFind: String? = null
             var pathToFind: Path? = null
 
-            manager.createIndexWriter(tempDir.toString()).use {
+            manager.createIndexWriter().use {
                 for (i in 0..directoryDepth) {
                     val directory = randomPath(10)
 
@@ -50,23 +49,23 @@ internal class IndexManagerPerformanceTest {
                 }
             }
 
-            timeAction({findDocumentsByPath(tempDir, fileToFind!!, pathToFind!!)}, "Find documents by path")
-            timeAction({findDocumentsByLongRange(tempDir)}, "Find documents by long range")
+            timeAction({findDocumentsByPath(manager, fileToFind!!, pathToFind!!)}, "Find documents by path")
+            timeAction({findDocumentsByLongRange(manager)}, "Find documents by long range")
         } finally {
             tempDir.deleteRecursively()
         }
     }
 
-    private fun findDocumentsByPath(tempDir: File, fileToFind: String, pathToFind: Path) {
-        val foundByFileName = manager.searchIndex(tempDir.toString(), TermQuery(Term("path", fileToFind.toLowerCase())))
-        val foundByPathPart = manager.searchIndex(tempDir.toString(), TermQuery(Term("path", pathToFind.parent.parent.parent.fileName.toString().toLowerCase())))
+    private fun findDocumentsByPath(manager: IndexManager, fileToFind: String, pathToFind: Path) {
+        val foundByFileName = manager.searchIndex(TermQuery(Term("path", fileToFind.toLowerCase())))
+        val foundByPathPart = manager.searchIndex(TermQuery(Term("path", pathToFind.parent.parent.parent.fileName.toString().toLowerCase())))
 
         assertTrue(foundByFileName.totalHits.value >= 1L, "At least one file should be found by filename")
         assertTrue(foundByPathPart.totalHits.value >= 1L, "At least one file should be found by path part")
     }
 
-    private fun findDocumentsByLongRange(tempDir: File) {
-        val foundByRange = manager.searchIndex(tempDir.toString(), LongPoint.newRangeQuery("modified", 1010, 40000))
+    private fun findDocumentsByLongRange(manager: IndexManager) {
+        val foundByRange = manager.searchIndex(LongPoint.newRangeQuery("modified", 1010, 40000))
 
         assertTrue(foundByRange.totalHits.value >= 1L, "At least one file should be found by range")
     }

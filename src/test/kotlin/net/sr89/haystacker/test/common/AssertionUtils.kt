@@ -35,13 +35,14 @@ fun timeAction(action: () -> Unit, actionName: String) {
 }
 
 class ResultAssertions(val foundDocuments: List<Document>) {
-    fun includingDocumentWith(term: Term) {
+    fun includingDocumentWith(term: Term): ResultAssertions {
         val elements = foundDocuments
             .mapNotNull { d -> d.get(term.field()) }
             .filter { binaryValue -> binaryValue == term.text() }
             .toList()
 
         assertTrue(elements.isNotEmpty(), "Expected term $term")
+        return this
     }
 }
 

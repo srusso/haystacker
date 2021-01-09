@@ -48,7 +48,11 @@ internal class IndexManagerTest {
                 .includingDocumentWith(Term(stringKey, "C://path/to/FILE.txt"))
             hasHits(manager, foundByInPath, 1)
             hasHits(manager, foundByLongRange, 2)
+                .includingDocumentWith(Term(stringKey, "myString"))
+                .includingDocumentWith(Term(stringKey, "C://path/to/FILE.txt"))
             hasHits(manager, foundByLongEquality, 2)
+                .includingDocumentWith(Term(stringKey, "myString"))
+                .includingDocumentWith(Term(stringKey, "C://path/to/FILE.txt"))
         } finally {
             tempDir.deleteRecursively()
         }

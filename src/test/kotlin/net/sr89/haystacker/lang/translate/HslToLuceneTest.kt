@@ -28,13 +28,23 @@ internal class HslToLuceneTest {
     @Test
     internal fun longQueries() {
         assertEquals(
-            LongPoint.newRangeQuery("size", DataSize.ofKilobytes(23).toBytes(), Long.MAX_VALUE),
+            LongPoint.newRangeQuery("size", DataSize.ofKilobytes(23).toBytes() + 1, Long.MAX_VALUE),
             hslToLucene.toLuceneQuery("size > 23kb")
         )
 
         assertEquals(
-            LongPoint.newRangeQuery("size", Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes()),
+            LongPoint.newRangeQuery("size", DataSize.ofKilobytes(23).toBytes(), Long.MAX_VALUE),
+            hslToLucene.toLuceneQuery("size >= 23kb")
+        )
+
+        assertEquals(
+            LongPoint.newRangeQuery("size", Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes() - 1),
             hslToLucene.toLuceneQuery("size < 23kb")
+        )
+
+        assertEquals(
+            LongPoint.newRangeQuery("size", Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes()),
+            hslToLucene.toLuceneQuery("size <= 23kb")
         )
 
         assertEquals(

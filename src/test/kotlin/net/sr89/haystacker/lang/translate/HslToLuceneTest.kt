@@ -22,7 +22,7 @@ internal class HslToLuceneTest {
     internal fun parseSimpleStringTermQuery() {
         val query = hslToLucene.toLuceneQuery("name = \"file.txt\"")
 
-        assertEquals(query, TermQuery(Term("name", "file.txt")))
+        assertEquals(TermQuery(Term("name", "file.txt")), query)
     }
 
     @Test

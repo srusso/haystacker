@@ -19,6 +19,7 @@ import java.time.LocalDate
 class HslParserTest {
     private val date = "2020-01-01"
     private val dateTime = "2020-01-17T10:15:50Z"
+    private val dateTimeWithOffset = "2020-01-17T10:15:30+04:00"
 
     private val parser = HslParser()
 
@@ -146,6 +147,17 @@ class HslParserTest {
             .ofType(HslNodeClause::class)
             .then {
                 it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslInstant(Instant.ofEpochSecond(1579256150L)))
+            }
+    }
+
+    @Test
+    fun lastModifiedGreaterThanDateTimeWithOffset() {
+        val query = parser.parse("last_modified > '$dateTimeWithOffset'")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslInstant(Instant.ofEpochSecond(1579241730L)))
             }
     }
 

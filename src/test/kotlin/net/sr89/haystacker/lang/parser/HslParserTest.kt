@@ -9,8 +9,10 @@ import net.sr89.haystacker.lang.ast.HslOrClause
 import net.sr89.haystacker.lang.ast.HslString
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.test.common.having
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
 import java.time.Instant
@@ -294,5 +296,15 @@ class HslParserTest {
                     .then {
                     }
             }
+    }
+
+    @Test
+    internal fun brokenGrammarThrowsSensibleException() {
+        try {
+            parser.parse("this is a broken query")
+            fail<String>("Expected parsing to fail for a broken HSL query")
+        } catch (e: InvalidHslGrammarException) {
+
+        }
     }
 }

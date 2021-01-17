@@ -10,6 +10,7 @@ import net.sr89.haystacker.lang.ast.HslString
 import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import org.jparsec.OperatorTable
 import org.jparsec.Parser
 import org.jparsec.Parsers
@@ -20,6 +21,7 @@ import org.jparsec.Scanners.stringCaseInsensitive
 import org.jparsec.Terminals
 import org.jparsec.Terminals.StringLiteral.DOUBLE_QUOTE_TOKENIZER
 import org.jparsec.Terminals.StringLiteral.SINGLE_QUOTE_TOKENIZER
+import org.jparsec.error.ParserException
 import org.jparsec.pattern.CharPredicates.IS_ALPHA_NUMERIC
 import org.jparsec.pattern.Patterns
 import org.springframework.util.unit.DataSize
@@ -92,6 +94,10 @@ class HslParser {
     }
 
     fun parse(queryString: String): HslQuery {
-        return parser().parse(queryString.trim())
+        try {
+            return parser().parse(queryString.trim())
+        } catch (e: ParserException) {
+            throw InvalidHslGrammarException("Invalid HSL query. Refer to the README for a guide")
+        }
     }
 }

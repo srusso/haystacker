@@ -12,7 +12,6 @@ fun startServer(): Unit {
             * Add directory recursively to index
             * Remove directory from index
             * Create new index
-            * Delete index
         """.trimIndent()
     )
 }

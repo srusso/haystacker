@@ -10,9 +10,6 @@ import net.sr89.haystacker.lang.ast.HslOrClause
 import net.sr89.haystacker.lang.ast.HslQueryVisitor
 import net.sr89.haystacker.lang.ast.HslString
 import org.apache.lucene.index.Term
-import org.apache.lucene.search.BooleanClause.Occur.MUST
-import org.apache.lucene.search.BooleanClause.Occur.SHOULD
-import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TermQuery
 
@@ -21,14 +18,14 @@ class ToLuceneQueryVisitor: HslQueryVisitor<Query> {
         val left = query.left.accept(this)
         val right = query.right.accept(this)
 
-        return BooleanQuery.Builder().add(left, MUST).add(right, MUST).build()
+        return left.and(right)
     }
 
     override fun visit(query: HslOrClause): Query {
         val left = query.left.accept(this)
         val right = query.right.accept(this)
 
-        return BooleanQuery.Builder().add(left, SHOULD).add(right, SHOULD).build()
+        return left.or(right)
     }
 
     override fun visit(query: HslNodeClause): Query {

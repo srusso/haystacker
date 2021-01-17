@@ -7,7 +7,6 @@ import org.apache.lucene.document.LongPoint
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.TermQuery
-import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -15,7 +14,7 @@ import kotlin.test.assertTrue
 
 internal class IndexManagerPerformanceTest {
 
-    @Test
+//    @Test
     internal fun indexManyDocuments() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
         val manager = IndexManager(tempDir.toString())

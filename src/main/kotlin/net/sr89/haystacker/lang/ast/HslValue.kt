@@ -4,14 +4,39 @@ import org.springframework.util.unit.DataSize
 import java.time.Instant
 import java.time.LocalDate
 
-sealed class HslValue
+interface HslValueVisitor<T> {
+    fun accept(value: HslString): T
+    fun accept(value: HslDataSize): T
+    fun accept(value: HslDate): T
+    fun accept(value: HslInstant): T
+}
 
-data class HslString(val str: String): HslValue()
+sealed class HslValue {
+    abstract fun <T>accept(visitor: HslValueVisitor<T>): T
+}
 
-data class HslDataSize(val size: DataSize): HslValue()
+data class HslString(val str: String): HslValue() {
+    override fun <T> accept(visitor: HslValueVisitor<T>): T {
+        return visitor.accept(this)
+    }
+}
 
-open class HslDateTime: HslValue()
+data class HslDataSize(val size: DataSize): HslValue() {
+    override fun <T> accept(visitor: HslValueVisitor<T>): T {
+        return visitor.accept(this)
+    }
+}
 
-data class HslDate(val date: LocalDate): HslDateTime()
+sealed class HslDateTime: HslValue()
 
-data class HslInstant(val instant: Instant): HslDateTime()
+data class HslDate(val date: LocalDate): HslDateTime() {
+    override fun <T> accept(visitor: HslValueVisitor<T>): T {
+        return visitor.accept(this)
+    }
+}
+
+data class HslInstant(val instant: Instant): HslDateTime() {
+    override fun <T> accept(visitor: HslValueVisitor<T>): T {
+        return visitor.accept(this)
+    }
+}

@@ -74,7 +74,7 @@ internal class HslToLuceneTest {
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, MUST).add(nameClause, MUST).build(),
-            hslToLucene.toLuceneQuery("created < '$date' AND name = \"file.txt\"")
+            hslToLucene.toLuceneQuery("created <= '$date' AND name = \"file.txt\"")
         )
     }
 
@@ -85,7 +85,7 @@ internal class HslToLuceneTest {
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, SHOULD).add(nameClause, SHOULD).build(),
-            hslToLucene.toLuceneQuery("created < '$date' OR name = \"file.txt\"")
+            hslToLucene.toLuceneQuery("created <= '$date' OR name = \"file.txt\"")
         )
     }
 
@@ -99,7 +99,7 @@ internal class HslToLuceneTest {
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, MUST).add(innerClause, MUST).build(),
-            hslToLucene.toLuceneQuery("created < '$date' AND (last_modified > '$date' OR name = \"file.txt\")")
+            hslToLucene.toLuceneQuery("created <= '$date' AND (last_modified >= '$date' OR name = \"file.txt\")")
         )
     }
 

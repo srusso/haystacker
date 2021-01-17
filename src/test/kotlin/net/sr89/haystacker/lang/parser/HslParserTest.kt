@@ -3,6 +3,7 @@ package net.sr89.haystacker.lang.parser
 import net.sr89.haystacker.lang.ast.HslAndClause
 import net.sr89.haystacker.lang.ast.HslDataSize
 import net.sr89.haystacker.lang.ast.HslDate
+import net.sr89.haystacker.lang.ast.HslInstant
 import net.sr89.haystacker.lang.ast.HslNodeClause
 import net.sr89.haystacker.lang.ast.HslOrClause
 import net.sr89.haystacker.lang.ast.HslString
@@ -12,10 +13,12 @@ import net.sr89.haystacker.test.common.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
+import java.time.Instant
 import java.time.LocalDate
 
 class HslParserTest {
     private val date = "2020-01-01"
+    private val dateTime = "2020-01-17T10:15:50Z"
 
     private val parser = HslParser()
 
@@ -132,6 +135,17 @@ class HslParserTest {
             .ofType(HslNodeClause::class)
             .then {
                 it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslDate(LocalDate.parse(date)))
+            }
+    }
+
+    @Test
+    fun lastModifiedGreaterThanDateTime() {
+        val query = parser.parse("last_modified > '$dateTime'")
+
+        having(query)
+            .ofType(HslNodeClause::class)
+            .then {
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslInstant(Instant.ofEpochSecond(1579256150L)))
             }
     }
 

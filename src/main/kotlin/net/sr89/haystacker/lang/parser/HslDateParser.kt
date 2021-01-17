@@ -18,9 +18,9 @@ private fun isDateTime(date: Any): HslInstant? {
     for (parser in parsers) {
         try {
             val temporalAccessor = parser.parse(date.toString())
-            val seconds = temporalAccessor.get(ChronoField.INSTANT_SECONDS)
+            val seconds = temporalAccessor.getLong(ChronoField.INSTANT_SECONDS)
             val nanos = temporalAccessor.get(ChronoField.NANO_OF_SECOND)
-            return HslInstant(Instant.ofEpochSecond(seconds.toLong(), nanos.toLong()))
+            return HslInstant(Instant.ofEpochSecond(seconds, nanos.toLong()))
         } catch (e: DateTimeParseException) {
 
         }

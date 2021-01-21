@@ -22,7 +22,7 @@ internal class HslToLuceneTest {
     internal fun parseSimpleStringTermQuery() {
         val query = hslToLucene.toLuceneQuery("name = \"file.txt\"")
 
-        assertEquals(TermQuery(Term("name", "file.txt")), query)
+        assertEquals(TermQuery(Term("path", "file.txt")), query)
     }
 
     @Test
@@ -70,7 +70,7 @@ internal class HslToLuceneTest {
     @Test
     internal fun andQuery() {
         val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
-        val nameClause = TermQuery(Term("name", "file.txt"))
+        val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, MUST).add(nameClause, MUST).build(),
@@ -81,7 +81,7 @@ internal class HslToLuceneTest {
     @Test
     internal fun orQuery() {
         val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
-        val nameClause = TermQuery(Term("name", "file.txt"))
+        val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, SHOULD).add(nameClause, SHOULD).build(),
@@ -93,7 +93,7 @@ internal class HslToLuceneTest {
     internal fun nestedQueries() {
         val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
         val lastModifiedClause = LongPoint.newRangeQuery("last_modified", dateToMillis(date), Long.MAX_VALUE)
-        val nameClause = TermQuery(Term("name", "file.txt"))
+        val nameClause = TermQuery(Term("path", "file.txt"))
 
         val innerClause = BooleanQuery.Builder().add(lastModifiedClause, SHOULD).add(nameClause, SHOULD).build()
 

@@ -23,14 +23,45 @@ import org.http4k.routing.routes
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
 import java.nio.file.Files
+import java.nio.file.Paths
 
 data class SearchResponse(val totalResults: Long)
 
 val hslQuery = Query.string().required("hslQuery")
 val indexPath = Query.string().required("indexPath")
+val directory = Query.string().required("directory")
 val maxResults = Query.int().optional("maxResults")
 
 val hslToLucene = HslToLucene(HslParser())
+
+private fun createHandler(): HttpHandler {
+    return { request: Request ->
+        val indexPath: String = indexPath(request)
+        val indexManager = IndexManager(indexPath)
+
+        println("Received request to create index at $indexPath")
+
+        indexManager.createIndexWriter().use {  }
+
+        Response(OK)
+    }
+}
+
+private fun indexDirectoryHandler(): HttpHandler {
+    return { request: Request ->
+        val indexPath: String = indexPath(request)
+        val directoryToIndex = Paths.get(directory(request))
+        val indexManager = IndexManager(indexPath)
+
+        println("Received request to add directory $directoryToIndex to index $indexPath")
+
+        indexManager.createIndexWriter().use {
+            indexManager.indexDirectoryRecursively(it, directoryToIndex)
+        }
+
+        Response(OK)
+    }
+}
 
 private fun searchHandler(): HttpHandler {
     return { request: Request ->
@@ -55,7 +86,9 @@ private fun searchHandler(): HttpHandler {
 
 private fun createServer(): HttpHandler {
     return routes(
-        "search" bind POST to searchHandler()
+        "search" bind POST to searchHandler(),
+        "create" bind POST to createHandler(),
+        "indexDirectory" bind POST to indexDirectoryHandler()
     )
 }
 
@@ -75,16 +108,29 @@ fun main() {
 
     val indexFile = Files.createTempDirectory("index").toFile()
 
-    val request = Request(POST, "http://localhost:9000/search")
+    val createRequest = Request(POST, "http://localhost:9000/create")
         .with(
-            hslQuery of "name = haystacker-1.0-SNAPSHOT.jar",
+            indexPath of indexFile.absolutePath
+        )
+
+    val indexRequest = Request(POST, "http://localhost:9000/indexDirectory")
+        .with(
+            directory of "D:\\random",
+            indexPath of indexFile.absolutePath
+        )
+
+    val searchRequest = Request(POST, "http://localhost:9000/search")
+        .with(
+            hslQuery of "name = abba.txt",
             maxResults of 15,
             indexPath of indexFile.absolutePath
         )
 
     val client = ApacheClient()
 
-    println(client(request))
+    client(createRequest)
+    client(indexRequest)
+    println(client(searchRequest))
 
     jettyServer.stop()
 }

@@ -32,14 +32,10 @@ class IndexManager(val indexPath: String) {
     var searcher: IndexSearcher? = null
 
     fun createIndexWriter(): IndexWriter {
-        if (indexDirectory == null) {
-            indexDirectory = FSDirectory.open(Paths.get(indexPath))
-        }
-
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE_OR_APPEND
 
-        return IndexWriter(indexDirectory!!, iwc)
+        return IndexWriter(initIndexDirectory(), iwc)
     }
 
     fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
@@ -68,7 +64,7 @@ class IndexManager(val indexPath: String) {
 
     private fun initSearcher() {
         if (searcher == null) {
-            reader = DirectoryReader.open(indexDirectory)
+            reader = DirectoryReader.open(initIndexDirectory())
             searcher = IndexSearcher(reader)
         }
     }
@@ -92,6 +88,13 @@ class IndexManager(val indexPath: String) {
             val documentId = Term("path", path.toString())
             addDocumentToIndex(writer, document, documentId)
         }
+    }
+
+    private fun initIndexDirectory(): FSDirectory {
+        if (indexDirectory == null) {
+            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+        }
+        return indexDirectory!!
     }
 
     private fun createDocumentForFile(file: Path, lastModified: Long): Document {

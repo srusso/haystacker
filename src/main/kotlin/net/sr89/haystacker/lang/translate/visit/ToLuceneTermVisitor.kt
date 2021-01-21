@@ -26,7 +26,7 @@ import java.time.ZoneOffset.UTC
 class ToLuceneTermVisitor(val symbol: Symbol, val operator: Operator): HslValueVisitor<Query> {
     override fun accept(value: HslString): Query {
         if (symbol == Symbol.NAME && operator == EQUALS) {
-            return TermQuery(Term(symbol.name.toLowerCase(), value.str))
+            return TermQuery(Term("path", value.str))
         } else {
             throw InvalidSemanticException("Invalid symbol (${symbol.name.toLowerCase()}) or operator ($operator) for string value '${value.str}'")
         }

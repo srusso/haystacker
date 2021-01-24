@@ -1,11 +1,11 @@
 package net.sr89.haystacker.client.cli
 
-import net.sr89.haystacker.server.handlers.indexPath
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.with
 import java.nio.file.Path
+
 
 enum class Outcome { FAILURE, SUCCESS }
 
@@ -24,14 +24,14 @@ fun sendRequestToServer(request: HslServerRequest): HslServerResponse {
     TODO("Send request to the HslServer")
 }
 
-fun main() {
+fun main(args: Array<String>) {
     val port = 9000
 
     println("Started CLI client at port $port")
 
     val createRequest = Request(Method.POST, "http://localhost:9000/index")
         .with(
-            indexPath of TODO("Take this from the command line..")
+//            indexPath of TODO("Take this from the command line..")
         )
 
     val httpClient = ApacheClient()

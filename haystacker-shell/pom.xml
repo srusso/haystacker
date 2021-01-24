@@ -2,15 +2,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>haystacker</artifactId>
+        <groupId>net.sr89</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>net.sr89</groupId>
-    <artifactId>haystacker</artifactId>
-    <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
-    <modules>
-        <module>haystacker-shell</module>
-    </modules>
+    <artifactId>haystacker-shell</artifactId>
 
     <properties>
         <kotlin.version>1.4.21</kotlin.version>
@@ -142,6 +141,5 @@
             </plugin>
         </plugins>
     </build>
-
 
 </project>

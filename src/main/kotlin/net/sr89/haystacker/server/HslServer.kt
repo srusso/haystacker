@@ -11,6 +11,7 @@ import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.MemoryBody
 import org.http4k.core.MemoryResponse
+import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -42,6 +43,29 @@ val hslToLucene = HslToLucene(HslParser())
 
 private fun pingHandler(): HttpHandler {
     return { Response(OK) }
+}
+
+private fun deleteHandler(): HttpHandler {
+    return { request: Request ->
+        val indexPath: String = indexPath(request)
+        val directoryToDeindex = Paths.get(directory(request))
+
+        println("Received request to remove directory $directoryToDeindex from index $indexPath")
+
+        if (!directoryToDeindex.toFile().exists()) {
+            MemoryResponse(NOT_FOUND, body = MemoryBody("Directory $directoryToDeindex not found"))
+        } else if (!Paths.get(indexPath).toFile().exists()) {
+            MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+        } else {
+            val indexManager = IndexManager(indexPath)
+
+            indexManager.openIndex().use {
+                indexManager.removeDirectoryFromIndex(it, directoryToDeindex)
+            }
+
+            Response(OK)
+        }
+    }
 }
 
 private fun createHandler(): HttpHandler {
@@ -118,7 +142,8 @@ private fun createServer(): HttpHandler {
         "ping" bind GET to pingHandler(),
         "search" bind POST to searchHandler(),
         "create" bind POST to createHandler(),
-        "indexDirectory" bind POST to indexDirectoryHandler()
+        "directory" bind POST to indexDirectoryHandler(),
+        "directory" bind DELETE to deleteHandler()
     )
 }
 
@@ -134,7 +159,13 @@ fun main() {
             indexPath of indexFile.absolutePath
         )
 
-    val indexRequest = Request(POST, "http://localhost:9000/indexDirectory")
+    val indexRequest = Request(POST, "http://localhost:9000/directory")
+        .with(
+            directory of "D:\\random",
+            indexPath of indexFile.absolutePath
+        )
+
+    val removeFromIndexRequest = Request(DELETE, "http://localhost:9000/directory")
         .with(
             directory of "D:\\random",
             indexPath of indexFile.absolutePath
@@ -151,6 +182,14 @@ fun main() {
 
     client(createRequest)
     client(indexRequest)
+    println(client(searchRequest))
+
+    Thread.sleep(1000L)
+
+    client(removeFromIndexRequest)
+
+    Thread.sleep(1000L)
+
     println(client(searchRequest))
 
     jettyServer.stop()

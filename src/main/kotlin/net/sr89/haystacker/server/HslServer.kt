@@ -8,6 +8,7 @@ import net.sr89.haystacker.server.JacksonModule.auto
 import org.apache.lucene.search.ScoreDoc
 import org.http4k.client.ApacheClient
 import org.http4k.core.Body
+import org.http4k.core.ContentType.Companion.TEXT_PLAIN
 import org.http4k.core.HttpHandler
 import org.http4k.core.MemoryBody
 import org.http4k.core.MemoryResponse
@@ -38,6 +39,7 @@ val hslQuery = Query.string().required("hslQuery")
 val indexPath = Query.string().required("indexPath")
 val directory = Query.string().required("directory")
 val maxResults = Query.int().optional("maxResults")
+val stringBody = Body.string(TEXT_PLAIN).toLens()
 
 val hslToLucene = HslToLucene(HslParser())
 
@@ -53,9 +55,9 @@ private fun deleteHandler(): HttpHandler {
         println("Received request to remove directory $directoryToDeindex from index $indexPath")
 
         if (!directoryToDeindex.toFile().exists()) {
-            MemoryResponse(NOT_FOUND, body = MemoryBody("Directory $directoryToDeindex not found"))
+            Response(NOT_FOUND).with(stringBody of "Directory $directoryToDeindex not found")
         } else if (!Paths.get(indexPath).toFile().exists()) {
-            MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+            Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
             val indexManager = IndexManager(indexPath)
 
@@ -89,9 +91,9 @@ private fun indexDirectoryHandler(): HttpHandler {
         println("Received request to add directory $directoryToIndex to index $indexPath")
 
         if (!directoryToIndex.toFile().exists()) {
-            MemoryResponse(NOT_FOUND, body = MemoryBody("Directory $directoryToIndex not found"))
+            Response(NOT_FOUND).with(stringBody of "Directory $directoryToIndex not found")
         } else if (!Paths.get(indexPath).toFile().exists()) {
-            MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+            Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
             val indexManager = IndexManager(indexPath)
 
@@ -141,7 +143,7 @@ private fun createServer(): HttpHandler {
     return routes(
         "ping" bind GET to pingHandler(),
         "search" bind POST to searchHandler(),
-        "create" bind POST to createHandler(),
+        "index" bind POST to createHandler(),
         "directory" bind POST to indexDirectoryHandler(),
         "directory" bind DELETE to deleteHandler()
     )
@@ -154,7 +156,7 @@ fun main() {
 
     val indexFile = Files.createTempDirectory("index").toFile()
 
-    val createRequest = Request(POST, "http://localhost:9000/create")
+    val createRequest = Request(POST, "http://localhost:9000/index")
         .with(
             indexPath of indexFile.absolutePath
         )

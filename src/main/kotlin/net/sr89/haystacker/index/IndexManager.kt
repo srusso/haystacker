@@ -5,6 +5,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
+import org.apache.lucene.document.StringField
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.index.IndexReader
@@ -13,6 +14,7 @@ import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.index.IndexWriterConfig.OpenMode
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
+import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
@@ -31,27 +33,22 @@ class IndexManager(val indexPath: String) {
     var reader: IndexReader? = null
     var searcher: IndexSearcher? = null
 
-    fun createIndexWriter(): IndexWriter {
-        if (indexDirectory == null) {
-            indexDirectory = FSDirectory.open(Paths.get(indexPath))
-        }
-
+    fun createNewIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
-        iwc.openMode = OpenMode.CREATE_OR_APPEND
+        iwc.openMode = OpenMode.CREATE
 
-        return IndexWriter(indexDirectory!!, iwc)
+        return IndexWriter(initIndexDirectory(), iwc)
+    }
+
+    fun openIndex(): IndexWriter {
+        val iwc = IndexWriterConfig(analyzer)
+        iwc.openMode = OpenMode.APPEND
+
+        return IndexWriter(initIndexDirectory(), iwc)
     }
 
     fun addDocumentToIndex(writer: IndexWriter, document: Document, documentId: Term) {
-        if (writer.config.openMode == OpenMode.CREATE) {
-            // New index, so we just add the document (no old document can be there):
-            writer.addDocument(document)
-        } else {
-            // Existing index (an old copy of this document may have been indexed) so
-            // we use updateDocument instead to replace the old one matching the exact
-            // path, if present:
-            writer.updateDocument(documentId, document)
-        }
+        writer.updateDocument(documentId, document)
     }
 
     fun searchIndex(query: Query): TopDocs {
@@ -68,9 +65,13 @@ class IndexManager(val indexPath: String) {
 
     private fun initSearcher() {
         if (searcher == null) {
-            reader = DirectoryReader.open(indexDirectory)
+            reader = DirectoryReader.open(initIndexDirectory())
             searcher = IndexSearcher(reader)
         }
+    }
+
+    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path) {
+        writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
     fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {
@@ -78,8 +79,8 @@ class IndexManager(val indexPath: String) {
             Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
                 override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
                     try {
-                        val document = createDocumentForFile(file, attrs.lastModifiedTime().toMillis())
-                        val documentId = Term("path", file.toString())
+                        val document = createDocumentForFile(file, attrs)
+                        val documentId = Term("id", file.toString())
                         addDocumentToIndex(writer, document, documentId)
                     } catch (ignore: IOException) {
                         // don't index files that can't be read.
@@ -88,19 +89,27 @@ class IndexManager(val indexPath: String) {
                 }
             })
         } else {
-            val document = createDocumentForFile(path, Files.getLastModifiedTime(path).toMillis())
-            val documentId = Term("path", path.toString())
+            val document = createDocumentForFile(path, Files.readAttributes(path, BasicFileAttributes::class.java))
+            val documentId = Term("id", path.toString())
             addDocumentToIndex(writer, document, documentId)
         }
     }
 
-    private fun createDocumentForFile(file: Path, lastModified: Long): Document {
+    private fun initIndexDirectory(): FSDirectory {
+        if (indexDirectory == null) {
+            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+        }
+        return indexDirectory!!
+    }
+
+    private fun createDocumentForFile(path: Path, attrs: BasicFileAttributes): Document {
         val doc = Document()
 
-        val pathField: Field = TextField("path", file.toString(), Field.Store.YES)
-        doc.add(pathField)
+        doc.add(TextField("path", path.toString(), Field.Store.YES))
+        doc.add(StringField("id", path.toString(), Field.Store.NO))
 
-        doc.add(LongPoint("modified", lastModified))
+        doc.add(LongPoint("modified", attrs.lastModifiedTime().toMillis()))
+        doc.add(LongPoint("created", attrs.creationTime().toMillis()))
 
         return doc
     }

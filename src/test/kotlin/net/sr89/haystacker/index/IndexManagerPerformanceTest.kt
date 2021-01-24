@@ -27,7 +27,7 @@ internal class IndexManagerPerformanceTest {
             var fileToFind: String? = null
             var pathToFind: Path? = null
 
-            manager.createIndexWriter().use {
+            manager.createNewIndex().use {
                 for (i in 0..directoryDepth) {
                     val directory = randomPath(10)
 

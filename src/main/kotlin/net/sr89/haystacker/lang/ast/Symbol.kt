@@ -1,5 +1,8 @@
 package net.sr89.haystacker.lang.ast
 
-enum class Symbol {
-    NAME, SIZE, CREATED, LAST_MODIFIED
+enum class Symbol(val luceneQueryName: String) {
+    NAME("path"),
+    SIZE("size"),
+    CREATED("created"),
+    LAST_MODIFIED("last_modified")
 }

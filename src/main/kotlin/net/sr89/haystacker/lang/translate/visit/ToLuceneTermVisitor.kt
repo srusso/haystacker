@@ -26,7 +26,7 @@ import java.time.ZoneOffset.UTC
 class ToLuceneTermVisitor(val symbol: Symbol, val operator: Operator): HslValueVisitor<Query> {
     override fun accept(value: HslString): Query {
         if (symbol == Symbol.NAME && operator == EQUALS) {
-            return TermQuery(Term(symbol.name.toLowerCase(), value.str))
+            return TermQuery(Term(symbol.luceneQueryName, value.str))
         } else {
             throw InvalidSemanticException("Invalid symbol (${symbol.name.toLowerCase()}) or operator ($operator) for string value '${value.str}'")
         }
@@ -37,7 +37,7 @@ class ToLuceneTermVisitor(val symbol: Symbol, val operator: Operator): HslValueV
             throw InvalidSemanticException("Symbol ${symbol.name.toLowerCase()} does not accept a data-size value like ${value.size}")
         }
 
-        return longQuery(symbol.name.toLowerCase(), value.size.toBytes())
+        return longQuery(symbol.luceneQueryName, value.size.toBytes())
     }
 
     override fun accept(value: HslDate): Query {
@@ -45,7 +45,7 @@ class ToLuceneTermVisitor(val symbol: Symbol, val operator: Operator): HslValueV
             throw InvalidSemanticException("Symbol ${symbol.name.toLowerCase()} does not accept a date value like ${value.date}")
         }
 
-        return longQuery(symbol.name.toLowerCase(), value.date.atStartOfDay(UTC).toInstant().toEpochMilli())
+        return longQuery(symbol.luceneQueryName, value.date.atStartOfDay(UTC).toInstant().toEpochMilli())
     }
 
     override fun accept(value: HslInstant): Query {
@@ -53,7 +53,7 @@ class ToLuceneTermVisitor(val symbol: Symbol, val operator: Operator): HslValueV
             throw InvalidSemanticException("Symbol ${symbol.name.toLowerCase()} does not accept a datetime value like ${LocalDateTime.ofInstant(value.instant, UTC)}")
         }
 
-        return longQuery(symbol.name.toLowerCase(), value.instant.toEpochMilli())
+        return longQuery(symbol.luceneQueryName, value.instant.toEpochMilli())
     }
 
     private fun longQuery(fieldName: String, bytes: Long): Query {

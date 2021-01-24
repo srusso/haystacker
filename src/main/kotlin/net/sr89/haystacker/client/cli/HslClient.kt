@@ -31,7 +31,7 @@ fun main() {
 
     val createRequest = Request(Method.POST, "http://localhost:9000/index")
         .with(
-            indexPath of "D://sfdosidfjosidj/"
+            indexPath of TODO("Take this from the command line..")
         )
 
     val httpClient = ApacheClient()

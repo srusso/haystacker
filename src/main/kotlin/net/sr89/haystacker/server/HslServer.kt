@@ -5,6 +5,7 @@ import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.parser.HslParser
 import net.sr89.haystacker.lang.translate.HslToLucene
 import net.sr89.haystacker.server.JacksonModule.auto
+import org.apache.lucene.document.Document
 import org.apache.lucene.search.ScoreDoc
 import org.http4k.client.ApacheClient
 import org.http4k.core.Body
@@ -31,13 +32,20 @@ import org.http4k.server.asServer
 import java.nio.file.Files
 import java.nio.file.Paths
 
-data class SearchResponse(val totalResults: Long)
+data class SearchResult(val path: String)
+
+data class SearchResponse(
+    val totalResults: Long,
+    val returnedResults: Int,
+    val results: List<SearchResult>
+)
 
 val hslQuery = Query.string().required("hslQuery")
 val indexPath = Query.string().required("indexPath")
 val directory = Query.string().required("directory")
 val maxResults = Query.int().optional("maxResults")
 val stringBody = Body.string(TEXT_PLAIN).toLens()
+val searchResponse = Body.auto<SearchResponse>().toLens()
 
 val hslToLucene = HslToLucene(HslParser())
 
@@ -105,6 +113,10 @@ private fun indexDirectoryHandler(): HttpHandler {
 }
 
 private fun searchHandler(): HttpHandler {
+    fun toSearchResult(document: Document): SearchResult {
+        return SearchResult(document.getField("path").stringValue())
+    }
+
     return { request: Request ->
         val hslQuery: String = hslQuery(request)
 
@@ -121,11 +133,11 @@ private fun searchHandler(): HttpHandler {
             } else {
                 val hits = indexManager.searchIndex(parsedQuery)
 
-                hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
-                    .map { document -> document.getField("path") }
+                val searchResults = hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
+                    .map { document -> toSearchResult(document) }
 
                 Response(OK).with(
-                    Body.auto<SearchResponse>().toLens() of SearchResponse(hits.totalHits.value)
+                    searchResponse of SearchResponse(hits.totalHits.value, hits.scoreDocs.size, searchResults)
                 )
             }
         } catch (e: InvalidHslGrammarException) {

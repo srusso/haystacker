@@ -10,8 +10,6 @@ import org.http4k.client.ApacheClient
 import org.http4k.core.Body
 import org.http4k.core.ContentType.Companion.TEXT_PLAIN
 import org.http4k.core.HttpHandler
-import org.http4k.core.MemoryBody
-import org.http4k.core.MemoryResponse
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -119,7 +117,7 @@ private fun searchHandler(): HttpHandler {
             println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
 
             if (!Paths.get(indexPath).toFile().exists()) {
-                MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+                Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
             } else {
                 val hits = indexManager.searchIndex(parsedQuery)
 
@@ -131,7 +129,7 @@ private fun searchHandler(): HttpHandler {
                 )
             }
         } catch (e: InvalidHslGrammarException) {
-            MemoryResponse(BAD_REQUEST, body = MemoryBody("Unable to parse query $hslQuery: ${e.message}"))
+            Response(BAD_REQUEST).with(stringBody of "Unable to parse query $hslQuery: ${e.message}")
         }
     }
 }

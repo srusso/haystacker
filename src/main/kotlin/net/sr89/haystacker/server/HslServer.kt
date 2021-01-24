@@ -23,13 +23,18 @@ import org.http4k.server.asServer
 
 val hslToLucene = HslToLucene(HslParser())
 
+fun quitHandler(): HttpHandler {
+    return {request -> TODO("Implement me") }
+}
+
 fun haystackerRoutes(): HttpHandler {
     return routes(
         "ping" bind GET to { Response(OK) },
         "search" bind POST to SearchHandler(),
         "index" bind POST to CreateIndexHandler(),
         "directory" bind POST to DirectoryIndexHandler(),
-        "directory" bind DELETE to DirectoryDeindexHandler()
+        "directory" bind DELETE to DirectoryDeindexHandler(),
+        "quit" bind POST to quitHandler()
     )
 }
 
@@ -45,5 +50,4 @@ fun startServer(port: Int): Http4kServer {
 fun main() {
     val jettyServer = startServer(9000)
 
-    jettyServer.stop()
 }

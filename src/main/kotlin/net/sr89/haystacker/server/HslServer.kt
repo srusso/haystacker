@@ -1,6 +1,7 @@
 package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.parser.HslParser
 import net.sr89.haystacker.lang.translate.HslToLucene
 import net.sr89.haystacker.server.JacksonModule.auto
@@ -8,9 +9,14 @@ import org.apache.lucene.search.ScoreDoc
 import org.http4k.client.ApacheClient
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
+import org.http4k.core.MemoryBody
+import org.http4k.core.MemoryResponse
+import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Response
+import org.http4k.core.Status.Companion.BAD_REQUEST
+import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.then
 import org.http4k.core.with
@@ -34,6 +40,10 @@ val maxResults = Query.int().optional("maxResults")
 
 val hslToLucene = HslToLucene(HslParser())
 
+private fun pingHandler(): HttpHandler {
+    return { Response(OK) }
+}
+
 private fun createHandler(): HttpHandler {
     return { request: Request ->
         val indexPath: String = indexPath(request)
@@ -41,7 +51,7 @@ private fun createHandler(): HttpHandler {
 
         println("Received request to create index at $indexPath")
 
-        indexManager.createIndexWriter().use {  }
+        indexManager.createIndexWriter().use { }
 
         Response(OK)
     }
@@ -51,41 +61,58 @@ private fun indexDirectoryHandler(): HttpHandler {
     return { request: Request ->
         val indexPath: String = indexPath(request)
         val directoryToIndex = Paths.get(directory(request))
-        val indexManager = IndexManager(indexPath)
 
         println("Received request to add directory $directoryToIndex to index $indexPath")
 
-        indexManager.createIndexWriter().use {
-            indexManager.indexDirectoryRecursively(it, directoryToIndex)
-        }
+        if (!directoryToIndex.toFile().exists()) {
+            MemoryResponse(NOT_FOUND, body = MemoryBody("Directory $directoryToIndex not found"))
+        } else if (!Paths.get(indexPath).toFile().exists()) {
+            MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+        } else {
+            val indexManager = IndexManager(indexPath)
 
-        Response(OK)
+            indexManager.createIndexWriter().use {
+                indexManager.indexDirectoryRecursively(it, directoryToIndex)
+            }
+
+            Response(OK)
+        }
     }
 }
 
 private fun searchHandler(): HttpHandler {
     return { request: Request ->
         val hslQuery: String = hslQuery(request)
-        val parsedQuery = hslToLucene.toLuceneQuery(hslQuery)
-        val maxResults: Int = maxResults(request) ?: 10
-        val indexPath: String = indexPath(request)
-        val indexManager = IndexManager(indexPath)
 
-        println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
+        try {
+            val parsedQuery = hslToLucene.toLuceneQuery(hslQuery)
+            val maxResults: Int = maxResults(request) ?: 10
+            val indexPath: String = indexPath(request)
+            val indexManager = IndexManager(indexPath)
 
-        val hits = indexManager.searchIndex(parsedQuery)
+            println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
 
-        hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
-            .map { document -> document.getField("path") }
+            if (!Paths.get(indexPath).toFile().exists()) {
+                MemoryResponse(NOT_FOUND, body = MemoryBody("Index at $indexPath not found"))
+            } else {
+                val hits = indexManager.searchIndex(parsedQuery)
 
-        Response(OK).with(
-            Body.auto<SearchResponse>().toLens() of SearchResponse(hits.totalHits.value)
-        )
+                hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
+                    .map { document -> document.getField("path") }
+
+                Response(OK).with(
+                    Body.auto<SearchResponse>().toLens() of SearchResponse(hits.totalHits.value)
+                )
+            }
+        } catch (e: InvalidHslGrammarException) {
+            MemoryResponse(BAD_REQUEST, body = MemoryBody("Unable to parse query $hslQuery: ${e.message}"))
+        }
     }
 }
 
 private fun createServer(): HttpHandler {
     return routes(
+        "ping" bind GET to pingHandler(),
         "search" bind POST to searchHandler(),
         "create" bind POST to createHandler(),
         "indexDirectory" bind POST to indexDirectoryHandler()

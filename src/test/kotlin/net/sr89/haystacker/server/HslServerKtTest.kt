@@ -1,15 +1,20 @@
 package net.sr89.haystacker.server
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.sr89.haystacker.server.handlers.SearchResponse
 import net.sr89.haystacker.server.handlers.directory
 import net.sr89.haystacker.server.handlers.hslQuery
 import net.sr89.haystacker.server.handlers.indexPath
 import net.sr89.haystacker.server.handlers.maxResults
 import org.http4k.core.Method
 import org.http4k.core.Request
+import org.http4k.core.Response
 import org.http4k.core.with
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.test.assertEquals
 
 internal class HslServerKtTest {
     val routes = haystackerRoutes()
@@ -48,24 +53,28 @@ internal class HslServerKtTest {
 
         val searchFileInSubDirectory = Request(Method.POST, "/search")
             .with(
-                hslQuery of "name = \"file in subdirectory.txt\"",
+                hslQuery of "name = \"subfile.txt\"",
                 maxResults of 15,
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
         routes(createRequest)
         routes(indexRequest)
-        println(routes(searchFileInDirectory))
-        println(routes(searchFileInSubDirectory))
-
-        Thread.sleep(1000L)
+        assertSearchResult(routes(searchFileInDirectory), 1)
+        assertSearchResult(routes(searchFileInSubDirectory), 1)
 
         routes(removeSubdirectoryFromIndexRequest)
 
-        Thread.sleep(1000L)
+        assertSearchResult(routes(searchFileInDirectory), 1)
+        assertSearchResult(routes(searchFileInSubDirectory), 0)
+    }
 
-        println(routes(searchFileInDirectory))
-        println(routes(searchFileInSubDirectory))
+    private fun assertSearchResult(response: Response, expectedResultCount: Long) {
+        class SearchResponseType: TypeReference<SearchResponse>()
+
+        val searchResponse = ObjectMapper().readValue(response.bodyString(), SearchResponseType())
+
+        assertEquals(searchResponse.totalResults, expectedResultCount)
     }
 
     private fun addTestFilesTo(directoryToIndex: Path, subDirectory: Path) {
@@ -79,7 +88,7 @@ internal class HslServerKtTest {
 
         Files.createDirectory(subDirectory)
 
-        Files.newOutputStream(subDirectory.resolve("file in subdirectory.txt")).use {
+        Files.newOutputStream(subDirectory.resolve("subfile.txt")).use {
             it.write("Some example file contents (subdirectory file)".toByteArray())
         }
     }

@@ -1,168 +1,54 @@
 package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
-import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.parser.HslParser
 import net.sr89.haystacker.lang.translate.HslToLucene
-import net.sr89.haystacker.server.JacksonModule.auto
-import org.apache.lucene.document.Document
-import org.apache.lucene.search.ScoreDoc
+import net.sr89.haystacker.server.handlers.CreateIndexHandler
+import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
+import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
+import net.sr89.haystacker.server.handlers.SearchHandler
+import net.sr89.haystacker.server.handlers.directory
+import net.sr89.haystacker.server.handlers.hslQuery
+import net.sr89.haystacker.server.handlers.indexPath
+import net.sr89.haystacker.server.handlers.maxResults
 import org.http4k.client.ApacheClient
-import org.http4k.core.Body
-import org.http4k.core.ContentType.Companion.TEXT_PLAIN
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Response
-import org.http4k.core.Status.Companion.BAD_REQUEST
-import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.then
 import org.http4k.core.with
 import org.http4k.filter.ServerFilters
-import org.http4k.lens.Query
-import org.http4k.lens.int
-import org.http4k.lens.string
 import org.http4k.routing.bind
 import org.http4k.routing.routes
+import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
 import java.nio.file.Files
-import java.nio.file.Paths
-
-data class SearchResult(val path: String)
-
-data class SearchResponse(
-    val totalResults: Long,
-    val returnedResults: Int,
-    val results: List<SearchResult>
-)
-
-val hslQuery = Query.string().required("hslQuery")
-val indexPath = Query.string().required("indexPath")
-val directory = Query.string().required("directory")
-val maxResults = Query.int().optional("maxResults")
-val stringBody = Body.string(TEXT_PLAIN).toLens()
-val searchResponse = Body.auto<SearchResponse>().toLens()
 
 val hslToLucene = HslToLucene(HslParser())
-
-private fun pingHandler(): HttpHandler {
-    return { Response(OK) }
-}
-
-private fun deleteHandler(): HttpHandler {
-    return { request: Request ->
-        val indexPath: String = indexPath(request)
-        val directoryToDeindex = Paths.get(directory(request))
-
-        println("Received request to remove directory $directoryToDeindex from index $indexPath")
-
-        if (!directoryToDeindex.toFile().exists()) {
-            Response(NOT_FOUND).with(stringBody of "Directory $directoryToDeindex not found")
-        } else if (!Paths.get(indexPath).toFile().exists()) {
-            Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
-        } else {
-            val indexManager = IndexManager(indexPath)
-
-            indexManager.openIndex().use {
-                indexManager.removeDirectoryFromIndex(it, directoryToDeindex)
-            }
-
-            Response(OK)
-        }
-    }
-}
-
-private fun createHandler(): HttpHandler {
-    return { request: Request ->
-        val indexPath: String = indexPath(request)
-        val indexManager = IndexManager(indexPath)
-
-        println("Received request to create index at $indexPath")
-
-        indexManager.createNewIndex().close()
-
-        Response(OK)
-    }
-}
-
-private fun indexDirectoryHandler(): HttpHandler {
-    return { request: Request ->
-        val indexPath: String = indexPath(request)
-        val directoryToIndex = Paths.get(directory(request))
-
-        println("Received request to add directory $directoryToIndex to index $indexPath")
-
-        if (!directoryToIndex.toFile().exists()) {
-            Response(NOT_FOUND).with(stringBody of "Directory $directoryToIndex not found")
-        } else if (!Paths.get(indexPath).toFile().exists()) {
-            Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
-        } else {
-            val indexManager = IndexManager(indexPath)
-
-            indexManager.openIndex().use {
-                indexManager.indexDirectoryRecursively(it, directoryToIndex)
-            }
-
-            Response(OK)
-        }
-    }
-}
-
-private fun searchHandler(): HttpHandler {
-    fun toSearchResult(document: Document): SearchResult {
-        return SearchResult(document.getField("path").stringValue())
-    }
-
-    return { request: Request ->
-        val hslQuery: String = hslQuery(request)
-
-        try {
-            val parsedQuery = hslToLucene.toLuceneQuery(hslQuery)
-            val maxResults: Int = maxResults(request) ?: 10
-            val indexPath: String = indexPath(request)
-            val indexManager = IndexManager(indexPath)
-
-            println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
-
-            if (!Paths.get(indexPath).toFile().exists()) {
-                Response(NOT_FOUND).with(stringBody of "Index at $indexPath not found")
-            } else {
-                val hits = indexManager.searchIndex(parsedQuery)
-
-                val searchResults = hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
-                    .map { document -> toSearchResult(document) }
-
-                Response(OK).with(
-                    searchResponse of SearchResponse(hits.totalHits.value, hits.scoreDocs.size, searchResults)
-                )
-            }
-        } catch (e: InvalidHslGrammarException) {
-            Response(BAD_REQUEST).with(stringBody of "Unable to parse query $hslQuery: ${e.message}")
-        }
-    }
-}
 
 /**
  * Start a web server that routes requests to an [IndexManager].
  */
-private fun createServer(): HttpHandler {
-    return routes(
-        "ping" bind GET to pingHandler(),
-        "search" bind POST to searchHandler(),
-        "index" bind POST to createHandler(),
-        "directory" bind POST to indexDirectoryHandler(),
-        "directory" bind DELETE to deleteHandler()
+private fun startServer(port: Int): Http4kServer {
+    val routes = routes(
+        "ping" bind GET to { Response(OK) },
+        "search" bind POST to SearchHandler(),
+        "index" bind POST to CreateIndexHandler(),
+        "directory" bind POST to DirectoryIndexHandler(),
+        "directory" bind DELETE to DirectoryDeindexHandler()
     )
+
+    val app = ServerFilters.CatchLensFailure.then(routes)
+
+    return app.asServer(Jetty(port)).start()
 }
 
 fun main() {
-    val app = ServerFilters.CatchLensFailure.then(createServer())
-
-    val jettyServer = app.asServer(Jetty(9000)).start()
+    val jettyServer = startServer(9000)
 
     val indexFile = Files.createTempDirectory("index").toFile()
 

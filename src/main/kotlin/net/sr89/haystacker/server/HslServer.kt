@@ -51,7 +51,7 @@ private fun createHandler(): HttpHandler {
 
         println("Received request to create index at $indexPath")
 
-        indexManager.createIndexWriter().use { }
+        indexManager.createNewIndex().close()
 
         Response(OK)
     }
@@ -71,7 +71,7 @@ private fun indexDirectoryHandler(): HttpHandler {
         } else {
             val indexManager = IndexManager(indexPath)
 
-            indexManager.createIndexWriter().use {
+            indexManager.openIndex().use {
                 indexManager.indexDirectoryRecursively(it, directoryToIndex)
             }
 
@@ -110,6 +110,9 @@ private fun searchHandler(): HttpHandler {
     }
 }
 
+/**
+ * Start a web server that routes requests to an [IndexManager].
+ */
 private fun createServer(): HttpHandler {
     return routes(
         "ping" bind GET to pingHandler(),
@@ -119,15 +122,6 @@ private fun createServer(): HttpHandler {
     )
 }
 
-/**
- * Start a background process/daemon that listens for commands.
- * Commands:
- * Perform HSL search on index
- * Add directory to index
- * Add directory recursively to index
- * Remove directory from index
- * Create new index
- */
 fun main() {
     val app = ServerFilters.CatchLensFailure.then(createServer())
 

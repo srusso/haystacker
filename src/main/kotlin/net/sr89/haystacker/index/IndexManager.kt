@@ -31,9 +31,16 @@ class IndexManager(val indexPath: String) {
     var reader: IndexReader? = null
     var searcher: IndexSearcher? = null
 
-    fun createIndexWriter(): IndexWriter {
+    fun createNewIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
-        iwc.openMode = OpenMode.CREATE_OR_APPEND
+        iwc.openMode = OpenMode.CREATE
+
+        return IndexWriter(initIndexDirectory(), iwc)
+    }
+
+    fun openIndex(): IndexWriter {
+        val iwc = IndexWriterConfig(analyzer)
+        iwc.openMode = OpenMode.APPEND
 
         return IndexWriter(initIndexDirectory(), iwc)
     }

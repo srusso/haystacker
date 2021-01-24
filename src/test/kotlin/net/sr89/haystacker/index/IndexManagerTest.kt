@@ -24,7 +24,7 @@ internal class IndexManagerTest {
     internal fun indexDirectory() {
         val manager = IndexManager("target/lucene-index")
 
-        manager.createIndexWriter().use { writer ->
+        manager.createNewIndex().use { writer ->
             manager.indexDirectoryRecursively(writer, Paths.get("./"))
         }
     }
@@ -35,7 +35,7 @@ internal class IndexManagerTest {
         val manager = IndexManager(tempDir.toString())
 
         try {
-            manager.createIndexWriter().use {
+            manager.createNewIndex().use {
                 addDocumentToIndex(manager, it, "myString", 50L)
                 addDocumentToIndex(manager, it, "C://path/to/FILE.txt", 50L)
             }
@@ -68,7 +68,7 @@ internal class IndexManagerTest {
         val manager = IndexManager(tempDir.toString())
 
         try {
-            manager.createIndexWriter().use {
+            manager.createNewIndex().use {
                 addDocumentToIndex(manager, it, "myString", 50L)
                 addDocumentToIndex(manager, it, "C://path/to/FILE.txt", 50L)
             }

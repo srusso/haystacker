@@ -2,3 +2,4 @@
 *.iml
 target
 spring-shell.log
+/haystacker-shell/dependency-reduced-pom.xml

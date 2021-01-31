@@ -12,10 +12,6 @@
     <artifactId>haystacker-shell</artifactId>
 
     <properties>
-        <kotlin.version>1.4.21</kotlin.version>
-        <jupiter.version>5.7.0</jupiter.version>
-        <spring.version>5.3.2</spring.version>
-        <http4k.version>4.1.1.1</http4k.version>
     </properties>
 
     <dependencies>

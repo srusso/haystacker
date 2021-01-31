@@ -1,4 +1,4 @@
-package net.sr89.haystacker.server.handlers
+package net.sr89.haystacker.server.api
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import net.sr89.haystacker.server.JacksonModule.auto

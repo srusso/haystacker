@@ -2,6 +2,13 @@ package net.sr89.haystacker.server.handlers
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
+import net.sr89.haystacker.server.api.SearchResponse
+import net.sr89.haystacker.server.api.SearchResult
+import net.sr89.haystacker.server.api.hslQuery
+import net.sr89.haystacker.server.api.indexPath
+import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.api.searchResponse
+import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.hslToLucene
 import org.apache.lucene.document.Document
 import org.apache.lucene.search.ScoreDoc

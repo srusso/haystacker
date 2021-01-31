@@ -8,9 +8,11 @@
     <artifactId>haystacker</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
     <modules>
-        <module>haystacker-shell</module>
+        <module>haystacker-common</module>
         <module>haystacker-server</module>
+        <module>haystacker-shell</module>
     </modules>
 
     <properties>

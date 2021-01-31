@@ -1,6 +1,9 @@
 package net.sr89.haystacker.server.handlers
 
 import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.server.api.directory
+import net.sr89.haystacker.server.api.indexPath
+import net.sr89.haystacker.server.api.stringBody
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response

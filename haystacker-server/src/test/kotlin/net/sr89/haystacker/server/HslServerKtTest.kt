@@ -2,11 +2,11 @@ package net.sr89.haystacker.server
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.sr89.haystacker.server.handlers.SearchResponse
-import net.sr89.haystacker.server.handlers.directory
-import net.sr89.haystacker.server.handlers.hslQuery
-import net.sr89.haystacker.server.handlers.indexPath
-import net.sr89.haystacker.server.handlers.maxResults
+import net.sr89.haystacker.server.api.SearchResponse
+import net.sr89.haystacker.server.api.directory
+import net.sr89.haystacker.server.api.hslQuery
+import net.sr89.haystacker.server.api.indexPath
+import net.sr89.haystacker.server.api.maxResults
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response

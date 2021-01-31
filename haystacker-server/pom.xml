@@ -52,6 +52,11 @@
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
         </dependency>
+        <dependency>
+            <artifactId>haystacker-common</artifactId>
+            <groupId>net.sr89</groupId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
         <!--TEST-->
         <dependency>

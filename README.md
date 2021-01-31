@@ -2,6 +2,26 @@
 
 A file indexer and search software.
 
+## Building the project
+
+Simply run:
+
+    mvn clean install
+    
+This will create the CLI client jar.
+
+## Running the server
+
+Simply run `HslServer.kt`.
+
+## Running the client
+
+From a terminal (won't work from IntelliJ):
+
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
+
+Then type `help` for help.
+
 ## HSL: Haystacker Language
 
 Haystacker supports a simple but powerful language to search for indexed files.

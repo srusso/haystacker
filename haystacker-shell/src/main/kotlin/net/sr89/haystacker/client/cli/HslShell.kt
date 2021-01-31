@@ -1,5 +1,7 @@
 package net.sr89.haystacker.client.cli
 
+import net.sr89.haystacker.server.JacksonModule
+import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
@@ -21,6 +23,8 @@ import kotlin.system.exitProcess
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class HslShell : CommandMarker {
+    private val noIndexSetErrorMessage = "Please set the current index with 'set-index'"
+
     private val httpClient = ApacheClient()
     // TODO use config for this
     private val baseUrl = "http://localhost:9000"
@@ -61,7 +65,7 @@ class HslShell : CommandMarker {
     fun indexDirectory(
         @CliOption(key = ["directory", "dir"]) dirPath: String
     ): String {
-        val ci = currentIndex ?: return "Please set the current index with 'set-index'"
+        val ci = currentIndex ?: return noIndexSetErrorMessage
 
         val createRequest = Request(Method.POST, "$baseUrl/directory")
             .with(indexPath of ci, directory of dirPath)
@@ -79,7 +83,7 @@ class HslShell : CommandMarker {
     fun deindexDirectory(
         @CliOption(key = ["directory", "dir"]) dirPath: String
     ): String {
-        val ci = currentIndex ?: return "Please set the current index with 'set-index'"
+        val ci = currentIndex ?: return noIndexSetErrorMessage
 
         val createRequest = Request(Method.DELETE, "$baseUrl/directory")
             .with(indexPath of ci, directory of dirPath)
@@ -130,7 +134,7 @@ class HslShell : CommandMarker {
         @CliOption(key = ["hsl", "query"]) hsl: String,
         @CliOption(key = ["max-results", "mr"], mandatory = false, specifiedDefaultValue = "10", unspecifiedDefaultValue = "10") max: Int
     ): String {
-        val ci = currentIndex ?: return "Please set the current index with 'set-index'"
+        val ci = currentIndex ?: return noIndexSetErrorMessage
 
         val createRequest = Request(Method.POST, "$baseUrl/search")
             .with(hslQuery of hsl,
@@ -141,7 +145,11 @@ class HslShell : CommandMarker {
         val response = httpClient(createRequest)
 
         return if (response.status == Status.OK) {
-            response.bodyString()
+            val searchResponse = JacksonModule.asA(response.bodyString(), SearchResponse::class)
+            "Total results: ${searchResponse.totalResults}\n" +
+                "Returned results: ${searchResponse.returnedResults}\n" +
+                "Items:\n" +
+                searchResponse.results.joinToString("\n") { result -> "Path: ${result.path}" }
         } else {
             "Could not search $ci: \n${response.bodyString()}"
         }

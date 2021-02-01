@@ -40,7 +40,7 @@ internal class IndexManagerPerformanceTest {
                         val path = Path.of(directory.toString(), fileName)
                         val document = testDocument(path.toString(), (i * j).toLong())
                         val documentId = Term("path", path.toString())
-                        manager.addDocumentToIndex(it, document, documentId)
+                        it.updateDocument(documentId, document)
 
                         if (i * j == 40) {
                             fileToFind = fileName

@@ -36,8 +36,8 @@ internal class IndexManagerTest {
 
         try {
             manager.createNewIndex().use {
-                addDocumentToIndex(manager, it, "myString", 50L)
-                addDocumentToIndex(manager, it, "C://path/to/FILE.txt", 50L)
+                addDocumentToIndex(it, "myString", 50L)
+                addDocumentToIndex(it, "C://path/to/FILE.txt", 50L)
             }
 
             val foundByString = manager.searchIndex(TermQuery(Term(stringKey, "myString".toLowerCase())))
@@ -69,8 +69,8 @@ internal class IndexManagerTest {
 
         try {
             manager.createNewIndex().use {
-                addDocumentToIndex(manager, it, "myString", 50L)
-                addDocumentToIndex(manager, it, "C://path/to/FILE.txt", 50L)
+                addDocumentToIndex(it, "myString", 50L)
+                addDocumentToIndex(it, "C://path/to/FILE.txt", 50L)
             }
 
             val findFirst = TermQuery(Term(stringKey, "myString".toLowerCase()))
@@ -95,10 +95,10 @@ internal class IndexManagerTest {
         }
     }
 
-    private fun addDocumentToIndex(manager: IndexManager, it: IndexWriter, stringValue: String, longValue: Long) {
+    private fun addDocumentToIndex(it: IndexWriter, stringValue: String, longValue: Long) {
         val document = testDocument(stringValue, longValue)
         val documentId = Term(stringKey, stringValue)
-        manager.addDocumentToIndex(it, document, documentId)
+        it.updateDocument(documentId, document)
     }
 
     private fun testDocument(stringValue: String, longValue: Long): Document {

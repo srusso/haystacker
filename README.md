@@ -43,7 +43,7 @@ Then type `help` for help. Example usage:
     Total results: 1
     Returned results: 1
     Items:
-    Path: D:\random\abba.txt
+    Path: D:\my-data\myfile.txt
     Took: 23 ms
 
 ## HSL: Haystacker Language

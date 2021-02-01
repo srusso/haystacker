@@ -30,7 +30,7 @@ private val shutdownDelay = Duration.ofSeconds(5)
 fun quitHandler(): HttpHandler {
     return {
         if (serverInstance != null) {
-            println("Shutting down in $shutdownDelay")
+            println("Shutting down in ${shutdownDelay.toSeconds()}s")
             Thread {
                 Thread.sleep(shutdownDelay.toMillis())
                 serverInstance!!.stop()

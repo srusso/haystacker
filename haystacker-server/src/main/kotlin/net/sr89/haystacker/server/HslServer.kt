@@ -21,14 +21,20 @@ import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import java.time.Duration
 
 private var serverInstance: Http4kServer? = null
+
+private val shutdownDelay = Duration.ofSeconds(5)
 
 fun quitHandler(): HttpHandler {
     return {
         if (serverInstance != null) {
-            println("Shutting down")
-            serverInstance!!.stop()
+            println("Shutting down in $shutdownDelay")
+            Thread {
+                Thread.sleep(shutdownDelay.toMillis())
+                serverInstance!!.stop()
+            }.start()
             Response(OK)
         } else {
             Response(Status.INTERNAL_SERVER_ERROR)

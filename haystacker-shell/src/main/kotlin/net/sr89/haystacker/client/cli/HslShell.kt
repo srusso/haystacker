@@ -37,8 +37,7 @@ class HslShell : CommandMarker {
     private var currentIndex: String? = null
 
     @CliCommand(value = ["set-index"], help = "Sets the current index")
-    fun setCurrentIndex(@CliOption(key = ["path"], help = "The index to use (server's filesystem)") index: String): String {
-        println("Setting current index to: $index")
+    fun setCurrentIndex(@CliOption(key = [""], help = "The index to use (server's filesystem)") index: String): String {
         this.currentIndex = index
         return "Set current index to: $index"
     }
@@ -53,7 +52,7 @@ class HslShell : CommandMarker {
     }
 
     @CliCommand(value = ["create-index"], help = "Create a new index in the server machine")
-    fun createIndex(@CliOption(key = ["path"], help = "Where to create the new index, on the server's filesystem") path: String): String {
+    fun createIndex(@CliOption(key = [""], help = "Where to create the new index, on the server's filesystem") path: String): String {
         val createRequest = Request(Method.POST, "$baseUrl/index")
             .with(indexPath of path)
 
@@ -68,7 +67,7 @@ class HslShell : CommandMarker {
 
     @CliCommand(value = ["add-to-index"], help = "Add a directory and its contents to the index")
     fun indexDirectory(
-        @CliOption(key = ["directory", "dir"], help = "The directory to add to the index") dirPath: String
+        @CliOption(key = [""], help = "The directory to add to the index") dirPath: String
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
@@ -87,7 +86,7 @@ class HslShell : CommandMarker {
 
     @CliCommand(value = ["deindex"], help = "Remove a directory and its contents from the index")
     fun deindexDirectory(
-        @CliOption(key = ["directory", "dir"], help = "The directory to remove from the index") dirPath: String
+        @CliOption(key = [""], help = "The directory to remove from the index") dirPath: String
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
@@ -117,7 +116,7 @@ class HslShell : CommandMarker {
 
     @CliCommand(value = ["search"], help = "Search the current index using HSL (Haystacker Search Language)")
     fun searchIndex(
-        @CliOption(key = ["hsl", "query"], help = "The HSL query") hsl: String,
+        @CliOption(key = [""], help = "The HSL query") hsl: String,
         @CliOption(key = ["max-results", "mr"], mandatory = false, specifiedDefaultValue = "10", unspecifiedDefaultValue = "10") max: Int
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage

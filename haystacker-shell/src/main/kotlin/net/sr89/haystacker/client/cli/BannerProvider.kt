@@ -17,7 +17,7 @@ class BannerProvider : DefaultBannerProvider() {
     }
 
     override fun getWelcomeMessage(): String {
-        return "Welcome to Haystacker"
+        return "Welcome to Haystacker. Type 'help' for help."
     }
 
     override fun getProviderName(): String {

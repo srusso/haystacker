@@ -1,8 +1,7 @@
 package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
-import net.sr89.haystacker.lang.parser.HslParser
-import net.sr89.haystacker.lang.translate.HslToLucene
+import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
@@ -12,19 +11,36 @@ import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Response
+import org.http4k.core.Status
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.then
+import org.http4k.core.with
 import org.http4k.filter.ServerFilters
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import java.time.Duration
 
-val hslToLucene = HslToLucene(HslParser())
+private var serverInstance: Http4kServer? = null
+
+private val shutdownDelay = Duration.ofSeconds(5)
 
 fun quitHandler(): HttpHandler {
-    return {request -> TODO("Implement me") }
+    return {
+        if (serverInstance != null) {
+            println("Shutting down in ${shutdownDelay.toSeconds()}s")
+            Thread {
+                Thread.sleep(shutdownDelay.toMillis())
+                serverInstance!!.stop()
+            }.start()
+            Response(OK)
+        } else {
+            Response(Status.INTERNAL_SERVER_ERROR)
+                .with(stringBody of "Server not running.. but still received a request to shut down?")
+        }
+    }
 }
 
 fun haystackerRoutes(): HttpHandler {
@@ -48,6 +64,7 @@ fun startServer(port: Int): Http4kServer {
 }
 
 fun main() {
-    val jettyServer = startServer(9000)
+    serverInstance = startServer(9000)
 
+    println("Haystacker server started")
 }

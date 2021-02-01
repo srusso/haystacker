@@ -2,6 +2,8 @@ package net.sr89.haystacker.server.handlers
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
+import net.sr89.haystacker.lang.parser.HslParser
+import net.sr89.haystacker.lang.translate.HslToLucene
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.SearchResult
 import net.sr89.haystacker.server.api.hslQuery
@@ -9,7 +11,6 @@ import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
 import net.sr89.haystacker.server.api.searchResponse
 import net.sr89.haystacker.server.api.stringBody
-import net.sr89.haystacker.server.hslToLucene
 import org.apache.lucene.document.Document
 import org.apache.lucene.search.ScoreDoc
 import org.http4k.core.HttpHandler
@@ -18,6 +19,8 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import java.nio.file.Paths
+
+private val hslToLucene = HslToLucene(HslParser())
 
 class SearchHandler: HttpHandler {
     private fun toSearchResult(document: Document): SearchResult {

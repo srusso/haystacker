@@ -1,6 +1,50 @@
 # Haystacker
 
 A file indexer and search software.
+Work in progress.
+
+## Building the project
+
+Simply run:
+
+    mvn clean install
+    
+This will create the CLI client jar.
+
+## Running the server
+
+Simply run `HslServer.kt`.
+
+## Running the shell client
+
+From a terminal (won't work from IntelliJ):
+
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
+    
+Or in debug mode:
+
+    java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
+
+## Using the shell client
+
+Then type `help` for help. Example usage:
+
+    ; create an empty index at C:\\test-index on the server
+    haystacker> create-index C:\\my-index
+    
+    ; set the current index to C:\\test-index (will be used by future commands)
+    haystacker> set-index C:\\my-index
+    
+    ; adds directory D:\\my-data to the index, to make it searchable
+    haystacker> add-to-index D:\\my-data
+    
+    ; searches the index using the provided HSL (Haystacker Search Language) query
+    haystacker> search "name = myfile.txt"
+    Total results: 1
+    Returned results: 1
+    Items:
+    Path: D:\random\abba.txt
+    Took: 23 ms
 
 ## HSL: Haystacker Language
 

@@ -102,7 +102,7 @@ class HslParser {
             if (cause is HslParseException) {
                 throw cause
             } else {
-                throw InvalidHslGrammarException(queryString)
+                throw InvalidHslGrammarException(queryString, e.line, e.column)
             }
         }
     }

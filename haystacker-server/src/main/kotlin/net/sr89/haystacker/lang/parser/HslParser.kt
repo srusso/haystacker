@@ -10,6 +10,7 @@ import net.sr89.haystacker.lang.ast.HslString
 import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.lang.exception.HslParseException
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import org.jparsec.OperatorTable
 import org.jparsec.Parser
@@ -97,7 +98,12 @@ class HslParser {
         try {
             return parser().parse(queryString.trim())
         } catch (e: ParserException) {
-            throw InvalidHslGrammarException(queryString)
+            val cause = e.cause
+            if (cause is HslParseException) {
+                throw cause
+            } else {
+                throw InvalidHslGrammarException(queryString)
+            }
         }
     }
 }

@@ -97,7 +97,7 @@ class HslParser {
         try {
             return parser().parse(queryString.trim())
         } catch (e: ParserException) {
-            throw InvalidHslGrammarException("Invalid HSL query. Refer to the README for a guide: https://github.com/srusso/haystacker")
+            throw InvalidHslGrammarException(queryString)
         }
     }
 }

@@ -2,6 +2,7 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.server.api.stringBody
+import net.sr89.haystacker.server.filter.exceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
@@ -10,6 +11,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
+import org.http4k.core.RequestContexts
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.Status.Companion.OK
@@ -58,7 +60,12 @@ fun haystackerRoutes(): HttpHandler {
  * Start a web server that routes requests to an [IndexManager].
  */
 fun startServer(port: Int): Http4kServer {
-    val app = ServerFilters.CatchLensFailure.then(haystackerRoutes())
+    val contexts = RequestContexts()
+
+    val app = ServerFilters.InitialiseRequestContext(contexts)
+        .then(exceptionHandlingFilter())
+        .then(ServerFilters.CatchLensFailure())
+        .then(haystackerRoutes())
 
     return app.asServer(Jetty(port)).start()
 }

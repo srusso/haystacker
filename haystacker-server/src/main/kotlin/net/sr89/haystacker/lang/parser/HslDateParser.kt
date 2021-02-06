@@ -3,6 +3,7 @@ package net.sr89.haystacker.lang.parser
 import net.sr89.haystacker.lang.ast.HslDate
 import net.sr89.haystacker.lang.ast.HslDateTime
 import net.sr89.haystacker.lang.ast.HslInstant
+import net.sr89.haystacker.lang.exception.InvalidHslDateException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -50,5 +51,5 @@ fun parseHslDateTime(date: Any): HslDateTime {
         return dateValue
     }
 
-    throw hslParseException("Value '$date' is neither a \"UTC date time\" (ex: 2011-12-03T10:15:30Z), a \"date time with offset\" (ex: 2011-12-03T10:15:30+01:00) nor a date (ex: 2011-12-03)")
+    throw InvalidHslDateException(date)
 }

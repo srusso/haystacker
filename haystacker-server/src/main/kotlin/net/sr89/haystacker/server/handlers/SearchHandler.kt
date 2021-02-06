@@ -41,7 +41,7 @@ class SearchHandler: HttpHandler {
             if (!Paths.get(indexPath).toFile().exists()) {
                 Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")
             } else {
-                val hits = indexManager.searchIndex(parsedQuery)
+                val hits = indexManager.searchIndex(parsedQuery, maxResults)
 
                 val searchResults = hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
                     .map { document -> toSearchResult(document) }

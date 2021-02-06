@@ -40,10 +40,10 @@ class IndexManager(val indexPath: String) {
         return IndexWriter(initIndexDirectory(), iwc)
     }
 
-    fun searchIndex(query: Query): TopDocs {
+    fun searchIndex(query: Query, maxResults: Int = 5): TopDocs {
         initSearcher()
 
-        return searcher!!.search(query, 5)
+        return searcher!!.search(query, maxResults)
     }
 
     fun fetchDocument(docID: Int): Document? {

@@ -17,12 +17,19 @@ import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.FileTime
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
 import kotlin.test.assertEquals
+
+fun Path.setTimes(lastModified: Instant, created: Instant): Path {
+    Files.getFileAttributeView(this, BasicFileAttributeView::class.java)
+        .setTimes(FileTime.from(lastModified), null, FileTime.from(created))
+    return this
+}
 
 internal class HslServerKtTest {
     val routes = haystackerRoutes()
@@ -135,6 +142,26 @@ internal class HslServerKtTest {
         assertSearchResult(routes(searchNewFiles), 3)
     }
 
+    @Test
+    internal fun searchByCreatedTime() {
+        val searchOldFiles = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "created < 2016-03-01",
+                maxResults of 15,
+                indexPath of indexFile!!.toAbsolutePath().toString()
+            )
+
+        val searchNewFiles = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "created > 2016-03-01",
+                maxResults of 15,
+                indexPath of indexFile!!.toAbsolutePath().toString()
+            )
+
+        assertSearchResult(routes(searchOldFiles), 1)
+        assertSearchResult(routes(searchNewFiles), 3)
+    }
+
     private fun assertSearchResult(response: Response, expectedResultCount: Long) {
         class SearchResponseType : TypeReference<SearchResponse>()
 
@@ -149,7 +176,7 @@ internal class HslServerKtTest {
         Files.newOutputStream(oldFile).use {
             it.write("Some example file contents".toByteArray())
         }
-        Files.setLastModifiedTime(oldFile, FileTime.from(oldInstant))
+        oldFile.setTimes(oldInstant, oldInstant)
 
         Files.newOutputStream(directoryToIndex.resolve("binary.dat")).use {
             it.write(ByteArray(10) { i -> i.toByte() })

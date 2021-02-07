@@ -1,9 +1,16 @@
 package net.sr89.haystacker.lang.exception
 
-class InvalidSemanticException(message: String) : RuntimeException(message)
+import net.sr89.haystacker.lang.ast.Operator
+import net.sr89.haystacker.lang.ast.Symbol
 
 class InvalidHslGrammarException(val hslQuery: String, val line: Int, val column: Int) : RuntimeException()
 
-open class HslParseException: RuntimeException()
+class HslParseException : RuntimeException()
 
-class InvalidHslDateException(val date: Any) : HslParseException()
+abstract class InvalidSemanticException : RuntimeException()
+
+class InvalidHslDateException(val symbol: Symbol, val date: String) : InvalidSemanticException()
+
+class InvalidHslDataSizeException(val symbol: Symbol, val dataSize: String) : InvalidSemanticException()
+
+class InvalidHslOperatorException(val symbol: Symbol, val operator: Operator, val value: String) : InvalidSemanticException()

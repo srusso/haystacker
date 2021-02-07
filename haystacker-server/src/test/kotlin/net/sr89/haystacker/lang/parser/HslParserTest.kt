@@ -1,12 +1,9 @@
 package net.sr89.haystacker.lang.parser
 
 import net.sr89.haystacker.lang.ast.HslAndClause
-import net.sr89.haystacker.lang.ast.HslDataSize
-import net.sr89.haystacker.lang.ast.HslDate
-import net.sr89.haystacker.lang.ast.HslInstant
 import net.sr89.haystacker.lang.ast.HslNodeClause
 import net.sr89.haystacker.lang.ast.HslOrClause
-import net.sr89.haystacker.lang.ast.HslString
+import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
@@ -14,9 +11,6 @@ import net.sr89.haystacker.test.common.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
-import org.springframework.util.unit.DataSize
-import java.time.Instant
-import java.time.LocalDate
 
 class HslParserTest {
     private val date = "2020-01-01"
@@ -38,7 +32,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("name with spaces.txt"))
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("name with spaces.txt"))
             }
     }
 
@@ -49,7 +43,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
             }
     }
 
@@ -60,7 +54,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+                it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
             }
     }
 
@@ -71,7 +65,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofBytes(23)))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslValue("23"))
             }
     }
 
@@ -82,7 +76,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofBytes(23)))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslValue("23b"))
             }
     }
 
@@ -93,40 +87,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofKilobytes(23)))
-            }
-    }
-
-    @Test
-    fun sizeGreaterThanMBClause() {
-        val query = parser.parse("size > 23mb")
-
-        having(query)
-            .ofType(HslNodeClause::class)
-            .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofMegabytes(23)))
-            }
-    }
-
-    @Test
-    fun sizeGreaterThanGBClause() {
-        val query = parser.parse("size > 23gb")
-
-        having(query)
-            .ofType(HslNodeClause::class)
-            .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofGigabytes(23)))
-            }
-    }
-
-    @Test
-    fun sizeGreaterThanTBClause() {
-        val query = parser.parse("size > 23tb")
-
-        having(query)
-            .ofType(HslNodeClause::class)
-            .then {
-                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslDataSize(DataSize.ofTerabytes(23)))
+                it.isNodeClause(Symbol.SIZE, Operator.GREATER, HslValue("23kb"))
             }
     }
 
@@ -137,7 +98,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslDate(LocalDate.parse(date)))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslValue(date))
             }
     }
 
@@ -148,7 +109,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslInstant(Instant.ofEpochSecond(1579256150L)))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslValue(dateTime))
             }
     }
 
@@ -159,7 +120,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslInstant(Instant.ofEpochSecond(1579241730L)))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER, HslValue(dateTimeWithOffset))
             }
     }
 
@@ -170,18 +131,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER_OR_EQUAL, HslDate(LocalDate.parse(date)))
-            }
-    }
-
-    @Test
-    fun lastModifiedLessOrEqualThanDate() {
-        val query = parser.parse("last_modified <= '$date'")
-
-        having(query)
-            .ofType(HslNodeClause::class)
-            .then {
-                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.LESS_OR_EQUAL, HslDate(LocalDate.parse(date)))
+                it.isNodeClause(Symbol.LAST_MODIFIED, Operator.GREATER_OR_EQUAL, HslValue(date))
             }
     }
 
@@ -192,7 +142,7 @@ class HslParserTest {
         having(query)
             .ofType(HslNodeClause::class)
             .then {
-                it.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                it.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
             }
     }
 
@@ -206,13 +156,13 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
     }
@@ -227,13 +177,13 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
     }
@@ -253,7 +203,7 @@ class HslParserTest {
                 having(it.right)
                     .ofType(HslNodeClause::class)
                     .then {right ->
-                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslString("file.txt"))
+                        right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
     }
@@ -268,7 +218,7 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)
@@ -288,7 +238,7 @@ class HslParserTest {
                 having(it.left)
                     .ofType(HslNodeClause::class)
                     .then {left ->
-                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslDate(LocalDate.parse(date)))
+                        left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)

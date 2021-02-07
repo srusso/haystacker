@@ -66,13 +66,22 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
     private fun createDocumentForFile(path: Path, attrs: BasicFileAttributes): Document {
         val doc = Document()
 
-        doc.add(TextField(Symbol.NAME.luceneQueryName, path.toString(), Field.Store.YES))
-        doc.add(StringField("id", path.toString(), Field.Store.NO))
-
-        doc.add(LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, attrs.lastModifiedTime().toMillis()))
-        doc.add(LongPoint(Symbol.CREATED.luceneQueryName, attrs.creationTime().toMillis()))
-        doc.add(LongPoint(Symbol.SIZE.luceneQueryName, attrs.size()))
+        Symbol.values()
+            .flatMap { symbol -> fieldsFor(symbol, path, attrs) }
+            .forEach(doc::add)
 
         return doc
+    }
+
+    private fun fieldsFor(symbol: Symbol, path: Path, attrs: BasicFileAttributes): List<Field> {
+        return when (symbol) {
+            Symbol.NAME -> listOf(
+                TextField(Symbol.NAME.luceneQueryName, path.toString(), Field.Store.YES),
+                StringField("id", path.toString(), Field.Store.NO)
+            )
+            Symbol.SIZE -> listOf(LongPoint(Symbol.SIZE.luceneQueryName, attrs.size()))
+            Symbol.CREATED -> listOf(LongPoint(Symbol.CREATED.luceneQueryName, attrs.creationTime().toMillis()))
+            Symbol.LAST_MODIFIED -> listOf(LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, attrs.lastModifiedTime().toMillis()))
+        }
     }
 }

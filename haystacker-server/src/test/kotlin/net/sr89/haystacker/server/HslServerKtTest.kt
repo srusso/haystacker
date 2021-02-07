@@ -15,7 +15,6 @@ import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.util.unit.DataSize
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -110,14 +109,14 @@ internal class HslServerKtTest {
     internal fun searchByFileSize() {
         val searchSmallFiles = Request(Method.POST, "/search")
             .with(
-                hslQuery of "size < 500kb",
+                hslQuery of "size < 500",
                 maxResults of 15,
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
         val searchBigFiles = Request(Method.POST, "/search")
             .with(
-                hslQuery of "size > 500kb",
+                hslQuery of "size > 500",
                 maxResults of 15,
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
@@ -170,7 +169,7 @@ internal class HslServerKtTest {
     internal fun searchWithAndClause() {
         val searchNewAndBigFiles = Request(Method.POST, "/search")
             .with(
-                hslQuery of "created > 2016-03-01 AND size > 500kb",
+                hslQuery of "created > 2016-03-01 AND size > 500",
                 maxResults of 15,
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
@@ -214,9 +213,8 @@ internal class HslServerKtTest {
         }
 
         Files.newOutputStream(directoryToIndex.resolve("bigbinary.dat")).use {
-            it.write(ByteArray(DataSize.ofMegabytes(1).toBytes().toInt()) { i -> i.toByte() })
+            it.write(ByteArray(1000) { i -> i.toByte() })
         }
-
 
         Files.createDirectory(subDirectory)
 

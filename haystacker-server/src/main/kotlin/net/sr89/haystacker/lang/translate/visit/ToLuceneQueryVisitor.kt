@@ -8,7 +8,8 @@ import net.sr89.haystacker.lang.ast.HslOrClause
 import net.sr89.haystacker.lang.ast.HslQueryVisitor
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
-import net.sr89.haystacker.lang.exception.InvalidSemanticException
+import net.sr89.haystacker.lang.exception.InvalidHslDataSizeException
+import net.sr89.haystacker.lang.exception.InvalidHslOperatorException
 import net.sr89.haystacker.lang.parser.parseHslDateTime
 import net.sr89.haystacker.lang.translate.and
 import net.sr89.haystacker.lang.translate.or
@@ -32,7 +33,7 @@ private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query
 private fun toFileNameQuery(clause: HslNodeClause): Query {
     return when (clause.operator) {
         Operator.EQUALS -> TermQuery(Term(clause.symbol.luceneQueryName, clause.value.str))
-        else -> throw InvalidSemanticException("Invalid operator (${clause.operator}) for filename value '${clause.value.str}'")
+        else -> throw InvalidHslOperatorException(clause.symbol, clause.operator, clause.value.str)
     }
 }
 
@@ -41,7 +42,7 @@ private fun toDataSizeQuery(clause: HslNodeClause): Query {
         val dataSize = DataSize.parse(clause.value.str.toUpperCase())
         longQuery(clause.operator, clause.symbol.luceneQueryName, dataSize.toBytes())
     } catch (e: IllegalArgumentException) {
-        throw InvalidSemanticException("Expected data-size value for symbol (${clause.symbol.name.toLowerCase()}), but was '${clause.value.str}'")
+        throw InvalidHslDataSizeException(clause.symbol, clause.value.str)
     }
 }
 

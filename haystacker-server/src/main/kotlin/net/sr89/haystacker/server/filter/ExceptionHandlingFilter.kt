@@ -23,7 +23,7 @@ fun exceptionHandlingFilter() = Filter { next ->
                 .with(stringBody of "Symbol '${e.symbol}' expects a date, but '${e.date}' is neither an \"ISO-8601/UTC date time\" (ex: 2011-12-03T10:15:30Z), nor an \"ISO-8601/date time with offset\" (ex: 2011-12-03T10:15:30+01:00) nor a date (ex: 2011-12-03)")
         } catch (e: InvalidHslDataSizeException) {
             Response(BAD_REQUEST)
-                .with(stringBody of "Expected data-size value for symbol (${e.symbol.name.toLowerCase()}), but was '${e.dataSize}'")
+                .with(stringBody of "Symbol '${e.symbol}' expects a data-size value, but was '${e.dataSize}'")
         } catch (e: InvalidHslOperatorException) {
             Response(BAD_REQUEST)
                 .with(stringBody of "Invalid operator (${e.operator}) for symbol '${e.symbol}' and value '${e.value}'")

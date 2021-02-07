@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.lang.ast.Symbol
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
@@ -65,11 +66,12 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
     private fun createDocumentForFile(path: Path, attrs: BasicFileAttributes): Document {
         val doc = Document()
 
-        doc.add(TextField("path", path.toString(), Field.Store.YES))
+        doc.add(TextField(Symbol.NAME.luceneQueryName, path.toString(), Field.Store.YES))
         doc.add(StringField("id", path.toString(), Field.Store.NO))
 
-        doc.add(LongPoint("modified", attrs.lastModifiedTime().toMillis()))
-        doc.add(LongPoint("created", attrs.creationTime().toMillis()))
+        doc.add(LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, attrs.lastModifiedTime().toMillis()))
+        doc.add(LongPoint(Symbol.CREATED.luceneQueryName, attrs.creationTime().toMillis()))
+        doc.add(LongPoint(Symbol.SIZE.luceneQueryName, attrs.size()))
 
         return doc
     }

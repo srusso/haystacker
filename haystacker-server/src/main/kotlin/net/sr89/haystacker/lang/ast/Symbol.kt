@@ -4,5 +4,5 @@ enum class Symbol(val luceneQueryName: String) {
     NAME("path"),
     SIZE("size"),
     CREATED("created"),
-    LAST_MODIFIED("last_modified")
+    LAST_MODIFIED("modified")
 }

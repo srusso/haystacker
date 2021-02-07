@@ -70,6 +70,7 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
 
         doc.add(LongPoint("modified", attrs.lastModifiedTime().toMillis()))
         doc.add(LongPoint("created", attrs.creationTime().toMillis()))
+        doc.add(LongPoint("size", attrs.size()))
 
         return doc
     }

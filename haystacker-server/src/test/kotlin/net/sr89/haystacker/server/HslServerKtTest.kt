@@ -14,6 +14,7 @@ import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.util.unit.DataSize
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.assertEquals
@@ -28,8 +29,8 @@ internal class HslServerKtTest {
     var removeSubdirectoryFromIndexRequest: Request? = null
     var searchFileByNameInDirectory: Request? = null
     var searchFileByNameInSubDirectory: Request? = null
-    var searchByFileSizeLess1mb: Request? = null
-    var searchByFileSizeMore1mb: Request? = null
+    var searchSmallFiles: Request? = null
+    var searchBigFiles: Request? = null
 
     @BeforeEach
     internal fun setUp() {
@@ -70,16 +71,16 @@ internal class HslServerKtTest {
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        searchByFileSizeLess1mb = Request(Method.POST, "/search")
+        searchSmallFiles = Request(Method.POST, "/search")
             .with(
-                hslQuery of "size < 1mb",
+                hslQuery of "size < 500kb",
                 maxResults of 15,
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        searchByFileSizeMore1mb = Request(Method.POST, "/search")
+        searchBigFiles = Request(Method.POST, "/search")
             .with(
-                hslQuery of "size > 1mb",
+                hslQuery of "size > 500kb",
                 maxResults of 15,
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
@@ -107,8 +108,8 @@ internal class HslServerKtTest {
 
     @Test
     internal fun searchByFileSize() {
-        assertSearchResult(routes(searchByFileSizeMore1mb!!), 0)
-        assertSearchResult(routes(searchByFileSizeLess1mb!!), 1)
+        assertSearchResult(routes(searchBigFiles!!), 1)
+        assertSearchResult(routes(searchSmallFiles!!), 3)
     }
 
     private fun assertSearchResult(response: Response, expectedResultCount: Long) {
@@ -126,6 +127,10 @@ internal class HslServerKtTest {
 
         Files.newOutputStream(directoryToIndex.resolve("binary.dat")).use {
             it.write(ByteArray(10) { i -> i.toByte() })
+        }
+
+        Files.newOutputStream(directoryToIndex.resolve("bigbinary.dat")).use {
+            it.write(ByteArray(DataSize.ofMegabytes(1).toBytes().toInt()) { i -> i.toByte() })
         }
 
         Files.createDirectory(subDirectory)

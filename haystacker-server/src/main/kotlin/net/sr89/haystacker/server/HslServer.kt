@@ -70,7 +70,7 @@ fun startServer(port: Int): Http4kServer {
     return app.asServer(Jetty(port)).start()
 }
 
-fun main() {
+fun main(args: Array<String>) {
     serverInstance = startServer(9000)
 
     println("Haystacker server started")

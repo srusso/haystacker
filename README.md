@@ -82,7 +82,7 @@ For example, to search for all files that were last modified before January 5th 
 
     last_modified < '2020-01-05T10:00:00Z'
 
-Note the necessary single quotes surrounding the date.
+Note that the single quotes around the value are allowed but not necessary.
 The above specifies a date-time with UTC offset (`Z`). Offsets can also be specified numerically, for example `2020-01-05T10:00:00+04:00`.
 Additionally, it's possible to also just specify the date: `2020-01-05`. Note that this is interpreted as `2020-01-05T00:00:00Z` (start of day, in UTC).
 

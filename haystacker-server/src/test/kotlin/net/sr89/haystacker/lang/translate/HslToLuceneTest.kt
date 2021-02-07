@@ -1,5 +1,9 @@
 package net.sr89.haystacker.lang.translate
 
+import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.lang.ast.Symbol.CREATED
+import net.sr89.haystacker.lang.ast.Symbol.LAST_MODIFIED
+import net.sr89.haystacker.lang.ast.Symbol.SIZE
 import net.sr89.haystacker.lang.parser.HslParser
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.index.Term
@@ -15,6 +19,7 @@ import kotlin.test.assertEquals
 
 internal class HslToLuceneTest {
     private val date = "2020-01-17"
+    private val dateTime = "2020-01-17T10:15:30Z"
 
     val hslToLucene: HslToLucene = HslToLucene(HslParser())
 
@@ -22,33 +27,33 @@ internal class HslToLuceneTest {
     internal fun parseSimpleStringTermQuery() {
         val query = hslToLucene.toLuceneQuery("name = \"file.txt\"")
 
-        assertEquals(TermQuery(Term("path", "file.txt")), query)
+        assertEquals(TermQuery(Term(Symbol.NAME.luceneQueryName, "file.txt")), query)
     }
 
     @Test
     internal fun longQueries() {
         assertEquals(
-            LongPoint.newRangeQuery("size", DataSize.ofKilobytes(23).toBytes() + 1, Long.MAX_VALUE),
+            LongPoint.newRangeQuery(SIZE.luceneQueryName, DataSize.ofKilobytes(23).toBytes() + 1, Long.MAX_VALUE),
             hslToLucene.toLuceneQuery("size > 23kb")
         )
 
         assertEquals(
-            LongPoint.newRangeQuery("size", DataSize.ofKilobytes(23).toBytes(), Long.MAX_VALUE),
+            LongPoint.newRangeQuery(SIZE.luceneQueryName, DataSize.ofKilobytes(23).toBytes(), Long.MAX_VALUE),
             hslToLucene.toLuceneQuery("size >= 23kb")
         )
 
         assertEquals(
-            LongPoint.newRangeQuery("size", Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes() - 1),
+            LongPoint.newRangeQuery(SIZE.luceneQueryName, Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes() - 1),
             hslToLucene.toLuceneQuery("size < 23kb")
         )
 
         assertEquals(
-            LongPoint.newRangeQuery("size", Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes()),
+            LongPoint.newRangeQuery(SIZE.luceneQueryName, Long.MIN_VALUE, DataSize.ofKilobytes(23).toBytes()),
             hslToLucene.toLuceneQuery("size <= 23kb")
         )
 
         assertEquals(
-            LongPoint.newExactQuery("size", DataSize.ofKilobytes(23).toBytes()),
+            LongPoint.newExactQuery(SIZE.luceneQueryName, DataSize.ofKilobytes(23).toBytes()),
             hslToLucene.toLuceneQuery("size = 23kb")
         )
     }
@@ -56,20 +61,20 @@ internal class HslToLuceneTest {
     @Test
     internal fun dateQuery() {
         assertEquals(
-            LongPoint.newRangeQuery("last_modified", Long.MIN_VALUE, dateToMillis(date)),
+            LongPoint.newRangeQuery(LAST_MODIFIED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date)),
             hslToLucene.toLuceneQuery("last_modified <= '$date'"))
     }
 
     @Test
     internal fun dateTimeQuery() {
         assertEquals(
-            LongPoint.newRangeQuery("last_modified", Long.MIN_VALUE, dateToMillis(date)),
-            hslToLucene.toLuceneQuery("last_modified <= '$date'"))
+            LongPoint.newRangeQuery(LAST_MODIFIED.luceneQueryName, Long.MIN_VALUE, 1579256130000),
+            hslToLucene.toLuceneQuery("last_modified <= '$dateTime'"))
     }
 
     @Test
     internal fun andQuery() {
-        val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
+        val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
         val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
@@ -80,7 +85,7 @@ internal class HslToLuceneTest {
 
     @Test
     internal fun orQuery() {
-        val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
+        val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
         val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
@@ -91,8 +96,8 @@ internal class HslToLuceneTest {
 
     @Test
     internal fun nestedQueries() {
-        val createdClause = LongPoint.newRangeQuery("created", Long.MIN_VALUE, dateToMillis(date))
-        val lastModifiedClause = LongPoint.newRangeQuery("last_modified", dateToMillis(date), Long.MAX_VALUE)
+        val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
+        val lastModifiedClause = LongPoint.newRangeQuery(LAST_MODIFIED.luceneQueryName, dateToMillis(date), Long.MAX_VALUE)
         val nameClause = TermQuery(Term("path", "file.txt"))
 
         val innerClause = BooleanQuery.Builder().add(lastModifiedClause, SHOULD).add(nameClause, SHOULD).build()

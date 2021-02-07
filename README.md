@@ -1,7 +1,6 @@
 # Haystacker
 
 A file indexer and search software.
-Work in progress.
 
 ## Building the project
 

@@ -3,6 +3,7 @@ package net.sr89.haystacker.lang.parser
 import net.sr89.haystacker.lang.ast.HslDate
 import net.sr89.haystacker.lang.ast.HslDateTime
 import net.sr89.haystacker.lang.ast.HslInstant
+import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.exception.InvalidHslDateException
 import java.time.Instant
 import java.time.LocalDate
@@ -38,7 +39,7 @@ private fun isDate(date: Any): HslDate? {
     }
 }
 
-fun parseHslDateTime(date: Any): HslDateTime {
+fun parseHslDateTime(symbol: Symbol, date: String): HslDateTime {
     val dateTimeValue = isDateTime(date)
 
     if (dateTimeValue != null) {
@@ -51,5 +52,5 @@ fun parseHslDateTime(date: Any): HslDateTime {
         return dateValue
     }
 
-    throw InvalidHslDateException(date)
+    throw InvalidHslDateException(symbol, date)
 }

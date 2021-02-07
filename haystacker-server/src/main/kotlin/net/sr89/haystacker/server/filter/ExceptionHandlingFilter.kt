@@ -22,7 +22,7 @@ fun exceptionHandlingFilter() = Filter { next ->
                 .with(stringBody of e.message!!)
         } catch (e: InvalidHslDateException) {
             Response(BAD_REQUEST)
-                .with(stringBody of "Value '${e.date}' is neither an \"ISO-8601/UTC date time\" (ex: 2011-12-03T10:15:30Z), nor an \"ISO-8601/date time with offset\" (ex: 2011-12-03T10:15:30+01:00) nor a date (ex: 2011-12-03)")
+                .with(stringBody of "Symbol '${e.symbol}' expects a date, but '${e.date}' is neither an \"ISO-8601/UTC date time\" (ex: 2011-12-03T10:15:30Z), nor an \"ISO-8601/date time with offset\" (ex: 2011-12-03T10:15:30+01:00) nor a date (ex: 2011-12-03)")
         } catch (e: Exception) {
             Response(INTERNAL_SERVER_ERROR).with(stringBody of e.message!!)
         }

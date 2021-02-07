@@ -3,6 +3,7 @@ package net.sr89.haystacker.server
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.sr89.haystacker.server.api.SearchResponse
+import net.sr89.haystacker.server.api.SearchResult
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
@@ -17,19 +18,22 @@ import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.FileTime
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
-import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 fun Path.setTimes(lastModified: Instant, created: Instant): Path {
     Files.getFileAttributeView(this, BasicFileAttributeView::class.java)
         .setTimes(FileTime.from(lastModified), null, FileTime.from(created))
     return this
 }
+
+class SearchResponseType : TypeReference<SearchResponse>()
 
 internal class HslServerKtTest {
     val routes = haystackerRoutes()
@@ -93,13 +97,13 @@ internal class HslServerKtTest {
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchFileByNameInDirectory), 1)
-        assertSearchResult(routes(searchFileByNameInSubDirectory), 1)
+        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldfile.txt"))
+        assertSearchResult(routes(searchFileByNameInSubDirectory), listOf("subfile.txt"))
 
         routes(removeSubdirectoryFromIndexRequest!!)
 
-        assertSearchResult(routes(searchFileByNameInDirectory), 1)
-        assertSearchResult(routes(searchFileByNameInSubDirectory), 0)
+        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldfile.txt"))
+        assertSearchResult(routes(searchFileByNameInSubDirectory), emptyList())
     }
 
     @Test
@@ -118,8 +122,8 @@ internal class HslServerKtTest {
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchBigFiles), 1)
-        assertSearchResult(routes(searchSmallFiles), 3)
+        assertSearchResult(routes(searchBigFiles), listOf("bigbinary.dat"))
+        assertSearchResult(routes(searchSmallFiles), listOf("oldfile.txt", "binary.dat", "subfile.txt"))
     }
 
     @Test
@@ -138,8 +142,8 @@ internal class HslServerKtTest {
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchOldFiles), 1)
-        assertSearchResult(routes(searchNewFiles), 3)
+        assertSearchResult(routes(searchOldFiles), listOf("oldfile.txt"))
+        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subfile.txt"))
     }
 
     @Test
@@ -158,16 +162,43 @@ internal class HslServerKtTest {
                 indexPath of indexFile!!.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchOldFiles), 1)
-        assertSearchResult(routes(searchNewFiles), 3)
+        assertSearchResult(routes(searchOldFiles), listOf("oldfile.txt"))
+        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subfile.txt"))
     }
 
-    private fun assertSearchResult(response: Response, expectedResultCount: Long) {
-        class SearchResponseType : TypeReference<SearchResponse>()
+    @Test
+    internal fun searchWithAndClause() {
+        val searchNewAndBigFiles = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "created > 2016-03-01 AND size > 500kb",
+                maxResults of 15,
+                indexPath of indexFile!!.toAbsolutePath().toString()
+            )
 
+        assertSearchResult(routes(searchNewAndBigFiles), listOf("bigbinary.dat"))
+    }
+
+    @Test
+    internal fun searchWithOrClause() {
+        val oldFilesOrSpecific = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "created < 2016-03-01 OR name = subfile.txt",
+                maxResults of 15,
+                indexPath of indexFile!!.toAbsolutePath().toString()
+            )
+
+        assertSearchResult(routes(oldFilesOrSpecific), listOf("oldfile.txt", "subfile.txt"))
+    }
+
+    private fun assertSearchResult(response: Response, expectedFilenames: List<String>) {
         val searchResponse = ObjectMapper().readValue(response.bodyString(), SearchResponseType())
+        val foundFilenames: List<String> = searchResponse.results
+            .map(SearchResult::path)
+            .map { path -> Paths.get(path).fileName.toString() }
 
-        assertEquals(expectedResultCount, searchResponse.totalResults)
+        expectedFilenames.forEach { path ->
+            assertTrue(path in foundFilenames, "Expected path $path not found among results: $foundFilenames")
+        }
     }
 
     private fun addTestFilesTo(directoryToIndex: Path, subDirectory: Path) {

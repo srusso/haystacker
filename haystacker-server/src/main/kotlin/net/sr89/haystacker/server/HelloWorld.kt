@@ -1,27 +1,42 @@
 package net.sr89.haystacker.server
 
-import com.sun.jna.Library
-import com.sun.jna.Native
-import com.sun.jna.Platform
+import java.nio.file.FileSystems
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
+import java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
+import java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
+import java.nio.file.WatchEvent
+import java.nio.file.WatchKey
+import java.nio.file.WatchService
 
-/** Simple example of JNA interface mapping and usage.  */
 object HelloWorld {
     @JvmStatic
     fun main(args: Array<String>) {
-        CLibrary.INSTANCE.printf("Hello, World\n")
-        for (i in args.indices) {
-            CLibrary.INSTANCE.printf("Argument %d: %s\n", i, args[i])
+        val watchService: WatchService = FileSystems.getDefault().newWatchService()
+
+        Paths.get("C:")
+            .register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)
+
+        while (true) {
+            val key: WatchKey = try {
+                watchService.take()
+            } catch (ex: InterruptedException) {
+                return
+            }
+
+            println(key)
+
+            for (event in key.pollEvents()) {
+                val kind: WatchEvent.Kind<*> = event.kind()
+                println("kind " + kind.name())
+                val path = event.context() as Path
+                println(path.toString())
+
+            }
+
+            key.reset()
         }
     }
 
-    // This is the standard, stable way of mapping, which supports extensive
-    // customization and mapping of Java to native types.
-    interface CLibrary : Library {
-        fun printf(format: String?, vararg args: Any?)
-
-        companion object {
-            val INSTANCE = Native.load(if (Platform.isWindows()) "msvcrt" else "c",
-                CLibrary::class.java) as CLibrary
-        }
-    }
 }

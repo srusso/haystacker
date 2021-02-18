@@ -2,7 +2,7 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.server.api.stringBody
-import net.sr89.haystacker.server.filter.exceptionHandlingFilter
+import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
@@ -59,11 +59,11 @@ fun haystackerRoutes(): HttpHandler {
 /**
  * Start a web server that routes requests to an [IndexManager].
  */
-fun startServer(port: Int): Http4kServer {
+fun startRestServer(port: Int): Http4kServer {
     val contexts = RequestContexts()
 
     val app = ServerFilters.InitialiseRequestContext(contexts)
-        .then(exceptionHandlingFilter())
+        .then(ExceptionHandlingFilter())
         .then(ServerFilters.CatchLensFailure())
         .then(haystackerRoutes())
 
@@ -71,7 +71,7 @@ fun startServer(port: Int): Http4kServer {
 }
 
 fun main(args: Array<String>) {
-    serverInstance = startServer(9000)
+    serverInstance = startRestServer(9000)
 
     println("Haystacker server started")
 }

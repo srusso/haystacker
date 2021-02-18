@@ -67,7 +67,7 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
         val doc = Document()
 
         Symbol.values()
-            .flatMap { symbol -> fieldsFor(symbol, path, attrs) }
+            .flatMap { symbol: Symbol -> fieldsFor(symbol, path, attrs) }
             .forEach(doc::add)
 
         return doc

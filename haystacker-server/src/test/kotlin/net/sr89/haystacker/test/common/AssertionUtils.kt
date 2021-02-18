@@ -7,7 +7,7 @@ import org.apache.lucene.search.ScoreDoc
 import org.apache.lucene.search.TopDocs
 import java.time.Duration
 import kotlin.reflect.KClass
-import kotlin.reflect.cast
+import kotlin.reflect.full.cast
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

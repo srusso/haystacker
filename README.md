@@ -27,7 +27,13 @@ Or in debug mode:
 ## Keeping the index updated
 
 Haystacker uses [this native library](https://github.com/srusso/haystacker-fs-watcher-windows) to receive notifications from the operating system about changes to the file system.
-Note that it is possible for notifications to be lost in case many changes are performed in a short time, due to the operating system's own buffer overflowing, or due to other reasons.
+It is possible for notifications to be lost in case many changes are performed in a short time, due to the operating system's own buffer overflowing, or due to other reasons.
+
+To update the index manually in such case, this shell command can be used:
+
+    haystacker> add-to-index D:\\my-data
+    
+This way, the contents of `D:\\my-data` will be re-indexed.
 
 Note that currently this is only implemented for Windows. 
 

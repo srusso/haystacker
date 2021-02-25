@@ -24,6 +24,13 @@ Or in debug mode:
 
     java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
 
+## Keeping the index updated
+
+Haystacker uses [this native library](https://github.com/srusso/haystacker-fs-watcher-windows) to receive notifications from the operating system about changes to the file system.
+Note that it is possible for notifications to be lost in case many changes are performed in a short time, due to the operating system's own buffer overflowing, or due to other reasons.
+
+Note that currently this is only implemented for Windows. 
+
 ## Using the shell client
 
 Then type `help` for help. Example usage:

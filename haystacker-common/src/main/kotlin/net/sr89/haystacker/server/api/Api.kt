@@ -18,7 +18,8 @@ data class SearchResponse(
 
 data class BackgroundTaskStatusResponse(
     @JsonProperty("taskId") val taskId: String,
-    @JsonProperty("isRunning") val isRunning: Boolean
+    @JsonProperty("status") val status: String,
+    @JsonProperty("description") val description: String
 )
 
 data class DirectoryIndexResponse(

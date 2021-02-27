@@ -21,6 +21,18 @@
             <groupId>org.http4k</groupId>
             <artifactId>http4k-format-jackson</artifactId>
         </dependency>
+
+        <!--        TEST -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

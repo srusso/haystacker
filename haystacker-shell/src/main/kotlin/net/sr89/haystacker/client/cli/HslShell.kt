@@ -104,7 +104,7 @@ class HslShell : CommandMarker {
         }
     }
 
-    @CliCommand(value = ["taskStatus"], help = "Check the long-running task status")
+    @CliCommand(value = ["task-status"], help = "Check the long-running task status")
     fun taskStatus(
         @CliOption(key = [""], help = "The task ID") taskIdParam: String
     ): String {

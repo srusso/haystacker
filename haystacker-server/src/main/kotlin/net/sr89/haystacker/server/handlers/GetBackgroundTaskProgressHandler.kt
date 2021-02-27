@@ -16,6 +16,10 @@ class GetBackgroundTaskProgressHandler(private val taskManager: BackgroundTaskMa
     override fun invoke(request: Request): Response {
         val tid: String = taskId(request)
 
-        return Response(Status.OK).with(backgroundTaskStatusResponse of BackgroundTaskStatusResponse(tid, taskManager.isRunning(TaskId(UUID.fromString(tid)))))
+        val status = taskManager.status(TaskId(UUID.fromString(tid)))
+        val resp = BackgroundTaskStatusResponse(tid, status.state.name, status.description)
+
+        return Response(Status.OK)
+            .with(backgroundTaskStatusResponse of resp)
     }
 }

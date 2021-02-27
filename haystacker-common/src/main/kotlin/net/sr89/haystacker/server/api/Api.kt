@@ -16,9 +16,23 @@ data class SearchResponse(
     @JsonProperty("results") val results: List<SearchResult>
 )
 
+data class BackgroundTaskStatusResponse(
+    @JsonProperty("taskId") val taskId: String,
+    @JsonProperty("status") val status: String,
+    @JsonProperty("description") val description: String
+)
+
+data class DirectoryIndexResponse(
+    @JsonProperty("taskId") val taskId: String
+)
+
 val hslQuery = Query.string().required("hslQuery")
+
 val indexPath = Query.string().required("indexPath")
+val taskId = Query.string().required("taskId")
 val directory = Query.string().required("directory")
 val maxResults = Query.int().optional("maxResults")
 val stringBody = Body.string(ContentType.TEXT_PLAIN).toLens()
+val directoryIndexResponse = Body.auto<DirectoryIndexResponse>().toLens()
+val backgroundTaskStatusResponse = Body.auto<BackgroundTaskStatusResponse>().toLens()
 val searchResponse = Body.auto<SearchResponse>().toLens()

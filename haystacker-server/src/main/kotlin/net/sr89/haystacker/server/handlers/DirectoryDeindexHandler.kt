@@ -23,7 +23,7 @@ class DirectoryDeindexHandler: HttpHandler {
         } else if (!Paths.get(indexPath).toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
-            val indexManager = IndexManager(indexPath)
+            val indexManager = IndexManager.forPath(indexPath)
 
             indexManager.openIndex().use {
                 indexManager.removeDirectoryFromIndex(it, directoryToDeindex)

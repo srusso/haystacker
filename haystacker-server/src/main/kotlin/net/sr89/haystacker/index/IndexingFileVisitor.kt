@@ -1,5 +1,7 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.async.TaskExecutionState.RUNNING
+import net.sr89.haystacker.async.TaskStatus
 import net.sr89.haystacker.lang.ast.Symbol
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
@@ -15,8 +17,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.atomic.AtomicReference
 
-class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : SimpleFileVisitor<Path>() {
+class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val status: AtomicReference<TaskStatus>) : SimpleFileVisitor<Path>() {
     private val indexPath = Paths.get(indexPathStr)
     private var visitedFiles = 0
 
@@ -37,8 +40,8 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
     }
 
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-        if (++visitedFiles % 10000 == 0) {
-            println("Visiting file or directory #$visitedFiles ($file)")
+        if (++visitedFiles % 100 == 0) {
+            status.set(TaskStatus(RUNNING, "Visiting file or directory #$visitedFiles ($file)"))
         }
         try {
             addFileToIndex(file, attrs)
@@ -67,7 +70,7 @@ class IndexingFileVisitor(val indexPathStr: String, val writer: IndexWriter) : S
         val doc = Document()
 
         Symbol.values()
-            .flatMap { symbol -> fieldsFor(symbol, path, attrs) }
+            .flatMap { symbol: Symbol -> fieldsFor(symbol, path, attrs) }
             .forEach(doc::add)
 
         return doc

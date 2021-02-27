@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.async.TaskStatus
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -18,35 +19,54 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.atomic.AtomicReference
 
-class IndexManager(val indexPath: String) {
+interface IndexManager {
+    fun createNewIndex(): IndexWriter
+    fun openIndex(): IndexWriter
+    fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
+    fun fetchDocument(docID: Int): Document?
+    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path)
+    fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
+
+    companion object {
+        private val managers = hashMapOf<String, IndexManager>()
+
+        @Synchronized
+        fun forPath(indexPath: String): IndexManager {
+            return managers.computeIfAbsent(indexPath, ::IndexManagerImpl)
+        }
+    }
+}
+
+private class IndexManagerImpl(val indexPath: String) : IndexManager {
     val analyzer: Analyzer = StandardAnalyzer()
 
     var indexDirectory: FSDirectory? = null
     var reader: IndexReader? = null
     var searcher: IndexSearcher? = null
 
-    fun createNewIndex(): IndexWriter {
+    override fun createNewIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE
 
         return IndexWriter(initIndexDirectory(), iwc)
     }
 
-    fun openIndex(): IndexWriter {
+    override fun openIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.APPEND
 
         return IndexWriter(initIndexDirectory(), iwc)
     }
 
-    fun searchIndex(query: Query, maxResults: Int = 5): TopDocs {
+    override fun searchIndex(query: Query, maxResults: Int): TopDocs {
         initSearcher()
 
         return searcher!!.search(query, maxResults)
     }
 
-    fun fetchDocument(docID: Int): Document? {
+    override fun fetchDocument(docID: Int): Document? {
         initSearcher()
 
         return searcher!!.doc(docID)
@@ -59,12 +79,12 @@ class IndexManager(val indexPath: String) {
         }
     }
 
-    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path) {
+    override fun removeDirectoryFromIndex(writer: IndexWriter, path: Path) {
         writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
-    fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {
-        val visitor = IndexingFileVisitor(indexPath, writer)
+    override fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+        val visitor = IndexingFileVisitor(indexPath, writer, status)
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, visitor)
         } else {

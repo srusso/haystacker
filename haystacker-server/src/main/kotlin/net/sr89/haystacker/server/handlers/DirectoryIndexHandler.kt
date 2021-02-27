@@ -1,7 +1,10 @@
 package net.sr89.haystacker.server.handlers
 
-import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.async.BackgroundTaskManager
+import net.sr89.haystacker.index.BackgroundIndexingTask
+import net.sr89.haystacker.server.api.DirectoryIndexResponse
 import net.sr89.haystacker.server.api.directory
+import net.sr89.haystacker.server.api.directoryIndexResponse
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.stringBody
 import org.http4k.core.HttpHandler
@@ -11,7 +14,7 @@ import org.http4k.core.Status
 import org.http4k.core.with
 import java.nio.file.Paths
 
-class DirectoryIndexHandler: HttpHandler {
+class DirectoryIndexHandler(private val taskManager: BackgroundTaskManager): HttpHandler {
     override fun invoke(request: Request): Response {
         val indexPath: String = indexPath(request)
         val directoryToIndex = Paths.get(directory(request))
@@ -23,13 +26,9 @@ class DirectoryIndexHandler: HttpHandler {
         } else if (!Paths.get(indexPath).toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
-            val indexManager = IndexManager(indexPath)
+            val taskId = taskManager.submit(BackgroundIndexingTask(indexPath, directoryToIndex))
 
-            indexManager.openIndex().use {
-                indexManager.indexDirectoryRecursively(it, directoryToIndex)
-            }
-
-            Response(Status.OK)
+            Response(Status.OK).with(directoryIndexResponse of DirectoryIndexResponse(taskId.id.toString()))
         }
     }
 }

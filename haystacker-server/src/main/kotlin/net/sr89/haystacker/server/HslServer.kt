@@ -1,11 +1,13 @@
 package net.sr89.haystacker.server
 
+import net.sr89.haystacker.async.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
+import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
 import net.sr89.haystacker.server.handlers.SearchHandler
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.DELETE
@@ -29,7 +31,10 @@ private var serverInstance: Http4kServer? = null
 
 private val shutdownDelay = Duration.ofSeconds(5)
 
+private val taskManager: BackgroundTaskManager = BackgroundTaskManager()
+
 fun quitHandler(): HttpHandler {
+    // TODO interrupt all running tasks
     return {
         if (serverInstance != null) {
             println("Shutting down in ${shutdownDelay.toSeconds()}s")
@@ -50,8 +55,9 @@ fun haystackerRoutes(): HttpHandler {
         "ping" bind GET to { Response(OK) },
         "search" bind POST to SearchHandler(),
         "index" bind POST to CreateIndexHandler(),
-        "directory" bind POST to DirectoryIndexHandler(),
+        "directory" bind POST to DirectoryIndexHandler(taskManager),
         "directory" bind DELETE to DirectoryDeindexHandler(),
+        "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
         "quit" bind POST to quitHandler()
     )
 }
@@ -71,7 +77,13 @@ fun startRestServer(port: Int): Http4kServer {
 }
 
 fun main(args: Array<String>) {
+    println("Starting REST server")
+
     serverInstance = startRestServer(9000)
 
-    println("Haystacker server started")
+    println("Haystacker REST server started")
+
+    println("Loading indexes")
+
+    println("Setting up filesystem watchers for existing indexes")
 }

@@ -10,7 +10,7 @@ import org.http4k.core.Status
 class CreateIndexHandler: HttpHandler {
     override fun invoke(request: Request): Response {
         val indexPath: String = indexPath(request)
-        val indexManager = IndexManager(indexPath)
+        val indexManager = IndexManager.forPath(indexPath)
 
         println("Received request to create index at $indexPath")
 

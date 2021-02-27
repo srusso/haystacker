@@ -32,7 +32,7 @@ class SearchHandler : HttpHandler {
         val parsedQuery = hslToLucene.toLuceneQuery(hslQuery)
         val maxResults: Int = maxResults(request) ?: 10
         val indexPath: String = indexPath(request)
-        val indexManager = IndexManager(indexPath)
+        val indexManager = IndexManager.forPath(indexPath)
 
         println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
 

@@ -7,6 +7,7 @@ import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
 import net.sr89.haystacker.server.api.stringBody
+import net.sr89.haystacker.server.api.taskId
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -77,7 +78,7 @@ class HslShell : CommandMarker {
         val response = executeTimed(indexRequest)
 
         return if (response.status == Status.OK) {
-            "Added $dirPath to index $ci" +
+            "Started task to add $dirPath to index $ci: ${response.bodyString()}" +
                 "\nTook: ${response.duration.toMillis()} ms"
         } else {
             "Error:\n${response.bodyString()}"
@@ -98,6 +99,22 @@ class HslShell : CommandMarker {
         return if (response.status == Status.OK) {
             "Removed $dirPath to index $ci" +
                 "\nTook: ${response.duration.toMillis()} ms"
+        } else {
+            "Error:\n${response.bodyString()}"
+        }
+    }
+
+    @CliCommand(value = ["taskStatus"], help = "Check the long-running task status")
+    fun taskStatus(
+        @CliOption(key = [""], help = "The task ID") taskIdParam: String
+    ): String {
+        val taskStatusRequest = Request(Method.GET, "$baseUrl/task")
+            .with(taskId of taskIdParam)
+
+        val response = executeTimed(taskStatusRequest)
+
+        return if (response.status == Status.OK) {
+            response.response.bodyString()
         } else {
             "Error:\n${response.bodyString()}"
         }

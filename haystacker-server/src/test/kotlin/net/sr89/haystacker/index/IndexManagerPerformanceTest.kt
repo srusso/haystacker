@@ -19,7 +19,7 @@ internal class IndexManagerPerformanceTest {
     @Test @Disabled
     internal fun indexManyDocuments() {
         val tempDir = Files.createTempDirectory("tdir").toFile()
-        val manager = IndexManager(tempDir.toString())
+        val manager = IndexManager.forPath(tempDir.toString())
         val directoryDepth = 100
         val filesPerDirectory = 10000
 

@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.async.TaskStatus
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -18,6 +19,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.atomic.AtomicReference
 
 interface IndexManager {
     fun createNewIndex(): IndexWriter
@@ -25,7 +27,7 @@ interface IndexManager {
     fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
     fun fetchDocument(docID: Int): Document?
     fun removeDirectoryFromIndex(writer: IndexWriter, path: Path)
-    fun indexDirectoryRecursively(writer: IndexWriter, path: Path)
+    fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
 
     companion object {
         private val managers = hashMapOf<String, IndexManager>()
@@ -81,8 +83,8 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
-    override fun indexDirectoryRecursively(writer: IndexWriter, path: Path) {
-        val visitor = IndexingFileVisitor(indexPath, writer)
+    override fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+        val visitor = IndexingFileVisitor(indexPath, writer, status)
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, visitor)
         } else {

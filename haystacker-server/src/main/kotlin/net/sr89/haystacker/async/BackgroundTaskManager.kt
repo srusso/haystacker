@@ -1,23 +1,21 @@
 package net.sr89.haystacker.async
 
-import net.sr89.haystacker.async.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.TaskExecutionState.NOT_FOUND
-import net.sr89.haystacker.async.TaskExecutionState.RUNNING
 import net.sr89.haystacker.server.collection.CircularQueue
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 data class TaskId(val id: UUID)
 
-data class TaskStatus(val id: TaskId, val state: TaskExecutionState, val description: String)
+data class TaskStatus(val state: TaskExecutionState, val description: String)
 
 enum class TaskExecutionState {
-    NOT_FOUND, RUNNING, COMPLETED
+    NOT_FOUND, NOT_STARTED, RUNNING, COMPLETED, ERROR
 }
 
 class BackgroundTaskManager {
 
-    private val completedTasks: CircularQueue<TaskId> = CircularQueue(100)
+    private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
     fun submit(task: BackgroundTask): TaskId {
@@ -26,10 +24,12 @@ class BackgroundTaskManager {
         runningTasks[id] = task
 
         val thread = Thread {
-            task.run()
-
-            runningTasks.remove(id)
-            completedTasks.add(id)
+            try {
+                task.run()
+            } finally {
+                runningTasks.remove(id)
+                completedTasks.add(Pair(id, task))
+            }
         }
 
         thread.start()
@@ -41,15 +41,15 @@ class BackgroundTaskManager {
         val runningTask = runningTasks[taskId]
 
         if (runningTask != null) {
-            return TaskStatus(taskId, RUNNING, "Running")
+            return runningTask.currentStatus()
         } else {
-            for (id in completedTasks) {
-                if (id == taskId) {
-                    return TaskStatus(taskId, COMPLETED, "Completed successfully")
+            for (completedTask in completedTasks) {
+                if (completedTask.first == taskId) {
+                    return completedTask.second.currentStatus()
                 }
             }
 
-            return TaskStatus(taskId, NOT_FOUND, "Not found")
+            return TaskStatus(NOT_FOUND, "Not found")
         }
     }
 }

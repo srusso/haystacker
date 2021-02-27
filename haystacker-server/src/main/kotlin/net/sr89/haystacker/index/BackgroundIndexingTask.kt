@@ -17,7 +17,7 @@ class BackgroundIndexingTask(val indexPath: String, val directoryToIndex: Path) 
             val indexManager = IndexManager.forPath(indexPath)
 
             indexManager.openIndex().use {
-                indexManager.indexDirectoryRecursively(it, directoryToIndex, latestStatus)
+                indexManager.addNewDirectoryToIndex(it, directoryToIndex, latestStatus)
             }
 
             latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))

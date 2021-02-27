@@ -1,8 +1,10 @@
 package net.sr89.haystacker.server
 
 import net.sr89.haystacker.async.task.BackgroundTaskManager
+import net.sr89.haystacker.filesystem.FileSystemWatcher
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.server.api.stringBody
+import net.sr89.haystacker.server.config.HaystackerSettings
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
@@ -32,6 +34,10 @@ private var serverInstance: Http4kServer? = null
 private val shutdownDelay = Duration.ofSeconds(5)
 
 private val taskManager: BackgroundTaskManager = BackgroundTaskManager()
+
+private val haystackerSettings: HaystackerSettings = HaystackerSettings()
+
+private val fileSystemWatcher: FileSystemWatcher = FileSystemWatcher(haystackerSettings)
 
 fun quitHandler(): HttpHandler {
     // TODO interrupt all running tasks
@@ -77,13 +83,20 @@ fun startRestServer(port: Int): Http4kServer {
 }
 
 fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        println("Using default settings directory ${haystackerSettings.getSettingsDirectory()}")
+    } else {
+        println("Using settings directory ${args[0]}")
+        haystackerSettings.setSettingsDirectory(args[0])
+    }
+
+    println("Setting up filesystem watchers for existing indexes")
+
+    fileSystemWatcher.startWatchingIndexedDirectories()
+
     println("Starting REST server")
 
     serverInstance = startRestServer(9000)
 
     println("Haystacker REST server started")
-
-    println("Loading indexes")
-
-    println("Setting up filesystem watchers for existing indexes")
 }

@@ -19,15 +19,20 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.Collections.unmodifiableList
 import java.util.concurrent.atomic.AtomicReference
 
 interface IndexManager {
+    // TODO createNewIndex this and openIndex, and remove `writer: IndexWriter` from
+    // TODO the methods that accept it as parameter
     fun createNewIndex(): IndexWriter
     fun openIndex(): IndexWriter
     fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
     fun fetchDocument(docID: Int): Document?
     fun removeDirectoryFromIndex(writer: IndexWriter, path: Path)
-    fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
+    fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
+    fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
+    fun indexedDirectories(): List<Path>
 
     companion object {
         private val managers = hashMapOf<String, IndexManager>()
@@ -45,6 +50,7 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     var indexDirectory: FSDirectory? = null
     var reader: IndexReader? = null
     var searcher: IndexSearcher? = null
+    val indexedDirectories = mutableListOf<Path>()
 
     override fun createNewIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
@@ -83,7 +89,13 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
-    override fun indexDirectoryRecursively(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+    override fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+        indexedDirectories.add(path)
+
+        updateFileOrDirectoryInIndex(writer, path, status)
+    }
+
+    override fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
         val visitor = IndexingFileVisitor(indexPath, writer, status)
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, visitor)
@@ -93,6 +105,8 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
 
         println("Done indexing $path")
     }
+
+    override fun indexedDirectories(): List<Path> = unmodifiableList(indexedDirectories)
 
     private fun initIndexDirectory(): FSDirectory {
         if (indexDirectory == null) {

@@ -1,7 +1,7 @@
 package net.sr89.haystacker.index
 
-import net.sr89.haystacker.async.TaskExecutionState.RUNNING
-import net.sr89.haystacker.async.TaskStatus
+import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.lang.ast.Symbol
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field

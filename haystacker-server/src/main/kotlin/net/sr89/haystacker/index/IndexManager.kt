@@ -1,6 +1,6 @@
 package net.sr89.haystacker.index
 
-import net.sr89.haystacker.async.TaskStatus
+import net.sr89.haystacker.async.task.TaskStatus
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document

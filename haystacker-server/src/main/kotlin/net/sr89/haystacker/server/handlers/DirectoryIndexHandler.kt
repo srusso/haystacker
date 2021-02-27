@@ -1,6 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
-import net.sr89.haystacker.async.BackgroundTaskManager
+import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.BackgroundIndexingTask
 import net.sr89.haystacker.server.api.DirectoryIndexResponse
 import net.sr89.haystacker.server.api.directory

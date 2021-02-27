@@ -1,6 +1,6 @@
-package net.sr89.haystacker.async
+package net.sr89.haystacker.async.task
 
-import net.sr89.haystacker.async.TaskExecutionState.NOT_FOUND
+import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.server.collection.CircularQueue
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap

@@ -1,10 +1,10 @@
 package net.sr89.haystacker.index
 
-import net.sr89.haystacker.async.BackgroundTask
-import net.sr89.haystacker.async.TaskExecutionState.COMPLETED
-import net.sr89.haystacker.async.TaskExecutionState.ERROR
-import net.sr89.haystacker.async.TaskExecutionState.NOT_STARTED
-import net.sr89.haystacker.async.TaskStatus
+import net.sr89.haystacker.async.task.BackgroundTask
+import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
+import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
+import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
+import net.sr89.haystacker.async.task.TaskStatus
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
 

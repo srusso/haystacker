@@ -1,6 +1,6 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.BackgroundTaskManager
+import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter

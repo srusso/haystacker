@@ -1,6 +1,6 @@
-package net.sr89.haystacker.async
+package net.sr89.haystacker.async.daemon
 
-import net.sr89.haystacker.async.DaemonProcessExecutionState.NOT_FOUND
+import net.sr89.haystacker.async.daemon.DaemonProcessExecutionState.NOT_FOUND
 import java.util.UUID
 
 data class DaemonProcessID(val id: UUID)

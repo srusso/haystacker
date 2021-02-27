@@ -1,4 +1,4 @@
-package net.sr89.haystacker.async
+package net.sr89.haystacker.async.daemon
 
 interface DaemonProcess {
     fun interrupt()

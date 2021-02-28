@@ -16,10 +16,17 @@ class GetBackgroundTaskProgressHandler(private val taskManager: BackgroundTaskMa
     override fun invoke(request: Request): Response {
         val tid: String = taskId(request)
 
-        val status = taskManager.status(TaskId(UUID.fromString(tid)))
-        val resp = BackgroundTaskStatusResponse(tid, status.state.name, status.description)
+        try {
+            val status = taskManager.status(TaskId(UUID.fromString(tid)))
+            val resp = BackgroundTaskStatusResponse(tid, status.state.name, status.description)
+            return Response(Status.OK)
+                    .with(backgroundTaskStatusResponse of resp)
+        } catch (iax: IllegalArgumentException) {
+            // Catch exception when invalid task id is provided
+            // Send error message saying invalid task id
+            return Response(Status.BAD_REQUEST)
+                    .body("You have provided an invalid Task ID")
+        }
 
-        return Response(Status.OK)
-            .with(backgroundTaskStatusResponse of resp)
     }
 }

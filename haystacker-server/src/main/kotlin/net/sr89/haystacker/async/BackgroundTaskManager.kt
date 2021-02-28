@@ -1,11 +1,25 @@
 package net.sr89.haystacker.async
 
 import net.sr89.haystacker.async.TaskExecutionState.NOT_FOUND
+import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.collection.CircularQueue
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-data class TaskId(val id: UUID)
+data class TaskId(val id: UUID) {
+
+    companion object {
+        fun fromString(taskId: String): TaskId {
+            try {
+                val parsedTaskId = TaskId(UUID.fromString(taskId))
+                return parsedTaskId
+            } catch (iax: IllegalArgumentException) {
+                throw InvalidTaskIdException(taskId)
+            }
+        }
+    }
+
+}
 
 data class TaskStatus(val state: TaskExecutionState, val description: String)
 
@@ -52,4 +66,5 @@ class BackgroundTaskManager {
             return TaskStatus(NOT_FOUND, "Not found")
         }
     }
+
 }

@@ -14,3 +14,5 @@ class InvalidHslDateException(val symbol: Symbol, val date: String) : InvalidSem
 class InvalidHslDataSizeException(val symbol: Symbol, val dataSize: String) : InvalidSemanticException()
 
 class InvalidHslOperatorException(val symbol: Symbol, val operator: Operator, val value: String) : InvalidSemanticException()
+
+class InvalidTaskIdException(val taskId: String) : IllegalArgumentException()

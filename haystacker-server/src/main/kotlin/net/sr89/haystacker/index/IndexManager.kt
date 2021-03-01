@@ -23,7 +23,7 @@ import java.util.Collections.unmodifiableList
 import java.util.concurrent.atomic.AtomicReference
 
 interface IndexManager {
-    // TODO createNewIndex this and openIndex, and remove `writer: IndexWriter` from
+    // TODO remove createNewIndex and openIndex from interface, and remove `writer: IndexWriter` from
     // TODO the methods that accept it as parameter
     fun createNewIndex(): IndexWriter
     fun openIndex(): IndexWriter

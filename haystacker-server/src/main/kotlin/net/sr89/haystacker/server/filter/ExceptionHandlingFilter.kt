@@ -4,6 +4,7 @@ import net.sr89.haystacker.lang.exception.InvalidHslDataSizeException
 import net.sr89.haystacker.lang.exception.InvalidHslDateException
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.exception.InvalidHslOperatorException
+import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.api.stringBody
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
@@ -29,6 +30,9 @@ class ExceptionHandler(val next: HttpHandler) : HttpHandler {
         } catch (e: InvalidHslOperatorException) {
             Response(BAD_REQUEST)
                 .with(stringBody of "Invalid operator (${e.operator}) for symbol '${e.symbol}' and value '${e.value}'")
+        } catch (e: InvalidTaskIdException) {
+            Response(BAD_REQUEST)
+                    .with(stringBody of "Invalid Task ID provided: ${e.taskId}")
         } catch (e: Exception) {
             Response(INTERNAL_SERVER_ERROR).with(stringBody of e.message!!)
         }

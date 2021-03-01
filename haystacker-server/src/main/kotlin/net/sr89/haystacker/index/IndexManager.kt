@@ -4,6 +4,8 @@ import net.sr89.haystacker.async.task.TaskStatus
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
+import org.apache.lucene.document.Field
+import org.apache.lucene.document.TextField
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.index.IndexReader
 import org.apache.lucene.index.IndexWriter
@@ -13,13 +15,13 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
+import org.apache.lucene.search.TermQuery
 import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.Collections.unmodifiableList
 import java.util.concurrent.atomic.AtomicReference
 
 interface IndexManager {
@@ -32,7 +34,9 @@ interface IndexManager {
     fun removeDirectoryFromIndex(writer: IndexWriter, path: Path)
     fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
     fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
-    fun indexedDirectories(): List<Path>
+    fun indexedDirectories(): Set<Path>
+    fun excludedDirectories(): Set<Path>
+    fun indexPath(): String
 
     companion object {
         private val managers = hashMapOf<String, IndexManager>()
@@ -45,12 +49,17 @@ interface IndexManager {
 }
 
 private class IndexManagerImpl(val indexPath: String) : IndexManager {
-    val analyzer: Analyzer = StandardAnalyzer()
+    private val indexedRootDirectoriesId = Term("indexedRootDirectories")
+    private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 
-    var indexDirectory: FSDirectory? = null
-    var reader: IndexReader? = null
-    var searcher: IndexSearcher? = null
-    val indexedDirectories = mutableListOf<Path>()
+    private val delimiter = ",~#~,"
+
+    private val analyzer: Analyzer = StandardAnalyzer()
+
+    // TODO make these not nullable
+    private var indexDirectory: FSDirectory? = null
+    private var reader: IndexReader? = null
+    private var searcher: IndexSearcher? = null
 
     override fun createNewIndex(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)
@@ -72,25 +81,22 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         return searcher!!.search(query, maxResults)
     }
 
-    override fun fetchDocument(docID: Int): Document? {
+    override fun fetchDocument(docID: Int): Document {
         initSearcher()
 
         return searcher!!.doc(docID)
     }
 
-    private fun initSearcher() {
-        if (searcher == null) {
-            reader = DirectoryReader.open(initIndexDirectory())
-            searcher = IndexSearcher(reader)
-        }
-    }
-
     override fun removeDirectoryFromIndex(writer: IndexWriter, path: Path) {
+        addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
+        removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
+
         writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
     override fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
-        indexedDirectories.add(path)
+        addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
+        removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
 
         updateFileOrDirectoryInIndex(writer, path, status)
     }
@@ -106,12 +112,54 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         println("Done indexing $path")
     }
 
-    override fun indexedDirectories(): List<Path> = unmodifiableList(indexedDirectories)
+    override fun indexedDirectories() =
+        searchExistingSeparatedString(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+
+    override fun excludedDirectories() =
+        searchExistingSeparatedString(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+
+    override fun indexPath(): String {
+        return indexPath
+    }
 
     private fun initIndexDirectory(): FSDirectory {
         if (indexDirectory == null) {
             indexDirectory = FSDirectory.open(Paths.get(indexPath))
         }
         return indexDirectory!!
+    }
+
+    private fun initSearcher() {
+        if (searcher == null) {
+            reader = DirectoryReader.open(initIndexDirectory())
+            searcher = IndexSearcher(reader)
+        }
+    }
+
+    private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
+        val (document, dirs) = searchExistingSeparatedString(term)
+
+        document.add(TextField(term.field(), dirs.plus(newItem).joinToString(delimiter), Field.Store.YES))
+
+        writer.updateDocument(term, document)
+    }
+
+    private fun removeItemFromDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
+        val (document, dirs) = searchExistingSeparatedString(term)
+
+        document.add(TextField(term.field(), dirs.minus(newItem).joinToString(delimiter), Field.Store.YES))
+
+        writer.updateDocument(term, document)
+    }
+
+    private fun searchExistingSeparatedString(term: Term): Pair<Document, Set<String>> {
+        val dirDoc = searchIndex(TermQuery(term))
+
+        return if (dirDoc.totalHits.value == 1L) {
+            val existingDoc = fetchDocument(dirDoc.scoreDocs[0].doc)
+            Pair(existingDoc, existingDoc.getField(term.field()).stringValue()!!.split(delimiter).toSet())
+        } else {
+            Pair(Document(), setOf())
+        }
     }
 }

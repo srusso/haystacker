@@ -16,3 +16,5 @@ class InvalidHslDataSizeException(val symbol: Symbol, val dataSize: String) : In
 class InvalidHslOperatorException(val symbol: Symbol, val operator: Operator, val value: String) : InvalidSemanticException()
 
 class InvalidTaskIdException(val taskId: String) : IllegalArgumentException()
+
+class SettingsUpdateException(message: String): RuntimeException(message)

@@ -20,6 +20,5 @@ class GetBackgroundTaskProgressHandler(private val taskManager: BackgroundTaskMa
         val resp = BackgroundTaskStatusResponse(tid, status.state.name, status.description)
         return Response(Status.OK)
                 .with(backgroundTaskStatusResponse of resp)
-
     }
 }

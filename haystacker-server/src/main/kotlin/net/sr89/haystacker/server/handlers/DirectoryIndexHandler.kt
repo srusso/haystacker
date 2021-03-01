@@ -2,6 +2,7 @@ package net.sr89.haystacker.server.handlers
 
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.BackgroundIndexingTask
+import net.sr89.haystacker.index.Trigger.COMMAND
 import net.sr89.haystacker.server.api.DirectoryIndexResponse
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.directoryIndexResponse
@@ -26,7 +27,7 @@ class DirectoryIndexHandler(private val taskManager: BackgroundTaskManager): Htt
         } else if (!Paths.get(indexPath).toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
-            val taskId = taskManager.submit(BackgroundIndexingTask(indexPath, directoryToIndex))
+            val taskId = taskManager.submit(BackgroundIndexingTask(COMMAND, indexPath, directoryToIndex))
 
             Response(Status.OK).with(directoryIndexResponse of DirectoryIndexResponse(taskId.id.toString()))
         }

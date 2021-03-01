@@ -31,9 +31,8 @@ interface IndexManager {
     fun openIndex(): IndexWriter
     fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
     fun fetchDocument(docID: Int): Document?
-    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path)
-    fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
-    fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>)
+    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path, updateListOfIndexedDirectories: Boolean)
+    fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
     fun indexedDirectories(): Set<Path>
     fun excludedDirectories(): Set<Path>
     fun indexPath(): String
@@ -87,21 +86,25 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         return searcher!!.doc(docID)
     }
 
-    override fun removeDirectoryFromIndex(writer: IndexWriter, path: Path) {
-        addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
-        removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
+    override fun removeDirectoryFromIndex(writer: IndexWriter, path: Path, updateListOfIndexedDirectories: Boolean) {
+        if (updateListOfIndexedDirectories) {
+            addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
+            removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
+        }
 
         writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
     }
 
-    override fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
-        addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
-        removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
+    override fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
+        if (updateListOfIndexedDirectories) {
+            addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
+            removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
+        }
 
         updateFileOrDirectoryInIndex(writer, path, status)
     }
 
-    override fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+    private fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
         val visitor = IndexingFileVisitor(indexPath, writer, status)
         if (Files.isDirectory(path)) {
             Files.walkFileTree(path, visitor)

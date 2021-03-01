@@ -26,7 +26,7 @@ class DirectoryDeindexHandler: HttpHandler {
             val indexManager = IndexManager.forPath(indexPath)
 
             indexManager.openIndex().use {
-                indexManager.removeDirectoryFromIndex(it, directoryToDeindex)
+                indexManager.removeDirectoryFromIndex(it, directoryToDeindex, true)
             }
 
             Response(Status.OK)

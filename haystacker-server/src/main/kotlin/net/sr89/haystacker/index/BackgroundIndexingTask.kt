@@ -5,10 +5,13 @@ import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
 import net.sr89.haystacker.async.task.TaskStatus
+import net.sr89.haystacker.index.Trigger.COMMAND
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
 
-class BackgroundIndexingTask(val indexPath: String, val directoryToIndex: Path) : BackgroundTask {
+enum class Trigger { FS_UPDATE, COMMAND }
+
+class BackgroundIndexingTask(val trigger: Trigger, val indexPath: String, val directoryToIndex: Path) : BackgroundTask {
 
     val latestStatus = AtomicReference(TaskStatus(NOT_STARTED, "Ready to start"))
 
@@ -17,7 +20,7 @@ class BackgroundIndexingTask(val indexPath: String, val directoryToIndex: Path) 
             val indexManager = IndexManager.forPath(indexPath)
 
             indexManager.openIndex().use {
-                indexManager.addNewDirectoryToIndex(it, directoryToIndex, latestStatus)
+                indexManager.addNewDirectoryToIndex(it, directoryToIndex, latestStatus, trigger == COMMAND)
             }
 
             latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))

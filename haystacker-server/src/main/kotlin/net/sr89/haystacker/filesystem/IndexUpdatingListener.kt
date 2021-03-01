@@ -9,6 +9,7 @@ import com.sun.jna.platform.FileMonitor.FILE_SIZE_CHANGED
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.BackgroundIndexingTask
 import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.index.Trigger.FS_UPDATE
 import java.io.File
 import java.nio.file.Path
 
@@ -24,14 +25,14 @@ class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: Bac
     }
 
     private fun fileCreated(file: File) {
-        val task = BackgroundIndexingTask(indexManager.indexPath(), file.toPath())
+        val task = BackgroundIndexingTask(FS_UPDATE, indexManager.indexPath(), file.toPath())
 
         taskManager.submit(task)
     }
 
     private fun fileDeleted(file: File) {
         indexManager.openIndex().use {
-            indexManager.removeDirectoryFromIndex(it, file.toPath())
+            indexManager.removeDirectoryFromIndex(it, file.toPath(), false)
         }
     }
 

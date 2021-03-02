@@ -17,7 +17,7 @@ class CreateIndexHandler(val settingsManager: SettingsManager): HttpHandler {
 
         settingsManager.addIndex(indexPath)
 
-        indexManager.createNewIndex().close()
+        indexManager.createNewIndex()
 
         return Response(Status.OK)
     }

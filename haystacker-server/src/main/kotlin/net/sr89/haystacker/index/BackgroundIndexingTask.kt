@@ -19,9 +19,7 @@ class BackgroundIndexingTask(val trigger: Trigger, val indexPath: String, val di
         try {
             val indexManager = IndexManager.forPath(indexPath)
 
-            indexManager.openIndex().use {
-                indexManager.addNewDirectoryToIndex(it, directoryToIndex, latestStatus, trigger == COMMAND)
-            }
+            indexManager.addNewDirectoryToIndex(directoryToIndex, latestStatus, trigger == COMMAND)
 
             latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))
         } catch (e: Exception) {

@@ -25,14 +25,11 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.atomic.AtomicReference
 
 interface IndexManager {
-    // TODO remove createNewIndex and openIndex from interface, and remove `writer: IndexWriter` from
-    // TODO the methods that accept it as parameter
-    fun createNewIndex(): IndexWriter
-    fun openIndex(): IndexWriter
+    fun createNewIndex()
     fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
     fun fetchDocument(docID: Int): Document?
-    fun removeDirectoryFromIndex(writer: IndexWriter, path: Path, updateListOfIndexedDirectories: Boolean)
-    fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
+    fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean)
+    fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
     fun indexedDirectories(): Set<Path>
     fun excludedDirectories(): Set<Path>
     fun indexPath(): String
@@ -55,23 +52,16 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
-    // TODO make these not nullable
     private var indexDirectory: FSDirectory? = null
     private var reader: IndexReader? = null
     private var searcher: IndexSearcher? = null
 
-    override fun createNewIndex(): IndexWriter {
+    override fun createNewIndex() {
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.CREATE
 
-        return IndexWriter(initIndexDirectory(), iwc)
-    }
-
-    override fun openIndex(): IndexWriter {
-        val iwc = IndexWriterConfig(analyzer)
-        iwc.openMode = OpenMode.APPEND
-
-        return IndexWriter(initIndexDirectory(), iwc)
+        // creates the index
+        IndexWriter(initIndexDirectory(), iwc).close()
     }
 
     override fun searchIndex(query: Query, maxResults: Int): TopDocs {
@@ -86,22 +76,26 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         return searcher!!.doc(docID)
     }
 
-    override fun removeDirectoryFromIndex(writer: IndexWriter, path: Path, updateListOfIndexedDirectories: Boolean) {
-        if (updateListOfIndexedDirectories) {
-            addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
-            removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
-        }
+    override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
+        newIndexWriter().use {
+            if (updateListOfIndexedDirectories) {
+                addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
+                removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
+            }
 
-        writer.deleteDocuments(PrefixQuery(Term("id", path.toString())))
+            it.deleteDocuments(PrefixQuery(Term("id", path.toString())))
+        }
     }
 
-    override fun addNewDirectoryToIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
-        if (updateListOfIndexedDirectories) {
-            addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), writer)
-            removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), writer)
-        }
+    override fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
+        newIndexWriter().use {
+            if (updateListOfIndexedDirectories) {
+                addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
+                removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
+            }
 
-        updateFileOrDirectoryInIndex(writer, path, status)
+            updateFileOrDirectoryInIndex(it, path, status)
+        }
     }
 
     private fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
@@ -123,20 +117,6 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
 
     override fun indexPath(): String {
         return indexPath
-    }
-
-    private fun initIndexDirectory(): FSDirectory {
-        if (indexDirectory == null) {
-            indexDirectory = FSDirectory.open(Paths.get(indexPath))
-        }
-        return indexDirectory!!
-    }
-
-    private fun initSearcher() {
-//        if (searcher == null) {
-            reader = DirectoryReader.open(initIndexDirectory())
-            searcher = IndexSearcher(reader)
-//        }
     }
 
     private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
@@ -164,5 +144,26 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         } else {
             Pair(Document(), setOf())
         }
+    }
+
+    private fun newIndexWriter(): IndexWriter {
+        val iwc = IndexWriterConfig(analyzer)
+        iwc.openMode = OpenMode.APPEND
+
+        return IndexWriter(initIndexDirectory(), iwc)
+    }
+
+    private fun initIndexDirectory(): FSDirectory {
+        if (indexDirectory == null) {
+            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+        }
+        return indexDirectory!!
+    }
+
+    private fun initSearcher() {
+//        if (searcher == null) {
+        reader = DirectoryReader.open(initIndexDirectory())
+        searcher = IndexSearcher(reader)
+//        }
     }
 }

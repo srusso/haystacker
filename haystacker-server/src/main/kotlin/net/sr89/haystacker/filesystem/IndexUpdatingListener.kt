@@ -31,9 +31,7 @@ class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: Bac
     }
 
     private fun fileDeleted(file: File) {
-        indexManager.openIndex().use {
-            indexManager.removeDirectoryFromIndex(it, file.toPath(), false)
-        }
+        indexManager.removeDirectoryFromIndex(file.toPath(), false)
     }
 
     private fun fileChangedOld(file: File) {

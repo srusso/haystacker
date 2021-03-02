@@ -77,8 +77,10 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     }
 
     override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
+        // TODO stop watching (FS) the new directory
+
         newIndexWriter().use {
-            if (updateListOfIndexedDirectories) {
+            if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
                 addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
                 removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
             }
@@ -88,8 +90,10 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     }
 
     override fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
+        // TODO start watching (FS) the new directory
+
         newIndexWriter().use {
-            if (updateListOfIndexedDirectories) {
+            if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
                 addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
                 removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
             }
@@ -119,24 +123,31 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
         return indexPath
     }
 
+    // TODO refactor this stuff below
     private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
         val (document, dirs) = searchExistingSeparatedString(term)
 
+        document.removeFields(term.field())
+        document.removeFields(term.field() + "_id")
         document.add(TextField(term.field(), dirs.plus(newItem).joinToString(delimiter), Field.Store.YES))
+        document.add(TextField(term.field() + "_id", "true", Field.Store.NO))
 
-        writer.updateDocument(term, document)
+        writer.updateDocument(Term(term.field() + "_id", "true"), document)
     }
 
     private fun removeItemFromDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
         val (document, dirs) = searchExistingSeparatedString(term)
 
+        document.removeFields(term.field())
+        document.removeFields(term.field() + "_id")
         document.add(TextField(term.field(), dirs.minus(newItem).joinToString(delimiter), Field.Store.YES))
+        document.add(TextField(term.field() + "_id", "true", Field.Store.NO))
 
-        writer.updateDocument(term, document)
+        writer.updateDocument(Term(term.field() + "_id", "true"), document)
     }
 
     private fun searchExistingSeparatedString(term: Term): Pair<Document, Set<String>> {
-        val dirDoc = searchIndex(TermQuery(term))
+        val dirDoc = searchIndex(TermQuery(Term(term.field() + "_id", "true")))
 
         return if (dirDoc.totalHits.value == 1L) {
             val existingDoc = fetchDocument(dirDoc.scoreDocs[0].doc)

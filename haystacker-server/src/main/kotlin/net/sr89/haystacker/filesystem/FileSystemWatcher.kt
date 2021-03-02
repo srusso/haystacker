@@ -22,6 +22,7 @@ class FileSystemWatcher(val settings: SettingsManager, val taskManager: Backgrou
             monitor.addFileListener(listener)
 
             for (indexedDirectory in indexManager.indexedDirectories()) {
+                println("Watching $indexedDirectory")
                 monitor.addWatch(indexedDirectory.toFile(), observedEvents)
             }
         }

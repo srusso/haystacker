@@ -15,7 +15,7 @@ import java.nio.file.Path
 
 class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
     private fun Path.isParentOf(otherPath: Path): Boolean {
-        return toAbsolutePath().toString().startsWith(otherPath.toAbsolutePath().toString())
+        return otherPath.toAbsolutePath().toString().startsWith(toAbsolutePath().toString())
     }
 
     private fun isRelevantFileForThisIndex(file: File): Boolean {
@@ -25,6 +25,7 @@ class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: Bac
     }
 
     private fun fileCreated(file: File) {
+        println("File $file was created")
         val task = BackgroundIndexingTask(FS_UPDATE, indexManager.indexPath(), file.toPath())
 
         taskManager.submit(task)

@@ -26,12 +26,17 @@ enum class TaskExecutionState {
     NOT_FOUND, NOT_STARTED, RUNNING, COMPLETED, ERROR
 }
 
-class BackgroundTaskManager {
+interface BackgroundTaskManager {
+    fun submit(task: BackgroundTask): TaskId
+    fun status(taskId: TaskId): TaskStatus
+}
+
+class AsyncBackgroundTaskManager: BackgroundTaskManager {
 
     private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
-    fun submit(task: BackgroundTask): TaskId {
+    override fun submit(task: BackgroundTask): TaskId {
         val id = TaskId(UUID.randomUUID())
 
         runningTasks[id] = task
@@ -50,7 +55,7 @@ class BackgroundTaskManager {
         return id
     }
 
-    fun status(taskId: TaskId): TaskStatus {
+    override fun status(taskId: TaskId): TaskStatus {
         val runningTask = runningTasks[taskId]
 
         if (runningTask != null) {

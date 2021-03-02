@@ -17,7 +17,11 @@ class SettingsManager(settingsDirectory: Path) {
     private val settingsFile: Path = settingsDirectory.resolve("haystacker-settings.json")
     private val objectMapper = ObjectMapper()
 
-    private var settings = objectMapper.readValue(readAllBytes(settingsFile), HaystackerSettings::class.java)!!
+    private var settings = if (settingsFile.toFile().exists()) {
+        objectMapper.readValue(readAllBytes(settingsFile), HaystackerSettings::class.java)!!
+    } else {
+        HaystackerSettings(emptySet())
+    }
 
     fun indexes(): Set<String> {
         return settings.indexes

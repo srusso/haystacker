@@ -1,5 +1,6 @@
 package net.sr89.haystacker.server
 
+import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.filesystem.FileSystemWatcher
 import net.sr89.haystacker.index.IndexManager
@@ -56,18 +57,6 @@ class HslServer(
         }
     }
 
-    private fun haystackerRoutes(): HttpHandler {
-        return routes(
-            "ping" bind GET to { Response(OK) },
-            "search" bind POST to SearchHandler(),
-            "index" bind POST to CreateIndexHandler(settingsManager),
-            "directory" bind POST to DirectoryIndexHandler(taskManager),
-            "directory" bind DELETE to DirectoryDeindexHandler(),
-            "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
-            "quit" bind POST to quitHandler()
-        )
-    }
-
     /**
      * Start a web server that routes requests to an [IndexManager].
      */
@@ -80,6 +69,18 @@ class HslServer(
             .then(haystackerRoutes())
 
         return app.asServer(Jetty(port)).start()
+    }
+
+    fun haystackerRoutes(): HttpHandler {
+        return routes(
+            "ping" bind GET to { Response(OK) },
+            "search" bind POST to SearchHandler(),
+            "index" bind POST to CreateIndexHandler(settingsManager),
+            "directory" bind POST to DirectoryIndexHandler(taskManager),
+            "directory" bind DELETE to DirectoryDeindexHandler(),
+            "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
+            "quit" bind POST to quitHandler()
+        )
     }
 
     fun run() {
@@ -106,7 +107,7 @@ class HslServer(
             }
 
             val haystackerSettings = SettingsManager(settingsDirectory)
-            val taskManager = BackgroundTaskManager()
+            val taskManager = AsyncBackgroundTaskManager()
 
             // TODO https://github.com/srusso/haystacker/issues/38 - Nicer Dependency Injection
             HslServer(

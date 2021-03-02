@@ -133,10 +133,10 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     }
 
     private fun initSearcher() {
-        if (searcher == null) {
+//        if (searcher == null) {
             reader = DirectoryReader.open(initIndexDirectory())
             searcher = IndexSearcher(reader)
-        }
+//        }
     }
 
     private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {

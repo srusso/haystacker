@@ -1,12 +1,13 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.filesystem.FileSystemWatcher
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
-import net.sr89.haystacker.server.config.SettingsManager
-import net.sr89.haystacker.test.common.SingleThreadTaskManager
+import net.sr89.haystacker.test.common.TaskCreatedResponseType
+import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import org.http4k.core.HttpHandler
@@ -24,7 +25,8 @@ import java.time.Month
 import java.time.ZoneOffset
 
 internal class HslServerKtTest {
-    val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+    private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+    private val objectMapper = ObjectMapper()
 
     lateinit var routes: HttpHandler
     lateinit var directoryToIndex: Path
@@ -47,27 +49,18 @@ internal class HslServerKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        val indexRequest = Request(Method.POST, "/directory")
-            .with(
-                directory of directoryToIndex.toString(),
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
-
         removeSubdirectoryFromIndexRequest = Request(Method.DELETE, "/directory")
             .with(
                 directory of subDirectory.toString(),
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        val settingsManager = SettingsManager(settingsDirectory)
-        val taskManager = SingleThreadTaskManager()
-        val fsWatcher = FileSystemWatcher(settingsManager, taskManager)
-        val server = HslServer(settingsManager, taskManager, fsWatcher)
+        val server = HslServer.server(settingsDirectory)
 
         routes = server.haystackerRoutes()
 
         routes(createRequest)
-        routes(indexRequest)
+        addDirectoryToIndex(indexFile, directoryToIndex)
     }
 
     @AfterEach
@@ -184,5 +177,31 @@ internal class HslServerKtTest {
             )
 
         assertSearchResult(routes(oldFilesOrSpecific), listOf("oldfile.txt", "subfile.txt"))
+    }
+
+    private fun addDirectoryToIndex(
+        indexFile: Path,
+        directoryToIndex: Path
+    ) {
+        val taskResponse = routes(Request(Method.POST, "/directory")
+            .with(
+                directory of directoryToIndex.toString(),
+                indexPath of indexFile.toAbsolutePath().toString()
+            ))
+
+        val taskId = objectMapper.readValue(taskResponse.bodyString(), TaskCreatedResponseType())!!
+
+        while (getTaskStatus(taskId.taskId) != TaskExecutionState.COMPLETED) {
+            Thread.sleep(10L)
+        }
+    }
+
+    private fun getTaskStatus(taskId: String): TaskExecutionState {
+        val response = routes(Request(Method.GET, "/task")
+            .with(
+                net.sr89.haystacker.server.api.taskId of taskId
+            ))
+
+        return TaskExecutionState.valueOf(objectMapper.readValue(response.bodyString(), TaskStatusResponseType())!!.status)
     }
 }

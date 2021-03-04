@@ -1,6 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
-import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.lang.parser.HslParser
 import net.sr89.haystacker.lang.translate.HslToLucene
 import net.sr89.haystacker.server.api.SearchResponse
@@ -21,7 +21,7 @@ import java.nio.file.Paths
 
 private val hslToLucene = HslToLucene(HslParser())
 
-class SearchHandler : HttpHandler {
+class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : HttpHandler {
     private fun toSearchResult(document: Document): SearchResult {
         return SearchResult(document.getField("path").stringValue())
     }
@@ -32,7 +32,7 @@ class SearchHandler : HttpHandler {
         val parsedQuery = hslToLucene.toLuceneQuery(hslQuery)
         val maxResults: Int = maxResults(request) ?: 10
         val indexPath: String = indexPath(request)
-        val indexManager = IndexManager.forPath(indexPath)
+        val indexManager = indexManagerProvider.forPath(indexPath)
 
         println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
 

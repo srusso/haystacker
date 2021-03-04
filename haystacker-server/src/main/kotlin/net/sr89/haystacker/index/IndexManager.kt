@@ -1,6 +1,7 @@
 package net.sr89.haystacker.index
 
 import net.sr89.haystacker.async.task.TaskStatus
+import net.sr89.haystacker.filesystem.FileSystemWatcher
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -22,7 +23,19 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+
+class IndexManagerProvider {
+    lateinit var fileSystemWatcher: FileSystemWatcher
+    private val managers = hashMapOf<String, IndexManager>()
+    private val counter = AtomicLong()
+
+    @Synchronized
+    fun forPath(indexPath: String): IndexManager {
+        return managers.computeIfAbsent(indexPath) { p -> IndexManagerImpl(counter.getAndIncrement(), fileSystemWatcher, p) }
+    }
+}
 
 interface IndexManager {
     fun createNewIndex()
@@ -33,18 +46,10 @@ interface IndexManager {
     fun indexedDirectories(): Set<Path>
     fun excludedDirectories(): Set<Path>
     fun indexPath(): String
-
-    companion object {
-        private val managers = hashMapOf<String, IndexManager>()
-
-        @Synchronized
-        fun forPath(indexPath: String): IndexManager {
-            return managers.computeIfAbsent(indexPath, ::IndexManagerImpl)
-        }
-    }
+    fun getUniqueManagerIdentifier(): Long
 }
 
-private class IndexManagerImpl(val indexPath: String) : IndexManager {
+private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: FileSystemWatcher, val indexPath: String) : IndexManager {
     private val indexedRootDirectoriesId = Term("indexedRootDirectories")
     private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 
@@ -77,8 +82,6 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     }
 
     override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
-        // TODO stop watching (FS) the new directory
-
         newIndexWriter().use {
             if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
                 addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
@@ -90,15 +93,19 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     }
 
     override fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
-        // TODO start watching (FS) the new directory
+        val addDirectoryToWatchedList = updateListOfIndexedDirectories && Files.isDirectory(path)
 
         newIndexWriter().use {
-            if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
+            if (addDirectoryToWatchedList) {
                 addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
                 removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
             }
 
             updateFileOrDirectoryInIndex(it, path, status)
+        }
+
+        if (addDirectoryToWatchedList) {
+            fileSystemWatcher.startWatching(this, path)
         }
     }
 
@@ -122,6 +129,8 @@ private class IndexManagerImpl(val indexPath: String) : IndexManager {
     override fun indexPath(): String {
         return indexPath
     }
+
+    override fun getUniqueManagerIdentifier(): Long = id
 
     // TODO refactor this stuff below
     private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {

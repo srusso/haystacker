@@ -11,14 +11,15 @@ import java.util.concurrent.atomic.AtomicReference
 
 enum class Trigger { FS_UPDATE, COMMAND }
 
-class BackgroundIndexingTask(val trigger: Trigger, val indexPath: String, val directoryToIndex: Path) : BackgroundTask {
+class BackgroundIndexingTask(
+    val trigger: Trigger,
+    val indexManager: IndexManager,
+    val directoryToIndex: Path) : BackgroundTask {
 
     val latestStatus = AtomicReference(TaskStatus(NOT_STARTED, "Ready to start"))
 
     override fun run() {
         try {
-            val indexManager = IndexManager.forPath(indexPath)
-
             indexManager.addNewDirectoryToIndex(directoryToIndex, latestStatus, trigger == COMMAND)
 
             latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))

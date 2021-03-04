@@ -13,7 +13,9 @@ import net.sr89.haystacker.index.Trigger.FS_UPDATE
 import java.io.File
 import java.nio.file.Path
 
-class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
+class IndexUpdatingListener(
+    val indexManager: IndexManager,
+    val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
     private fun Path.isParentOf(otherPath: Path): Boolean {
         return otherPath.toAbsolutePath().toString().startsWith(toAbsolutePath().toString())
     }
@@ -28,12 +30,11 @@ class IndexUpdatingListener(val indexManager: IndexManager, val taskManager: Bac
 
     private fun fileCreated(file: File) {
         println("File $file was created")
-        val task = BackgroundIndexingTask(FS_UPDATE, indexManager.indexPath(), file.toPath())
-
-        taskManager.submit(task)
+        taskManager.submit(BackgroundIndexingTask(FS_UPDATE, indexManager, file.toPath()))
     }
 
     private fun fileDeleted(file: File) {
+        println("File $file was deleted")
         indexManager.removeDirectoryFromIndex(file.toPath(), false)
     }
 

@@ -4,6 +4,7 @@ import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.filesystem.FileSystemWatcher
 import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
@@ -30,19 +31,19 @@ import java.nio.file.Paths
 import java.time.Duration
 
 class HslServer(
+    private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager,
     private val taskManager: BackgroundTaskManager,
     private val fileSystemWatcher: FileSystemWatcher,
+    private val shutdownDelay: Duration
 ) {
     lateinit var serverInstance: Http4kServer
-
-    private val shutdownDelay = Duration.ofSeconds(5)
 
     private fun quitHandler(): HttpHandler {
         // TODO interrupt all running tasks
         return {
             run {
-                println("Shutting down in ${shutdownDelay.toSeconds()}s")
+                println("Shutting down in ${shutdownDelay.toMillis()}ms")
                 Thread {
                     Thread.sleep(shutdownDelay.toMillis())
                     serverInstance.stop()
@@ -69,10 +70,10 @@ class HslServer(
     fun haystackerRoutes(): HttpHandler {
         return routes(
             "ping" bind GET to { Response(OK) },
-            "search" bind POST to SearchHandler(),
-            "index" bind POST to CreateIndexHandler(settingsManager),
-            "directory" bind POST to DirectoryIndexHandler(taskManager),
-            "directory" bind DELETE to DirectoryDeindexHandler(),
+            "search" bind POST to SearchHandler(indexManagerProvider),
+            "index" bind POST to CreateIndexHandler(indexManagerProvider, settingsManager),
+            "directory" bind POST to DirectoryIndexHandler(indexManagerProvider, taskManager),
+            "directory" bind DELETE to DirectoryDeindexHandler(indexManagerProvider),
             "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
             "quit" bind POST to quitHandler()
         )
@@ -91,15 +92,22 @@ class HslServer(
     }
 
     companion object {
-        fun server(settingsDirectory: Path): HslServer {
+        fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
             val haystackerSettings = SettingsManager(settingsDirectory)
             val taskManager = AsyncBackgroundTaskManager()
+            val indexManagerProvider = IndexManagerProvider()
+            val fileSystemWatcher = FileSystemWatcher(indexManagerProvider, haystackerSettings, taskManager)
+
+            // TODO remove this circular dependency
+            indexManagerProvider.fileSystemWatcher = fileSystemWatcher
 
             // TODO https://github.com/srusso/haystacker/issues/38 - Nicer Dependency Injection
             return HslServer(
+                indexManagerProvider,
                 haystackerSettings,
                 taskManager,
-                FileSystemWatcher(haystackerSettings, taskManager)
+                fileSystemWatcher,
+                shutdownDelay
             )
         }
 

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
@@ -38,6 +39,7 @@ internal class ServerFSMonitoringTest {
 
     private val httpClient = ApacheClient()
     private val objectMapper = ObjectMapper()
+    private val shutdownDelay = Duration.ofMillis(100L)
 
     val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
@@ -85,12 +87,12 @@ internal class ServerFSMonitoringTest {
      */
     @Test
     internal fun testFileSystemWatching() {
-        HslServer.server(settingsDirectory).runServer {
+        newServer().runServer {
             createIndex(indexFile)
             addDirectoryToIndex(indexFile, directoryToIndex)
 
             assertSearchResult(searchIndex(indexFile, "name = oldfile.txt"), listOf("oldfile.txt"))
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(""))
+            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
 
             Files.newOutputStream(directoryToIndex.resolve("newfile.txt")).use {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
@@ -103,16 +105,21 @@ internal class ServerFSMonitoringTest {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
         }
 
-        HslServer.server(settingsDirectory).runServer {
+        newServer().runServer {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
 
             Files.newOutputStream(directoryToIndex.resolve("fileCreatedAfterRestart.txt")).use {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
+            // let's give some time to the file system watcher
+            Thread.sleep(100L)
+
             assertSearchResult(searchIndex(indexFile, "name = fileCreatedAfterRestart.txt"), listOf("fileCreatedAfterRestart.txt"))
         }
     }
+
+    private fun newServer() = HslServer.server(settingsDirectory, shutdownDelay)
 
     private fun createIndex(indexFile: Path) {
         httpClient(Request(Method.POST, "$baseUrl/index")
@@ -124,7 +131,7 @@ internal class ServerFSMonitoringTest {
     private fun quitServer() {
         httpClient(Request(Method.POST, "$baseUrl/quit"))
 
-        Thread.sleep(5500L)
+        Thread.sleep(shutdownDelay.toMillis() * 3)
     }
 
     private fun addDirectoryToIndex(
@@ -140,7 +147,7 @@ internal class ServerFSMonitoringTest {
         val taskId = objectMapper.readValue(taskResponse.bodyString(), TaskCreatedResponseType())!!
 
         while (getTaskStatus(taskId.taskId) != COMPLETED) {
-            Thread.sleep(100L)
+            Thread.sleep(10L)
         }
     }
 

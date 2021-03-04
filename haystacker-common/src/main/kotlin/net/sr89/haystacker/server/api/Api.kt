@@ -22,7 +22,7 @@ data class BackgroundTaskStatusResponse(
     @JsonProperty("description") val description: String
 )
 
-data class DirectoryIndexResponse(
+data class TaskIdResponse(
     @JsonProperty("taskId") val taskId: String
 )
 
@@ -33,6 +33,6 @@ val taskId = Query.string().required("taskId")
 val directory = Query.string().required("directory")
 val maxResults = Query.int().optional("maxResults")
 val stringBody = Body.string(ContentType.TEXT_PLAIN).toLens()
-val directoryIndexResponse = Body.auto<DirectoryIndexResponse>().toLens()
+val directoryIndexResponse = Body.auto<TaskIdResponse>().toLens()
 val backgroundTaskStatusResponse = Body.auto<BackgroundTaskStatusResponse>().toLens()
 val searchResponse = Body.auto<SearchResponse>().toLens()

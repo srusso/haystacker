@@ -104,6 +104,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
             updateFileOrDirectoryInIndex(it, path, status)
         }
 
+        println("Done indexing $path")
+
         if (addDirectoryToWatchedList) {
             fileSystemWatcher.startWatching(this, path)
         }
@@ -116,8 +118,6 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         } else {
             visitor.addFileToIndex(path, Files.readAttributes(path, BasicFileAttributes::class.java))
         }
-
-        println("Done indexing $path")
     }
 
     override fun indexedDirectories() =

@@ -103,6 +103,8 @@ internal class ServerFSMonitoringTest {
 
             // assert that the new file was indexed based on file system changes
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
+
+            Thread.sleep(100L)
         }
 
         newServer().runServer {
@@ -116,6 +118,8 @@ internal class ServerFSMonitoringTest {
             Thread.sleep(100L)
 
             assertSearchResult(searchIndex(indexFile, "name = fileCreatedAfterRestart.txt"), listOf("fileCreatedAfterRestart.txt"))
+
+            Thread.sleep(100L)
         }
     }
 

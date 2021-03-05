@@ -9,6 +9,7 @@ import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.config.SettingsManager
+import java.io.File
 import java.nio.file.Path
 
 class FileSystemWatcher(
@@ -16,8 +17,15 @@ class FileSystemWatcher(
     val settings: SettingsManager,
     val taskManager: BackgroundTaskManager) {
     private val activeIndexManagers: MutableSet<Long> = mutableSetOf()
+    private val watchedDirectories: MutableSet<File> = mutableSetOf()
+    private val listeners: MutableSet<IndexUpdatingListener> = mutableSetOf()
     private val observedEvents = FILE_CREATED or FILE_DELETED or FILE_RENAMED or FILE_SIZE_CHANGED
     private val monitor = FileMonitor.getInstance()
+
+    fun stopWatchingAll() {
+        watchedDirectories.forEach(monitor::removeWatch)
+        listeners.forEach(monitor::removeFileListener)
+    }
 
     fun startWatchingIndexedDirectories() {
         for (indexPath in settings.indexes()) {
@@ -35,7 +43,10 @@ class FileSystemWatcher(
             registerFSEventListenerFor(indexManager)
         }
 
-        monitor.addWatch(directory.toFile(), observedEvents)
+        val directoryFile = directory.toFile()
+
+        watchedDirectories.add(directoryFile)
+        monitor.addWatch(directoryFile, observedEvents)
     }
 
     private fun registerFSEventListenerFor(indexManager: IndexManager) {
@@ -43,5 +54,6 @@ class FileSystemWatcher(
 
         activeIndexManagers.add(indexManager.getUniqueManagerIdentifier())
         monitor.addFileListener(listener)
+        listeners.add(listener)
     }
 }

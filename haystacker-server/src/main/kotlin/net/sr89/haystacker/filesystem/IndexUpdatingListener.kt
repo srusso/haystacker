@@ -24,8 +24,8 @@ class IndexUpdatingListener(
         val filePath: Path = file.toPath()
         return indexManager.indexedDirectories()
             .any { indexedDirectory -> indexedDirectory.isParentOf(filePath) }
-        //TODO .and(indexManager.excludedDirectories()
-        //            .none { excludedDirectory -> excludedDirectory.isParentOf(filePath) })
+            .and(indexManager.excludedDirectories()
+                .none { excludedDirectory -> excludedDirectory.isParentOf(filePath) })
     }
 
     private fun fileCreated(file: File) {

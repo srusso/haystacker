@@ -100,11 +100,14 @@ internal class ServerFSMonitoringTest {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
+            removeDirectoryFromIndex(indexFile, subDirectory)
+
             // let's give some time to the file system watcher
             Thread.sleep(1000L)
 
             // assert that the new file was indexed based on file system changes
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
+            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"), "Expected new file to be added to the index by the file system watcher")
+            assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf(), "Subdirectory was removed from the index")
         }
 
         println()
@@ -116,13 +119,26 @@ internal class ServerFSMonitoringTest {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
+            Files.newOutputStream(subDirectory.resolve("ignoredbecauseinremoveddirectory.txt")).use {
+                it.write("The file system watcher should pick up that this file was created!".toByteArray())
+            }
+
             directoryToIndex.resolve("newfile.txt").toFile().delete()
 
             // let's give some time to the file system watcher
             Thread.sleep(1000L)
 
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
-            assertSearchResult(searchIndex(indexFile, "name = filecreatedafterrestart.txt"), listOf("fileCreatedAfterRestart.txt"))
+            assertSearchResult(
+                searchIndex(indexFile, "name = ignoredbecauseinremoveddirectory.txt"),
+                listOf(),
+                "Subdirectory $subDirectory was excluded from the index, so we are not expecting changes there to be picked up by the file system watcher and updated in the index again"
+            )
+            assertSearchResult(
+                searchIndex(indexFile, "name = filecreatedafterrestart.txt"),
+                listOf("fileCreatedAfterRestart.txt"),
+                "Expected file in $directoryToIndex to be indexed by the file system watcher even after restarting the server"
+            )
         }
     }
 
@@ -159,6 +175,17 @@ internal class ServerFSMonitoringTest {
         while (getTaskStatus(taskId.taskId) != COMPLETED) {
             Thread.sleep(10L)
         }
+    }
+
+    private fun removeDirectoryFromIndex(
+        indexFile: Path,
+        directoryToIndex: Path
+    ) {
+        httpClient(Request(Method.DELETE, "$baseUrl/directory")
+            .with(
+                directory of directoryToIndex.toString(),
+                indexPath of indexFile.toAbsolutePath().toString()
+            ))
     }
 
     private fun getTaskStatus(taskId: String): TaskExecutionState {

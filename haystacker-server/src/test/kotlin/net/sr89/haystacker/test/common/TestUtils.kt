@@ -13,7 +13,7 @@ import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.FileTime
 import java.time.Instant
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 fun Path.setTimes(lastModified: Instant, created: Instant): Path {
     Files.getFileAttributeView(this, BasicFileAttributeView::class.java)
@@ -25,15 +25,16 @@ class SearchResponseType : TypeReference<SearchResponse>()
 class TaskCreatedResponseType : TypeReference<TaskIdResponse>()
 class TaskStatusResponseType : TypeReference<BackgroundTaskStatusResponse>()
 
-fun assertSearchResult(response: Response, expectedFilenames: List<String>) {
+fun assertSearchResult(response: Response, expectedFilenames: List<String>, message: String? = null) {
     val searchResponse = ObjectMapper().readValue(response.bodyString(), SearchResponseType())
     val foundFilenames: List<String> = searchResponse.results
         .map(SearchResult::path)
         .map { path -> Paths.get(path).fileName.toString() }
 
-    expectedFilenames.forEach { path ->
-        assertTrue(path in foundFilenames, "Expected path $path not found among results: $foundFilenames")
-    }
+    assertEquals(expectedFilenames.toSet(), foundFilenames.toSet(), message)
+//    expectedFilenames.forEach { path ->
+//        assertTrue(path in foundFilenames, "Expected path $path not found among results: $foundFilenames")
+//    }
 }
 
 fun createServerTestFiles(

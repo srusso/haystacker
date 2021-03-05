@@ -52,7 +52,6 @@ interface IndexManager {
     fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
     fun indexedDirectories(): Set<Path>
     fun excludedDirectories(): Set<Path>
-    fun indexPath(): String
     fun getUniqueManagerIdentifier(): Long
 }
 
@@ -127,10 +126,6 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
 
     override fun excludedDirectories() =
         getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
-
-    override fun indexPath(): String {
-        return indexPath
-    }
 
     override fun getUniqueManagerIdentifier(): Long = id
 

@@ -55,7 +55,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     private val indexedRootDirectoriesId = Term("indexedRootDirectories")
     private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 
-    private val delimiter = ",~#~,"
+    private val setTermValueDelimiter = ",~#~,"
+    private val setTermIdValue = "true"
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
@@ -147,26 +148,27 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
 
     private fun IndexWriter.updateSetTerm(term: Term, updateSet: (Set<String>) -> Set<String>) {
         val (document, dirs) = getSetValue(term)
-        val idFieldForSetTerm = term.field() + "_id"
+        val idFieldForSetTerm = idTermForSetDocument(term)
 
         document.removeFields(term.field())
-        document.removeFields(idFieldForSetTerm)
-        document.add(TextField(term.field(), updateSet(dirs).joinToString(delimiter), Field.Store.YES))
-        document.add(TextField(idFieldForSetTerm, "true", Field.Store.NO))
+        document.add(TextField(term.field(), updateSet(dirs).joinToString(setTermValueDelimiter), Field.Store.YES))
+        document.add(TextField(idFieldForSetTerm, setTermIdValue, Field.Store.NO))
 
-        this.updateDocument(Term(idFieldForSetTerm, "true"), document)
+        this.updateDocument(Term(idFieldForSetTerm, setTermIdValue), document)
     }
 
     private fun getSetValue(term: Term): Pair<Document, Set<String>> {
-        val dirDoc = searchIndex(TermQuery(Term(term.field() + "_id", "true")))
+        val dirDoc = searchIndex(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
 
         return if (dirDoc.totalHits.value == 1L) {
             val existingDoc = fetchDocument(dirDoc.scoreDocs[0].doc)
-            Pair(existingDoc, existingDoc.getField(term.field()).stringValue()!!.split(delimiter).toSet())
+            Pair(existingDoc, existingDoc.getField(term.field()).stringValue()!!.split(setTermValueDelimiter).toSet())
         } else {
             Pair(Document(), setOf())
         }
     }
+
+    private fun idTermForSetDocument(term: Term) = term.field() + "_setid"
 
     private fun newIndexWriter(): IndexWriter {
         val iwc = IndexWriterConfig(analyzer)

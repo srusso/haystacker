@@ -94,6 +94,7 @@ internal class ServerFSMonitoringTest {
 
             assertSearchResult(searchIndex(indexFile, "name = oldfile.txt"), listOf("oldfile.txt"))
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
+            assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf("subfile.txt"))
 
             Files.newOutputStream(directoryToIndex.resolve("newfile.txt")).use {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
@@ -104,8 +105,6 @@ internal class ServerFSMonitoringTest {
 
             // assert that the new file was indexed based on file system changes
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
-
-            Thread.sleep(100L)
         }
 
         println()
@@ -117,12 +116,13 @@ internal class ServerFSMonitoringTest {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
+            directoryToIndex.resolve("newfile.txt").toFile().delete()
+
             // let's give some time to the file system watcher
             Thread.sleep(1000L)
 
+            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
             assertSearchResult(searchIndex(indexFile, "name = filecreatedafterrestart.txt"), listOf("fileCreatedAfterRestart.txt"))
-
-            Thread.sleep(1000L)
         }
     }
 

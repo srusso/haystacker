@@ -25,6 +25,8 @@ import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 class IndexManagerProvider {
     lateinit var fileSystemWatcher: FileSystemWatcher
@@ -60,6 +62,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     private var indexDirectory: FSDirectory? = null
     private var reader: IndexReader? = null
     private var searcher: IndexSearcher? = null
+    private val indexLock = ReentrantReadWriteLock()
 
     override fun createNewIndex() {
         val iwc = IndexWriterConfig(analyzer)
@@ -82,26 +85,30 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
-        newIndexWriter().use {
-            if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
-                addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
-                removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
-            }
+        indexLock.write {
+            newIndexWriter().use {
+                if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
+                    addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
+                    removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
+                }
 
-            it.deleteDocuments(PrefixQuery(Term("id", path.toString())))
+                it.deleteDocuments(PrefixQuery(Term("id", path.toString())))
+            }
         }
     }
 
     override fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
         val addDirectoryToWatchedList = updateListOfIndexedDirectories && Files.isDirectory(path)
 
-        newIndexWriter().use {
-            if (addDirectoryToWatchedList) {
-                addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
-                removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
-            }
+        indexLock.write {
+            newIndexWriter().use {
+                if (addDirectoryToWatchedList) {
+                    addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
+                    removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
+                }
 
-            updateFileOrDirectoryInIndex(it, path, status)
+                updateFileOrDirectoryInIndex(it, path, status)
+            }
         }
 
         println("Done indexing $path")

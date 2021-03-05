@@ -23,12 +23,13 @@ data class TaskId(val id: UUID) {
 data class TaskStatus(val state: TaskExecutionState, val description: String)
 
 enum class TaskExecutionState {
-    NOT_FOUND, NOT_STARTED, RUNNING, COMPLETED, ERROR
+    NOT_FOUND, NOT_STARTED, RUNNING, COMPLETED, ERROR, INTERRUPTED
 }
 
 interface BackgroundTaskManager {
     fun submit(task: BackgroundTask): TaskId
     fun status(taskId: TaskId): TaskStatus
+    fun interruptAllRunningTasks()
 }
 
 class AsyncBackgroundTaskManager: BackgroundTaskManager {
@@ -36,6 +37,7 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
     private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
+    // TODO concurrency around [runningTasks], don't allow submitting new tasks if interruptAllRunningTasks() has been called
     override fun submit(task: BackgroundTask): TaskId {
         val id = TaskId(UUID.randomUUID())
 
@@ -69,5 +71,9 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
 
             return TaskStatus(NOT_FOUND, "Not found")
         }
+    }
+
+    override fun interruptAllRunningTasks() {
+        runningTasks.values.forEach(BackgroundTask::interrupt)
     }
 }

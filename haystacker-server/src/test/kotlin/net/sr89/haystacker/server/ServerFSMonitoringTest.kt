@@ -12,6 +12,7 @@ import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import org.http4k.client.ApacheClient
+import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -37,7 +38,7 @@ internal class ServerFSMonitoringTest {
         }
     }
 
-    private val httpClient = ApacheClient()
+    private lateinit var httpClient: HttpHandler
     private val objectMapper = ObjectMapper()
     private val shutdownDelay = Duration.ofMillis(100L)
 
@@ -99,13 +100,15 @@ internal class ServerFSMonitoringTest {
             }
 
             // let's give some time to the file system watcher
-            Thread.sleep(100L)
+            Thread.sleep(1000L)
 
             // assert that the new file was indexed based on file system changes
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
 
             Thread.sleep(100L)
         }
+
+        println()
 
         newServer().runServer {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
@@ -115,15 +118,18 @@ internal class ServerFSMonitoringTest {
             }
 
             // let's give some time to the file system watcher
-            Thread.sleep(100L)
+            Thread.sleep(1000L)
 
             assertSearchResult(searchIndex(indexFile, "name = fileCreatedAfterRestart.txt"), listOf("fileCreatedAfterRestart.txt"))
 
-            Thread.sleep(100L)
+            Thread.sleep(1000L)
         }
     }
 
-    private fun newServer() = HslServer.server(settingsDirectory, shutdownDelay)
+    private fun newServer(): HslServer {
+        httpClient = ApacheClient()
+        return HslServer.server(settingsDirectory, shutdownDelay)
+    }
 
     private fun createIndex(indexFile: Path) {
         httpClient(Request(Method.POST, "$baseUrl/index")

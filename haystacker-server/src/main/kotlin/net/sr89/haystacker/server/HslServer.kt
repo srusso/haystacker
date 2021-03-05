@@ -40,9 +40,14 @@ class HslServer(
     lateinit var serverInstance: Http4kServer
 
     private fun quitHandler(): HttpHandler {
-        // TODO interrupt all running tasks
         return {
             run {
+
+                println("Stopping all filesystem watchers")
+                fileSystemWatcher.stopWatchingAll()
+                println("Interrupting all running background tasks")
+                taskManager.interruptAllRunningTasks()
+
                 println("Shutting down in ${shutdownDelay.toMillis()}ms")
                 Thread {
                     Thread.sleep(shutdownDelay.toMillis())

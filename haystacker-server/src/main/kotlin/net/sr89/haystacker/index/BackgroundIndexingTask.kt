@@ -3,6 +3,7 @@ package net.sr89.haystacker.index
 import net.sr89.haystacker.async.task.BackgroundTask
 import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
+import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.index.Trigger.COMMAND
@@ -29,7 +30,7 @@ class BackgroundIndexingTask(
     }
 
     override fun interrupt() {
-        TODO("Not yet implemented")
+        latestStatus.set(TaskStatus(INTERRUPTED, "Interrupt command received"))
     }
 
     override fun currentStatus(): TaskStatus = latestStatus.get()

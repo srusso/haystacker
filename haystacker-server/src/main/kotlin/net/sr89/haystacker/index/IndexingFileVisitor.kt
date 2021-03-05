@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.lang.ast.Symbol
@@ -40,6 +41,10 @@ class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val sta
     }
 
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+        if (status.get().state == INTERRUPTED) {
+            return FileVisitResult.TERMINATE
+        }
+
         if (++visitedFiles % 100 == 0) {
             status.set(TaskStatus(RUNNING, "Visiting file or directory #$visitedFiles ($file)"))
         }

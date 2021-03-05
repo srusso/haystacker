@@ -32,7 +32,11 @@ class DirectoryIndexHandler(
         } else {
             val taskId = taskManager.submit(BackgroundIndexingTask(COMMAND, indexManagerProvider.forPath(indexPath), directoryToIndex))
 
-            Response(Status.OK).with(directoryIndexResponse of TaskIdResponse(taskId.id.toString()))
+            if (taskId != null) {
+                Response(Status.OK).with(directoryIndexResponse of TaskIdResponse(taskId.id.toString()))
+            } else {
+                Response(Status.SERVICE_UNAVAILABLE).with(stringBody of "Task was not started")
+            }
         }
     }
 }

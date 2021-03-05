@@ -27,7 +27,12 @@ enum class TaskExecutionState {
 }
 
 interface BackgroundTaskManager {
-    fun submit(task: BackgroundTask): TaskId
+    /**
+     * Submits and immediately run the task.
+     *
+     * @return A [TaskId] that uniquely identifies the new task, or null if the task couldn't be started
+     */
+    fun submit(task: BackgroundTask): TaskId?
     fun status(taskId: TaskId): TaskStatus
     fun interruptAllRunningTasks()
 }
@@ -38,7 +43,7 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
     // TODO concurrency around [runningTasks], don't allow submitting new tasks if interruptAllRunningTasks() has been called
-    override fun submit(task: BackgroundTask): TaskId {
+    override fun submit(task: BackgroundTask): TaskId? {
         val id = TaskId(UUID.randomUUID())
 
         runningTasks[id] = task

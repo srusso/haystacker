@@ -16,8 +16,8 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
+import org.apache.lucene.search.ScoreDoc
 import org.apache.lucene.search.TermQuery
-import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Files
 import java.nio.file.Path
@@ -39,10 +39,15 @@ class IndexManagerProvider {
     }
 }
 
+data class IndexSearchResult(
+    val totalResults: Long,
+    val returnedResults: Int,
+    val results: List<Document>
+)
+
 interface IndexManager {
     fun createNewIndex()
-    fun searchIndex(query: Query, maxResults: Int = 5): TopDocs
-    fun fetchDocument(docID: Int): Document?
+    fun searchIndex(query: Query, maxResults: Int = 5): IndexSearchResult
     fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean)
     fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
     fun indexedDirectories(): Set<Path>
@@ -73,14 +78,14 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         IndexWriter(initIndexDirectory(), iwc).close()
     }
 
-    override fun searchIndex(query: Query, maxResults: Int): TopDocs {
+    override fun searchIndex(query: Query, maxResults: Int): IndexSearchResult {
         initSearcher()
 
-        return searcher.search(query, maxResults)
-    }
+        val hits = searcher.search(query, maxResults)
 
-    override fun fetchDocument(docID: Int): Document {
-        return searcher.doc(docID)
+        val foundDocuments = hits.scoreDocs.map(ScoreDoc::doc).map(::fetchDocument).toList()
+
+        return IndexSearchResult(hits.totalHits.value, hits.scoreDocs.size, foundDocuments)
     }
 
     override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
@@ -117,15 +122,6 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         }
     }
 
-    private fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
-        val visitor = IndexingFileVisitor(indexPath, writer, status)
-        if (Files.isDirectory(path)) {
-            Files.walkFileTree(path, visitor)
-        } else {
-            visitor.addFileToIndex(path, Files.readAttributes(path, BasicFileAttributes::class.java))
-        }
-    }
-
     override fun indexedDirectories() =
         getSetValue(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
@@ -137,6 +133,19 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     override fun getUniqueManagerIdentifier(): Long = id
+
+    private fun fetchDocument(docID: Int): Document {
+        return searcher.doc(docID)
+    }
+
+    private fun updateFileOrDirectoryInIndex(writer: IndexWriter, path: Path, status: AtomicReference<TaskStatus>) {
+        val visitor = IndexingFileVisitor(indexPath, writer, status)
+        if (Files.isDirectory(path)) {
+            Files.walkFileTree(path, visitor)
+        } else {
+            visitor.addFileToIndex(path, Files.readAttributes(path, BasicFileAttributes::class.java))
+        }
+    }
 
     private fun IndexWriter.addToSetTerm(term: Term, newItem: String) =
         updateSetTerm(term) { currentValues -> currentValues.plus(newItem) }
@@ -156,10 +165,10 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     private fun getSetValue(term: Term): Pair<Document, Set<String>> {
-        val dirDoc = searchIndex(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
+        val hits = searchIndex(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
 
-        return if (dirDoc.totalHits.value == 1L) {
-            val existingDoc = fetchDocument(dirDoc.scoreDocs[0].doc)
+        return if (hits.totalResults == 1L) {
+            val existingDoc = hits.results[0]
             Pair(existingDoc, existingDoc.getField(term.field()).stringValue()!!.split(setTermValueDelimiter).toSet())
         } else {
             Pair(Document(), setOf())
@@ -183,7 +192,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     private fun initSearcher() {
-        // TODO figure out when exactly we need to recreate this. Once per search seems excessive.
+        // Probably fine to initialize this once per search.
+        // If performance concerns arise, we should look into this.
         reader = DirectoryReader.open(initIndexDirectory())
         searcher = IndexSearcher(reader)
     }

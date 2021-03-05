@@ -11,7 +11,6 @@ import net.sr89.haystacker.server.api.maxResults
 import net.sr89.haystacker.server.api.searchResponse
 import net.sr89.haystacker.server.api.stringBody
 import org.apache.lucene.document.Document
-import org.apache.lucene.search.ScoreDoc
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -41,11 +40,8 @@ class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : Ht
         } else {
             val hits = indexManager.searchIndex(parsedQuery, maxResults)
 
-            val searchResults = hits.scoreDocs.map(ScoreDoc::doc).mapNotNull(indexManager::fetchDocument).toList()
-                .map { document -> toSearchResult(document) }
-
             Response(Status.OK).with(
-                searchResponse of SearchResponse(hits.totalHits.value, hits.scoreDocs.size, searchResults)
+                searchResponse of SearchResponse(hits.totalResults, hits.returnedResults, hits.results.map(this::toSearchResult))
             )
         }
     }

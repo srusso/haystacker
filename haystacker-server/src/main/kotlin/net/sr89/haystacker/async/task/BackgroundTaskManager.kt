@@ -4,8 +4,11 @@ import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.collection.CircularQueue
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit.SECONDS
 
 data class TaskId(val id: UUID) {
 
@@ -38,31 +41,33 @@ interface BackgroundTaskManager {
     fun interruptAllRunningTasks()
 }
 
-class AsyncBackgroundTaskManager: BackgroundTaskManager {
+class AsyncBackgroundTaskManager : BackgroundTaskManager {
 
-    private val shuttingDown = AtomicBoolean(false)
     private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
+    private val executor = Executors.newFixedThreadPool(15)
 
     override fun submit(task: BackgroundTask): TaskId? {
-        if (shuttingDown.get()) {
+        if (executor.isShutdown) {
             return null
         }
 
         val id = TaskId(UUID.randomUUID())
 
-        runningTasks[id] = task
-
-        val thread = Thread {
-            try {
-                task.run()
-            } finally {
-                runningTasks.remove(id)
-                completedTasks.add(Pair(id, task))
-            }
+        try {
+            CompletableFuture.runAsync(
+                {
+                    runningTasks[id] = task
+                    task.run()
+                }, executor)
+                .whenComplete { _, _ ->
+                    runningTasks.remove(id)
+                    completedTasks.add(Pair(id, task))
+                }
+        } catch (e: RejectedExecutionException) {
+            e.printStackTrace()
+            return null
         }
-
-        thread.start()
 
         return id
     }
@@ -84,13 +89,10 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
     }
 
     override fun interruptAllRunningTasks() {
-        shuttingDown.set(true)
+        executor.shutdown()
 
-        runningTasks.values.forEach(BackgroundTask::interrupt)
+        println("Waiting up to 30 seconds for all currently running tasks to complete")
 
-        // TODO make this better
-        while (runningTasks.isNotEmpty()) {
-            Thread.sleep(10L)
-        }
+        executor.awaitTermination(30, SECONDS)
     }
 }

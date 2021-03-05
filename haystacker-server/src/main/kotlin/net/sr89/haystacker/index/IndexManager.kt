@@ -88,8 +88,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         indexLock.write {
             newIndexWriter().use {
                 if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
-                    addItemToDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
-                    removeItemFromDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
+                    it.addToSetTerm(excludedRootSubDirectoriesId, path.toString())
+                    it.removeFromSetTerm(indexedRootDirectoriesId, path.toString())
                 }
 
                 it.deleteDocuments(PrefixQuery(Term("id", path.toString())))
@@ -103,8 +103,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         indexLock.write {
             newIndexWriter().use {
                 if (addDirectoryToWatchedList) {
-                    addItemToDelimitedListTerm(indexedRootDirectoriesId, path.toString(), it)
-                    removeItemFromDelimitedListTerm(excludedRootSubDirectoriesId, path.toString(), it)
+                    it.addToSetTerm(indexedRootDirectoriesId, path.toString())
+                    it.removeFromSetTerm(excludedRootSubDirectoriesId, path.toString())
                 }
 
                 updateFileOrDirectoryInIndex(it, path, status)
@@ -128,10 +128,10 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     override fun indexedDirectories() =
-        searchExistingSeparatedString(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+        getSetValue(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
     override fun excludedDirectories() =
-        searchExistingSeparatedString(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+        getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
     override fun indexPath(): String {
         return indexPath
@@ -139,30 +139,25 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
 
     override fun getUniqueManagerIdentifier(): Long = id
 
-    // TODO refactor this stuff below
-    private fun addItemToDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
-        val (document, dirs) = searchExistingSeparatedString(term)
+    private fun IndexWriter.addToSetTerm(term: Term, newItem: String) =
+        updateSetTerm(term) { currentValues -> currentValues.plus(newItem) }
+
+    private fun IndexWriter.removeFromSetTerm(term: Term, toRemove: String) =
+        updateSetTerm(term) { currentValues -> currentValues.minus(toRemove) }
+
+    private fun IndexWriter.updateSetTerm(term: Term, updateSet: (Set<String>) -> Set<String>) {
+        val (document, dirs) = getSetValue(term)
+        val idFieldForSetTerm = term.field() + "_id"
 
         document.removeFields(term.field())
-        document.removeFields(term.field() + "_id")
-        document.add(TextField(term.field(), dirs.plus(newItem).joinToString(delimiter), Field.Store.YES))
-        document.add(TextField(term.field() + "_id", "true", Field.Store.NO))
+        document.removeFields(idFieldForSetTerm)
+        document.add(TextField(term.field(), updateSet(dirs).joinToString(delimiter), Field.Store.YES))
+        document.add(TextField(idFieldForSetTerm, "true", Field.Store.NO))
 
-        writer.updateDocument(Term(term.field() + "_id", "true"), document)
+        this.updateDocument(Term(idFieldForSetTerm, "true"), document)
     }
 
-    private fun removeItemFromDelimitedListTerm(term: Term, newItem: String, writer: IndexWriter) {
-        val (document, dirs) = searchExistingSeparatedString(term)
-
-        document.removeFields(term.field())
-        document.removeFields(term.field() + "_id")
-        document.add(TextField(term.field(), dirs.minus(newItem).joinToString(delimiter), Field.Store.YES))
-        document.add(TextField(term.field() + "_id", "true", Field.Store.NO))
-
-        writer.updateDocument(Term(term.field() + "_id", "true"), document)
-    }
-
-    private fun searchExistingSeparatedString(term: Term): Pair<Document, Set<String>> {
+    private fun getSetValue(term: Term): Pair<Document, Set<String>> {
         val dirDoc = searchIndex(TermQuery(Term(term.field() + "_id", "true")))
 
         return if (dirDoc.totalHits.value == 1L) {
@@ -188,9 +183,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     private fun initSearcher() {
-//        if (searcher == null) {
+        // TODO figure out when exactly we need to recreate this. Once per search seems excessive.
         reader = DirectoryReader.open(initIndexDirectory())
         searcher = IndexSearcher(reader)
-//        }
     }
 }

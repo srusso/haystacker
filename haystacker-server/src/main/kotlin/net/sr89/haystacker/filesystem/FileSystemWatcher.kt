@@ -39,7 +39,7 @@ class FileSystemWatcher(
     }
 
     fun startWatching(indexManager: IndexManager, directory: Path) {
-        if (!activeIndexManagers.contains(indexManager.getUniqueManagerIdentifier())) {
+        if (!activeIndexManagers.contains(indexManager.getUniqueIdentifier())) {
             registerFSEventListenerFor(indexManager)
         }
 
@@ -52,7 +52,7 @@ class FileSystemWatcher(
     private fun registerFSEventListenerFor(indexManager: IndexManager) {
         val listener = IndexUpdatingListener(indexManager, taskManager)
 
-        activeIndexManagers.add(indexManager.getUniqueManagerIdentifier())
+        activeIndexManagers.add(indexManager.getUniqueIdentifier())
         monitor.addFileListener(listener)
         listeners.add(listener)
     }

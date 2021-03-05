@@ -25,7 +25,7 @@ class DirectoryDeindexHandler(val indexManagerProvider: IndexManagerProvider): H
         } else {
             val indexManager = indexManagerProvider.forPath(indexPath)
 
-            indexManager.removeDirectoryFromIndex(directoryToDeindex, true)
+            indexManager.removeDirectory(directoryToDeindex, true)
 
             Response(Status.OK)
         }

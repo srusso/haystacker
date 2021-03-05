@@ -21,7 +21,7 @@ class BackgroundIndexingTask(
 
     override fun run() {
         try {
-            indexManager.addNewDirectoryToIndex(directoryToIndex, latestStatus, trigger == COMMAND)
+            indexManager.addNewDirectory(directoryToIndex, latestStatus, trigger == COMMAND)
 
             latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))
         } catch (e: Exception) {

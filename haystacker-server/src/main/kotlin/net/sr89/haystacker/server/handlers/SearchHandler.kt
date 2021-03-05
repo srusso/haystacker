@@ -38,7 +38,7 @@ class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : Ht
         return if (!Paths.get(indexPath).toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")
         } else {
-            val hits = indexManager.searchIndex(parsedQuery, maxResults)
+            val hits = indexManager.search(parsedQuery, maxResults)
 
             Response(Status.OK).with(
                 searchResponse of SearchResponse(hits.totalResults, hits.returnedResults, hits.results.map(this::toSearchResult))

@@ -35,7 +35,7 @@ class IndexUpdatingListener(
 
     private fun fileDeleted(file: File) {
         println("File $file was deleted")
-        indexManager.removeDirectoryFromIndex(file.toPath(), false)
+        indexManager.removeDirectory(file.toPath(), false)
     }
 
     private fun fileChangedOld(file: File) {

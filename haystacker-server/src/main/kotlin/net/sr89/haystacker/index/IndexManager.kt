@@ -46,21 +46,66 @@ data class IndexSearchResult(
 )
 
 interface IndexManager {
+    /**
+     * Creates the index on the hard drive.
+     */
     fun createNewIndex()
-    fun searchIndex(query: Query, maxResults: Int = 5): IndexSearchResult
-    fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean)
-    fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
+
+    /**
+     * Search the index.
+     */
+    fun search(query: Query, maxResults: Int = 5): IndexSearchResult
+
+    /**
+     * Remove a directory from the index, recursively. Do not remove the directory itself.
+     */
+    fun removeDirectory(path: Path, updateListOfIndexedDirectories: Boolean)
+
+    /**
+     * Add a new directory and all its contents, recursively, to the index.
+     */
+    fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
+
+    /**
+     * Returns a list of [Path]s currently indexed by this [IndexManager].
+     * Useful to know which file system changes need to be taken into consideration for the purposes of updating the index.
+     *
+     * For example if:
+     *   * directory `C:\MyDirectory` is returned by this method, and
+     *   * file `C:\MyDirectory\MyNewFile.txt` is created
+     *
+     * Then we know that we need to add this file to the index.
+     */
     fun indexedDirectories(): Set<Path>
+
+    /**
+     * Returns a list of [Path]s ignored by this [IndexManager].
+     * Useful to know which file system changes need to be ignored.
+     *
+     * For example if:
+     *   * directory `C:\MyDirectory` is returned by [indexedDirectories], and
+     *   * directory `C:\MyDirectory\MySubDirectory` is returned by this method, and
+     *   * file `C:\MyDirectory\MySubDirectory\MyNewFile.txt` is created
+     *
+     * Then we know we should ignore this file.
+     *
+     * @see [indexedDirectories]
+     */
     fun excludedDirectories(): Set<Path>
-    fun getUniqueManagerIdentifier(): Long
+
+    /**
+     * A number that uniquely identifies this [IndexManager] instance.
+     */
+    fun getUniqueIdentifier(): Long
 }
 
-private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: FileSystemWatcher, val indexPath: String) : IndexManager {
-    private val indexedRootDirectoriesId = Term("indexedRootDirectories")
-    private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
+private val indexedRootDirectoriesId = Term("indexedRootDirectories")
+private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 
-    private val setTermValueDelimiter = ",~#~,"
-    private val setTermIdValue = "true"
+private const val setTermValueDelimiter = ",~#~,"
+private const val setTermIdValue = "true"
+
+private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: FileSystemWatcher, val indexPath: String) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
@@ -77,7 +122,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         IndexWriter(initIndexDirectory(), iwc).close()
     }
 
-    override fun searchIndex(query: Query, maxResults: Int): IndexSearchResult {
+    override fun search(query: Query, maxResults: Int): IndexSearchResult {
         initSearcher()
 
         val hits = searcher.search(query, maxResults)
@@ -87,7 +132,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         return IndexSearchResult(hits.totalHits.value, hits.scoreDocs.size, foundDocuments)
     }
 
-    override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {
+    override fun removeDirectory(path: Path, updateListOfIndexedDirectories: Boolean) {
         indexLock.write {
             newIndexWriter().use {
                 if (updateListOfIndexedDirectories && Files.isDirectory(path)) {
@@ -100,7 +145,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         }
     }
 
-    override fun addNewDirectoryToIndex(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
+    override fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
         val addDirectoryToWatchedList = updateListOfIndexedDirectories && Files.isDirectory(path)
 
         indexLock.write {
@@ -127,7 +172,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     override fun excludedDirectories() =
         getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
-    override fun getUniqueManagerIdentifier(): Long = id
+    override fun getUniqueIdentifier(): Long = id
 
     private fun fetchDocument(docID: Int): Document {
         return searcher.doc(docID)
@@ -160,7 +205,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     }
 
     private fun getSetValue(term: Term): Pair<Document, Set<String>> {
-        val hits = searchIndex(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
+        val hits = search(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
 
         return if (hits.totalResults == 1L) {
             val existingDoc = hits.results[0]

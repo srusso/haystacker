@@ -5,6 +5,7 @@ import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.collection.CircularQueue
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class TaskId(val id: UUID) {
 
@@ -39,11 +40,15 @@ interface BackgroundTaskManager {
 
 class AsyncBackgroundTaskManager: BackgroundTaskManager {
 
+    private val shuttingDown = AtomicBoolean(false)
     private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
-    // TODO concurrency around [runningTasks], don't allow submitting new tasks if interruptAllRunningTasks() has been called
     override fun submit(task: BackgroundTask): TaskId? {
+        if (shuttingDown.get()) {
+            return null
+        }
+
         val id = TaskId(UUID.randomUUID())
 
         runningTasks[id] = task
@@ -79,6 +84,8 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
     }
 
     override fun interruptAllRunningTasks() {
+        shuttingDown.set(true)
+
         runningTasks.values.forEach(BackgroundTask::interrupt)
 
         // TODO make this better

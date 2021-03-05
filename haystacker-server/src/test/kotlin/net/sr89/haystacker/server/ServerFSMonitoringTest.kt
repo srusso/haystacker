@@ -128,7 +128,7 @@ internal class ServerFSMonitoringTest {
             // let's give some time to the file system watcher
             Thread.sleep(1000L)
 
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
+            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(), "The file was removed, so it shouldn't be returned by the search anymore")
             assertSearchResult(
                 searchIndex(indexFile, "name = ignoredbecauseinremoveddirectory.txt"),
                 listOf(),

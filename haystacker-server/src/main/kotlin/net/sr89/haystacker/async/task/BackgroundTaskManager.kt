@@ -75,5 +75,10 @@ class AsyncBackgroundTaskManager: BackgroundTaskManager {
 
     override fun interruptAllRunningTasks() {
         runningTasks.values.forEach(BackgroundTask::interrupt)
+
+        // TODO make this better
+        while (runningTasks.isNotEmpty()) {
+            Thread.sleep(10L)
+        }
     }
 }

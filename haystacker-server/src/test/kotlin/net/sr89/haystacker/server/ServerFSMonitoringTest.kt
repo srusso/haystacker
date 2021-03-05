@@ -120,7 +120,7 @@ internal class ServerFSMonitoringTest {
             // let's give some time to the file system watcher
             Thread.sleep(1000L)
 
-            assertSearchResult(searchIndex(indexFile, "name = fileCreatedAfterRestart.txt"), listOf("fileCreatedAfterRestart.txt"))
+            assertSearchResult(searchIndex(indexFile, "name = filecreatedafterrestart.txt"), listOf("fileCreatedAfterRestart.txt"))
 
             Thread.sleep(1000L)
         }

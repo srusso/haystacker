@@ -61,8 +61,8 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     private val analyzer: Analyzer = StandardAnalyzer()
 
     private var indexDirectory: FSDirectory? = null
-    private var reader: IndexReader? = null
-    private var searcher: IndexSearcher? = null
+    private lateinit var reader: IndexReader
+    private lateinit var searcher: IndexSearcher
     private val indexLock = ReentrantReadWriteLock()
 
     override fun createNewIndex() {
@@ -76,13 +76,11 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     override fun searchIndex(query: Query, maxResults: Int): TopDocs {
         initSearcher()
 
-        return searcher!!.search(query, maxResults)
+        return searcher.search(query, maxResults)
     }
 
     override fun fetchDocument(docID: Int): Document {
-        initSearcher()
-
-        return searcher!!.doc(docID)
+        return searcher.doc(docID)
     }
 
     override fun removeDirectoryFromIndex(path: Path, updateListOfIndexedDirectories: Boolean) {

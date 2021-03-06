@@ -197,6 +197,9 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         val (document, dirs) = getSetValue(term)
         val idFieldForSetTerm = idTermForSetDocument(term)
 
+        // "set" documents are documents with two fields:
+        //   * A text field containing a list of separated values
+        //   * An "ID" field with a similar key as the data field, with a value of "true". Simply used to find the document.
         document.removeFields(term.field())
         document.add(TextField(term.field(), updateSet(dirs).joinToString(setTermValueDelimiter), Field.Store.YES))
         document.add(TextField(idFieldForSetTerm, setTermIdValue, Field.Store.NO))

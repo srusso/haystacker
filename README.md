@@ -24,17 +24,6 @@ Or in debug mode:
 
     java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
 
-## Keeping the index updated
-
-Haystacker uses JNA's [FileMonitor](https://github.com/java-native-access/jna/blob/master/www/PlatformLibrary.md) to receive notifications from the operating system about changes to the file system.
-It is possible for notifications to be lost in case many changes are performed in a short time, due to the operating system's own buffer overflowing, or due to other reasons.
-
-To update the index manually in such case, this shell command can be used:
-
-    haystacker> add-to-index D:\\my-data
-    
-This way, the contents of `D:\\my-data` will be re-indexed.
-
 ## Using the shell client
 
 Then type `help` for help. Example usage:
@@ -107,3 +96,14 @@ Examples:
     last_modified < 2020-01-05T10:00:00Z AND name = "file.txt"
     last_modified < 2020-01-05T10:00:00Z OR name = "file.txt"
     created < '2020-01-05' AND (last_modified > '2020-01-10' OR name = "file.txt")
+    
+## Keeping the index updated
+
+Haystacker uses JNA's [FileMonitor](https://github.com/java-native-access/jna/blob/master/www/PlatformLibrary.md) to receive notifications from the operating system about changes to the file system.
+It is possible for notifications to be lost in case many changes are performed in a short time, due to the operating system's own buffer overflowing, or due to other reasons.
+
+To update the index manually in such case, this shell command can be used:
+
+    haystacker> add-to-index D:\\my-data
+    
+This way, the contents of `D:\\my-data` will be re-indexed.

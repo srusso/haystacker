@@ -1,8 +1,11 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.BackgroundTaskManager
+import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
+import net.sr89.haystacker.async.task.BackgroundTaskManager
+import net.sr89.haystacker.filesystem.FileSystemWatcher
 import net.sr89.haystacker.index.IndexManager
-import net.sr89.haystacker.server.api.stringBody
+import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
@@ -15,75 +18,115 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.RequestContexts
 import org.http4k.core.Response
-import org.http4k.core.Status
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.then
-import org.http4k.core.with
 import org.http4k.filter.ServerFilters
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Duration
 
-private var serverInstance: Http4kServer? = null
+class HslServer(
+    private val indexManagerProvider: IndexManagerProvider,
+    private val settingsManager: SettingsManager,
+    private val taskManager: BackgroundTaskManager,
+    private val fileSystemWatcher: FileSystemWatcher,
+    private val shutdownDelay: Duration
+) {
+    lateinit var serverInstance: Http4kServer
 
-private val shutdownDelay = Duration.ofSeconds(5)
+    private fun quitHandler(): HttpHandler {
+        return {
+            run {
 
-private val taskManager: BackgroundTaskManager = BackgroundTaskManager()
+                println("Stopping all filesystem watchers")
+                fileSystemWatcher.stopWatchingAll()
+                println("Interrupting all running background tasks")
+                taskManager.interruptAllRunningTasks()
 
-fun quitHandler(): HttpHandler {
-    // TODO interrupt all running tasks
-    return {
-        if (serverInstance != null) {
-            println("Shutting down in ${shutdownDelay.toSeconds()}s")
-            Thread {
-                Thread.sleep(shutdownDelay.toMillis())
-                serverInstance!!.stop()
-            }.start()
-            Response(OK)
-        } else {
-            Response(Status.INTERNAL_SERVER_ERROR)
-                .with(stringBody of "Server not running.. but still received a request to shut down?")
+                println("Shutting down in ${shutdownDelay.toMillis()}ms")
+                Thread {
+                    Thread.sleep(shutdownDelay.toMillis())
+                    serverInstance.stop()
+                }.start()
+                Response(OK)
+            }
         }
     }
-}
 
-fun haystackerRoutes(): HttpHandler {
-    return routes(
-        "ping" bind GET to { Response(OK) },
-        "search" bind POST to SearchHandler(),
-        "index" bind POST to CreateIndexHandler(),
-        "directory" bind POST to DirectoryIndexHandler(taskManager),
-        "directory" bind DELETE to DirectoryDeindexHandler(),
-        "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
-        "quit" bind POST to quitHandler()
-    )
-}
+    /**
+     * Start a web server that routes requests to an [IndexManager].
+     */
+    private fun startRestServer(port: Int): Http4kServer {
+        val contexts = RequestContexts()
 
-/**
- * Start a web server that routes requests to an [IndexManager].
- */
-fun startRestServer(port: Int): Http4kServer {
-    val contexts = RequestContexts()
+        val app = ServerFilters.InitialiseRequestContext(contexts)
+            .then(ExceptionHandlingFilter())
+            .then(ServerFilters.CatchLensFailure())
+            .then(haystackerRoutes())
 
-    val app = ServerFilters.InitialiseRequestContext(contexts)
-        .then(ExceptionHandlingFilter())
-        .then(ServerFilters.CatchLensFailure())
-        .then(haystackerRoutes())
+        return app.asServer(Jetty(port)).start()
+    }
 
-    return app.asServer(Jetty(port)).start()
-}
+    fun haystackerRoutes(): HttpHandler {
+        return routes(
+            "ping" bind GET to { Response(OK) },
+            "search" bind POST to SearchHandler(indexManagerProvider),
+            "index" bind POST to CreateIndexHandler(indexManagerProvider, settingsManager),
+            "directory" bind POST to DirectoryIndexHandler(indexManagerProvider, taskManager),
+            "directory" bind DELETE to DirectoryDeindexHandler(indexManagerProvider),
+            "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
+            "quit" bind POST to quitHandler()
+        )
+    }
 
-fun main(args: Array<String>) {
-    println("Starting REST server")
+    fun run() {
+        println("Setting up filesystem watchers for existing indexes")
 
-    serverInstance = startRestServer(9000)
+        fileSystemWatcher.startWatchingIndexedDirectories()
 
-    println("Haystacker REST server started")
+        println("Starting REST server")
 
-    println("Loading indexes")
+        serverInstance = startRestServer(9000)
 
-    println("Setting up filesystem watchers for existing indexes")
+        println("Haystacker REST server started")
+    }
+
+    companion object {
+        fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
+            val haystackerSettings = SettingsManager(settingsDirectory)
+            val taskManager = AsyncBackgroundTaskManager()
+            val indexManagerProvider = IndexManagerProvider()
+            val fileSystemWatcher = FileSystemWatcher(indexManagerProvider, haystackerSettings, taskManager)
+
+            // TODO remove this circular dependency
+            indexManagerProvider.fileSystemWatcher = fileSystemWatcher
+
+            // TODO https://github.com/srusso/haystacker/issues/38 - Nicer Dependency Injection
+            return HslServer(
+                indexManagerProvider,
+                haystackerSettings,
+                taskManager,
+                fileSystemWatcher,
+                shutdownDelay
+            )
+        }
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val settingsDirectory = if (args.isEmpty()) {
+                println("Using Haystacker executable directory (${Paths.get(".").toAbsolutePath()}) as settings directory")
+                Paths.get(".")
+            } else {
+                println("Using settings directory ${args[0]}")
+                Paths.get(args[0])
+            }
+
+            server(settingsDirectory).run()
+        }
+    }
 }

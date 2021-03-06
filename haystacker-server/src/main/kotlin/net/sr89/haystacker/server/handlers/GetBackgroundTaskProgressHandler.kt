@@ -1,7 +1,7 @@
 package net.sr89.haystacker.server.handlers
 
-import net.sr89.haystacker.async.BackgroundTaskManager
-import net.sr89.haystacker.async.TaskId
+import net.sr89.haystacker.async.task.BackgroundTaskManager
+import net.sr89.haystacker.async.task.TaskId
 import net.sr89.haystacker.server.api.BackgroundTaskStatusResponse
 import net.sr89.haystacker.server.api.backgroundTaskStatusResponse
 import net.sr89.haystacker.server.api.taskId
@@ -20,6 +20,5 @@ class GetBackgroundTaskProgressHandler(private val taskManager: BackgroundTaskMa
         val resp = BackgroundTaskStatusResponse(tid, status.state.name, status.description)
         return Response(Status.OK)
                 .with(backgroundTaskStatusResponse of resp)
-
     }
 }

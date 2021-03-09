@@ -53,6 +53,10 @@
             <artifactId>lucene-analyzers-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.kodein.di</groupId>
+            <artifactId>kodein-di-jvm</artifactId>
+        </dependency>
+        <dependency>
             <artifactId>haystacker-common</artifactId>
             <groupId>net.sr89</groupId>
             <version>${project.parent.version}</version>

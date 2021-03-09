@@ -1,7 +1,10 @@
 package net.sr89.haystacker.index
 
+import com.sun.jna.platform.FileMonitor
+import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskStatus
-import net.sr89.haystacker.filesystem.FileSystemWatcher
+import net.sr89.haystacker.filesystem.IndexUpdatingListener
+import net.sr89.haystacker.server.config.SettingsManager
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -19,23 +22,21 @@ import org.apache.lucene.search.Query
 import org.apache.lucene.search.ScoreDoc
 import org.apache.lucene.search.TermQuery
 import org.apache.lucene.store.FSDirectory
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
-class IndexManagerProvider {
-    lateinit var fileSystemWatcher: FileSystemWatcher
+class IndexManagerProvider(private val settings: SettingsManager, private val taskManager: BackgroundTaskManager) {
     private val managers = hashMapOf<String, IndexManager>()
-    private val counter = AtomicLong()
 
     @Synchronized
     fun forPath(indexPath: String): IndexManager {
-        return managers.computeIfAbsent(indexPath) { p -> IndexManagerImpl(counter.getAndIncrement(), fileSystemWatcher, p) }
+        return managers.computeIfAbsent(indexPath) { p -> IndexManagerImpl(settings, taskManager, p) }
     }
 }
 
@@ -93,10 +94,11 @@ interface IndexManager {
      */
     fun excludedDirectories(): Set<Path>
 
-    /**
-     * A number that uniquely identifies this [IndexManager] instance.
-     */
-    fun getUniqueIdentifier(): Long
+    fun stopWatchingFileSystemChanges()
+
+    fun startWatchingFileSystemChanges()
+
+    fun startWatching(directory: Path)
 }
 
 private val indexedRootDirectoriesId = Term("indexedRootDirectories")
@@ -105,7 +107,9 @@ private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 private const val setTermValueDelimiter = ",~#~,"
 private const val setTermIdValue = "true"
 
-private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: FileSystemWatcher, val indexPath: String) : IndexManager {
+private class IndexManagerImpl(private val settings: SettingsManager,
+                               private val taskManager: BackgroundTaskManager,
+                               private val indexPath: String) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
@@ -162,7 +166,7 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
         println("Done indexing $path")
 
         if (addDirectoryToWatchedList) {
-            fileSystemWatcher.startWatching(this, path)
+            startWatching(path)
         }
     }
 
@@ -172,7 +176,40 @@ private class IndexManagerImpl(private val id: Long, val fileSystemWatcher: File
     override fun excludedDirectories() =
         getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
-    override fun getUniqueIdentifier(): Long = id
+    private val watchedDirectories: MutableSet<File> = mutableSetOf()
+    private val listeners: MutableSet<IndexUpdatingListener> = mutableSetOf()
+    private val observedEvents = FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
+    private val fileMonitor = FileMonitor.getInstance()
+
+    override fun stopWatchingFileSystemChanges() {
+        watchedDirectories.forEach(fileMonitor::removeWatch)
+        listeners.forEach(fileMonitor::removeFileListener)
+    }
+
+    override fun startWatchingFileSystemChanges() {
+        registerFSEventListener()
+
+        for (indexPath in settings.indexes()) {
+            for (indexedDirectory in indexedDirectories()) {
+                println("Watching $indexedDirectory")
+                startWatching(indexedDirectory)
+            }
+        }
+    }
+
+    override fun startWatching(directory: Path) {
+        val directoryFile = directory.toFile()
+
+        watchedDirectories.add(directoryFile)
+        fileMonitor.addWatch(directoryFile, observedEvents)
+    }
+
+    private fun registerFSEventListener() {
+        val listener = IndexUpdatingListener(this, taskManager)
+
+        fileMonitor.addFileListener(listener)
+        listeners.add(listener)
+    }
 
     private fun fetchDocument(docID: Int): Document {
         return searcher.doc(docID)

@@ -72,21 +72,28 @@ interface IndexManager {
     fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
 
     /**
-     * Returns true if the file is of interest for this index.
+     * Returns true if the file or directory specified by [file] is of interest for this index.
      *
      * For example if:
-     *   * directory `C:\MyDirectory` is indexed by this manager
-     *   * directory `C:\MyDirectory\MySubDirectory` was excluded from the index
+     *   * directory `C:\MyDirectory` is indexed by this manager, and
+     *   * its subdirectory `C:\MyDirectory\MySubDirectory` is excluded from the index
      *
      * Then, calling this method for:
      *
-     * * C:\MyDirectory\MyNewFile.txt, will return true
-     * * C:\MyDirectory\MySubDirectory\MyNewFile.txt, will return false
+     *   * `C:\MyDirectory\MyNewFile.txt`, will return `true`
+     *   * `C:\MyDirectory\MySubDirectory\MyNewFile.txt`, will return `false`
      */
     fun fileIsRelevantForIndex(file: File): Boolean
 
+    /**
+     * Stops observing changes to the file system.
+     * To be used when shutting down the server.
+     */
     fun stopWatchingFileSystemChanges()
 
+    /**
+     * Start observing changes to the directories that belong to this index, in order to keep the index up to date in almost real time.
+     */
     fun startWatchingFileSystemChanges()
 }
 

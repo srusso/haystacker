@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
@@ -55,7 +56,7 @@ internal class HslServerKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        val server = HslServer.server(settingsDirectory)
+        val server = HslServer.server(settingsDirectory, Duration.ofMillis(1L))
 
         routes = server.haystackerRoutes()
 
@@ -65,6 +66,8 @@ internal class HslServerKtTest {
 
     @AfterEach
     internal fun tearDown() {
+        println("Shutting down server: ${routes(Request(Method.POST, "/quit"))}")
+
         directoryToIndex.toFile().deleteRecursively()
         settingsDirectory.toFile().deleteRecursively()
         indexFile.toFile().deleteRecursively()

@@ -32,7 +32,7 @@ import java.time.Month
 import java.time.ZoneOffset
 
 internal class ServerFSMonitoringTest {
-    private fun <R> HslServer.runServer(testCase: HslServer.() -> R) {
+    private fun <R> HaystackerApplication.runServer(testCase: HaystackerApplication.() -> R) {
         try {
             this.run()
             testCase()
@@ -145,7 +145,7 @@ internal class ServerFSMonitoringTest {
         }
     }
 
-    private fun newServer(): HslServer {
+    private fun newServer(): HaystackerApplication {
         httpClient = ApacheClient()
 
         val testOverrides = DI.Module("DITestOverrides") {
@@ -159,7 +159,7 @@ internal class ServerFSMonitoringTest {
             import(testOverrides, allowOverride = true)
         }
 
-        return HslServer.server(testDI, settingsDirectory, 9000)
+        return HaystackerApplication.server(testDI, settingsDirectory, 9000)
     }
 
     private fun createIndex(indexFile: Path) {

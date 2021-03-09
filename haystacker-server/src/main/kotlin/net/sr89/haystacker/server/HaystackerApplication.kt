@@ -12,7 +12,7 @@ import org.kodein.di.newInstance
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class HslServer(
+class HaystackerApplication(
     private val restServer: Http4kServer,
     private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager
@@ -32,13 +32,13 @@ class HslServer(
     }
 
     companion object {
-        fun server(di: DI, settingsDirectory: Path, port: Int): HslServer {
+        fun server(di: DI, settingsDirectory: Path, port: Int): HaystackerApplication {
             val config = ServerConfig(port, settingsDirectory)
 
             val serverInstance: Http4kServer by di.instance(arg = config)
 
             val hslServer by di.newInstance {
-                HslServer(
+                HaystackerApplication(
                     restServer = serverInstance,
                     indexManagerProvider = instance(),
                     settingsManager = instance(arg = config)

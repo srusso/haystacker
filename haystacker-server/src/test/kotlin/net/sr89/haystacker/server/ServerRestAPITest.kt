@@ -38,7 +38,7 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
 
-internal class HslServerKtTest {
+internal class HaystackerApplicationKtTest {
     private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     private val objectMapper = ObjectMapper()
 

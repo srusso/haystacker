@@ -1,6 +1,5 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
@@ -25,6 +24,8 @@ import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import org.kodein.di.instance
+import org.kodein.di.newInstance
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
@@ -98,17 +99,16 @@ class HslServer(
 
     companion object {
         fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
-            val haystackerSettings = SettingsManager(settingsDirectory)
-            val taskManager = AsyncBackgroundTaskManager()
-            val indexManagerProvider = IndexManagerProvider(taskManager)
+            val hslServer by serverModule().newInstance {
+                HslServer(
+                    instance(),
+                    instance(arg = settingsDirectory),
+                    instance(),
+                    shutdownDelay
+                )
+            }
 
-            // TODO https://github.com/srusso/haystacker/issues/38 - Nicer Dependency Injection
-            return HslServer(
-                indexManagerProvider,
-                haystackerSettings,
-                taskManager,
-                shutdownDelay
-            )
+            return hslServer
         }
 
         @JvmStatic

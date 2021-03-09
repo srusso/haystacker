@@ -49,6 +49,7 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
 
     override fun submit(task: BackgroundTask): TaskId? {
         if (executor.isShutdown) {
+            println("Not starting task of type ${task::class} because the server is being shut down")
             return null
         }
 

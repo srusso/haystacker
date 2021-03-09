@@ -1,11 +1,13 @@
 package net.sr89.haystacker.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
 import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
@@ -17,6 +19,9 @@ import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -56,7 +61,16 @@ internal class HslServerKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        val server = HslServer.server(settingsDirectory, Duration.ofMillis(1L))
+        val testOverrides = DI.Module("DITestOverrides") {
+            bind<BackgroundTaskManager>(overrides = true) with singleton { SingleThreadTaskManager() }
+        }
+
+        val server = HslServer.server(DI {
+            import(handlersModule)
+            import(managerModule)
+
+            import(testOverrides, allowOverride = true)
+        }, settingsDirectory, Duration.ofMillis(1L))
 
         routes = server.haystackerRoutes()
 

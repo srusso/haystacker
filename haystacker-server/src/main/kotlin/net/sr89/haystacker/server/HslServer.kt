@@ -20,6 +20,7 @@ import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import org.kodein.di.DI
 import org.kodein.di.instance
 import org.kodein.di.newInstance
 import java.nio.file.Path
@@ -33,7 +34,7 @@ class HslServer(
     private val taskManager: BackgroundTaskManager,
     private val shutdownDelay: Duration
 ) {
-    lateinit var serverInstance: Http4kServer
+    var serverInstance: Http4kServer? = null
 
     private fun quitHandler(): HttpHandler {
         return {
@@ -47,7 +48,9 @@ class HslServer(
                 println("Shutting down in ${shutdownDelay.toMillis()}ms")
                 Thread {
                     Thread.sleep(shutdownDelay.toMillis())
-                    serverInstance.stop()
+                    if (serverInstance != null) {
+                        serverInstance!!.stop()
+                    }
                 }.start()
                 Response(OK)
             }
@@ -95,9 +98,7 @@ class HslServer(
     }
 
     companion object {
-        fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
-            val di = serverDI()
-
+        fun server(di: DI, settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
             val hslServer by di.newInstance {
                 HslServer(
                     haystackerRoutes = instance(arg = settingsDirectory),
@@ -121,7 +122,7 @@ class HslServer(
                 Paths.get(args[0])
             }
 
-            server(settingsDirectory).run()
+            server(serverDI(), settingsDirectory).run()
         }
     }
 }

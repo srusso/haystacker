@@ -144,7 +144,7 @@ internal class ServerFSMonitoringTest {
 
     private fun newServer(): HslServer {
         httpClient = ApacheClient()
-        return HslServer.server(settingsDirectory, shutdownDelay)
+        return HslServer.server(serverDI(), settingsDirectory, shutdownDelay)
     }
 
     private fun createIndex(indexFile: Path) {

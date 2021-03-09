@@ -1,6 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
-class HaystackerRoutes(
+data class HaystackerRoutes(
     val searchHandler: SearchHandler,
     val createIndexHandler: CreateIndexHandler,
     val directoryIndexHandler: DirectoryIndexHandler,

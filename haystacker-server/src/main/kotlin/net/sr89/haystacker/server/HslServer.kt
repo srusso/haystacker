@@ -24,6 +24,7 @@ import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
+import org.kodein.di.DI
 import org.kodein.di.instance
 import org.kodein.di.newInstance
 import java.nio.file.Path
@@ -31,12 +32,18 @@ import java.nio.file.Paths
 import java.time.Duration
 
 class HslServer(
+    private val di: DI,
     private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager,
     private val taskManager: BackgroundTaskManager,
     private val shutdownDelay: Duration
 ) {
     lateinit var serverInstance: Http4kServer
+    val searchHandler: SearchHandler by di.instance()
+    val createIndexHandler: CreateIndexHandler by di.instance(arg = settingsManager)
+    val directoryIndexHandler: DirectoryIndexHandler by di.instance()
+    val deindexHandler: DirectoryDeindexHandler by di.instance()
+    val taskProcessHandler: GetBackgroundTaskProgressHandler by di.instance()
 
     private fun quitHandler(): HttpHandler {
         return {
@@ -74,11 +81,11 @@ class HslServer(
     fun haystackerRoutes(): HttpHandler {
         return routes(
             "ping" bind GET to { Response(OK) },
-            "search" bind POST to SearchHandler(indexManagerProvider),
-            "index" bind POST to CreateIndexHandler(indexManagerProvider, settingsManager),
-            "directory" bind POST to DirectoryIndexHandler(indexManagerProvider, taskManager),
-            "directory" bind DELETE to DirectoryDeindexHandler(indexManagerProvider),
-            "task" bind GET to GetBackgroundTaskProgressHandler(taskManager),
+            "search" bind POST to searchHandler,
+            "index" bind POST to createIndexHandler,
+            "directory" bind POST to directoryIndexHandler,
+            "directory" bind DELETE to deindexHandler,
+            "task" bind GET to taskProcessHandler,
             "quit" bind POST to quitHandler()
         )
     }
@@ -99,8 +106,11 @@ class HslServer(
 
     companion object {
         fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
-            val hslServer by serverModule().newInstance {
+            val di = serverDI()
+
+            val hslServer by di.newInstance {
                 HslServer(
+                    di = di,
                     indexManagerProvider = instance(),
                     settingsManager = instance(arg = settingsDirectory),
                     taskManager = instance(),

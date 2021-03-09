@@ -4,7 +4,7 @@ import com.sun.jna.platform.FileMonitor
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.filesystem.IndexUpdatingListener
-import net.sr89.haystacker.server.config.SettingsManager
+import net.sr89.haystacker.server.file.isParentOf
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -31,12 +31,16 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
-class IndexManagerProvider(private val settings: SettingsManager, private val taskManager: BackgroundTaskManager) {
+class IndexManagerProvider(private val taskManager: BackgroundTaskManager) {
     private val managers = hashMapOf<String, IndexManager>()
 
     @Synchronized
     fun forPath(indexPath: String): IndexManager {
-        return managers.computeIfAbsent(indexPath) { p -> IndexManagerImpl(settings, taskManager, p) }
+        return managers.computeIfAbsent(indexPath) { p -> IndexManagerImpl(taskManager, p) }
+    }
+
+    fun getAll(): Set<IndexManager> {
+        return managers.values.toSet()
     }
 }
 
@@ -68,37 +72,22 @@ interface IndexManager {
     fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
 
     /**
-     * Returns a list of [Path]s currently indexed by this [IndexManager].
-     * Useful to know which file system changes need to be taken into consideration for the purposes of updating the index.
+     * Returns true if the file is of interest for this index.
      *
      * For example if:
-     *   * directory `C:\MyDirectory` is returned by this method, and
-     *   * file `C:\MyDirectory\MyNewFile.txt` is created
+     *   * directory `C:\MyDirectory` is indexed by this manager
+     *   * directory `C:\MyDirectory\MySubDirectory` was excluded from the index
      *
-     * Then we know that we need to add this file to the index.
+     * Then, calling this method for:
+     *
+     * * C:\MyDirectory\MyNewFile.txt, will return true
+     * * C:\MyDirectory\MySubDirectory\MyNewFile.txt, will return false
      */
-    fun indexedDirectories(): Set<Path>
-
-    /**
-     * Returns a list of [Path]s ignored by this [IndexManager].
-     * Useful to know which file system changes need to be ignored.
-     *
-     * For example if:
-     *   * directory `C:\MyDirectory` is returned by [indexedDirectories], and
-     *   * directory `C:\MyDirectory\MySubDirectory` is returned by this method, and
-     *   * file `C:\MyDirectory\MySubDirectory\MyNewFile.txt` is created
-     *
-     * Then we know we should ignore this file.
-     *
-     * @see [indexedDirectories]
-     */
-    fun excludedDirectories(): Set<Path>
+    fun fileIsRelevantForIndex(file: File): Boolean
 
     fun stopWatchingFileSystemChanges()
 
     fun startWatchingFileSystemChanges()
-
-    fun startWatching(directory: Path)
 }
 
 private val indexedRootDirectoriesId = Term("indexedRootDirectories")
@@ -107,8 +96,10 @@ private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 private const val setTermValueDelimiter = ",~#~,"
 private const val setTermIdValue = "true"
 
-private class IndexManagerImpl(private val settings: SettingsManager,
-                               private val taskManager: BackgroundTaskManager,
+private const val observedEvents = FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
+private val fileMonitor = FileMonitor.getInstance()
+
+private class IndexManagerImpl(private val taskManager: BackgroundTaskManager,
                                private val indexPath: String) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
@@ -117,6 +108,9 @@ private class IndexManagerImpl(private val settings: SettingsManager,
     private lateinit var reader: IndexReader
     private lateinit var searcher: IndexSearcher
     private val indexLock = ReentrantReadWriteLock()
+
+    private val watchedDirectories: MutableSet<File> = mutableSetOf()
+    private val listeners: MutableSet<IndexUpdatingListener> = mutableSetOf()
 
     override fun createNewIndex() {
         val iwc = IndexWriterConfig(analyzer)
@@ -170,17 +164,6 @@ private class IndexManagerImpl(private val settings: SettingsManager,
         }
     }
 
-    override fun indexedDirectories() =
-        getSetValue(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
-
-    override fun excludedDirectories() =
-        getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
-
-    private val watchedDirectories: MutableSet<File> = mutableSetOf()
-    private val listeners: MutableSet<IndexUpdatingListener> = mutableSetOf()
-    private val observedEvents = FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
-    private val fileMonitor = FileMonitor.getInstance()
-
     override fun stopWatchingFileSystemChanges() {
         watchedDirectories.forEach(fileMonitor::removeWatch)
         listeners.forEach(fileMonitor::removeFileListener)
@@ -189,15 +172,27 @@ private class IndexManagerImpl(private val settings: SettingsManager,
     override fun startWatchingFileSystemChanges() {
         registerFSEventListener()
 
-        for (indexPath in settings.indexes()) {
-            for (indexedDirectory in indexedDirectories()) {
-                println("Watching $indexedDirectory")
-                startWatching(indexedDirectory)
-            }
+        for (indexedDirectory in indexedDirectories()) {
+            println("Watching $indexedDirectory")
+            startWatching(indexedDirectory)
         }
     }
 
-    override fun startWatching(directory: Path) {
+    override fun fileIsRelevantForIndex(file: File): Boolean {
+        val filePath: Path = file.toPath()
+        return indexedDirectories()
+            .any { indexedDirectory -> indexedDirectory.isParentOf(filePath) }
+            .and(excludedDirectories()
+                .none { excludedDirectory -> excludedDirectory.isParentOf(filePath) })
+    }
+
+    private fun indexedDirectories() =
+        getSetValue(indexedRootDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+
+    private fun excludedDirectories() =
+        getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
+
+    private fun startWatching(directory: Path) {
         val directoryFile = directory.toFile()
 
         watchedDirectories.add(directoryFile)

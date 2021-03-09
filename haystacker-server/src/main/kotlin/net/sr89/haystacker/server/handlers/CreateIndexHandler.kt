@@ -18,6 +18,7 @@ class CreateIndexHandler(val indexManagerProvider: IndexManagerProvider, val set
         settingsManager.addIndex(indexPath)
 
         indexManager.createNewIndex()
+        indexManager.startWatchingFileSystemChanges()
 
         return Response(Status.OK)
     }

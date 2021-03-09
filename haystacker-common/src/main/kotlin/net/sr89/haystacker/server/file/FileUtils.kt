@@ -4,6 +4,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.Path
 
 @Throws(IOException::class)
 fun writeToFile(contents: String, destination: File) {
@@ -20,4 +21,8 @@ fun writeToFile(contents: String, destination: File) {
     }
 
     Files.move(temporaryFile.toPath(), destination.toPath())
+}
+
+fun Path.isParentOf(otherPath: Path): Boolean {
+    return otherPath.toAbsolutePath().toString().startsWith(toAbsolutePath().toString())
 }

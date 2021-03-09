@@ -2,7 +2,6 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.async.task.BackgroundTaskManager
-import net.sr89.haystacker.filesystem.FileSystemWatcher
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.config.SettingsManager
@@ -34,7 +33,6 @@ class HslServer(
     private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager,
     private val taskManager: BackgroundTaskManager,
-    private val fileSystemWatcher: FileSystemWatcher,
     private val shutdownDelay: Duration
 ) {
     lateinit var serverInstance: Http4kServer
@@ -44,7 +42,7 @@ class HslServer(
             run {
 
                 println("Stopping all filesystem watchers")
-                fileSystemWatcher.stopWatchingAll()
+                indexManagerProvider.getAll().forEach(IndexManager::stopWatchingFileSystemChanges)
                 println("Interrupting all running background tasks")
                 taskManager.interruptAllRunningTasks()
 
@@ -87,7 +85,9 @@ class HslServer(
     fun run() {
         println("Setting up filesystem watchers for existing indexes")
 
-        fileSystemWatcher.startWatchingIndexedDirectories()
+        settingsManager.indexes()
+            .map(indexManagerProvider::forPath)
+            .forEach(IndexManager::startWatchingFileSystemChanges)
 
         println("Starting REST server")
 
@@ -100,18 +100,13 @@ class HslServer(
         fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
             val haystackerSettings = SettingsManager(settingsDirectory)
             val taskManager = AsyncBackgroundTaskManager()
-            val indexManagerProvider = IndexManagerProvider()
-            val fileSystemWatcher = FileSystemWatcher(indexManagerProvider, haystackerSettings, taskManager)
-
-            // TODO remove this circular dependency
-            indexManagerProvider.fileSystemWatcher = fileSystemWatcher
+            val indexManagerProvider = IndexManagerProvider(taskManager)
 
             // TODO https://github.com/srusso/haystacker/issues/38 - Nicer Dependency Injection
             return HslServer(
                 indexManagerProvider,
                 haystackerSettings,
                 taskManager,
-                fileSystemWatcher,
                 shutdownDelay
             )
         }

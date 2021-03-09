@@ -11,22 +11,10 @@ import net.sr89.haystacker.index.BackgroundIndexingTask
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.Trigger.FS_UPDATE
 import java.io.File
-import java.nio.file.Path
 
 class IndexUpdatingListener(
     val indexManager: IndexManager,
     val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
-    private fun Path.isParentOf(otherPath: Path): Boolean {
-        return otherPath.toAbsolutePath().toString().startsWith(toAbsolutePath().toString())
-    }
-
-    private fun isRelevantFileForThisIndex(file: File): Boolean {
-        val filePath: Path = file.toPath()
-        return indexManager.indexedDirectories()
-            .any { indexedDirectory -> indexedDirectory.isParentOf(filePath) }
-            .and(indexManager.excludedDirectories()
-                .none { excludedDirectory -> excludedDirectory.isParentOf(filePath) })
-    }
 
     private fun fileCreated(file: File) {
         println("File $file was created")
@@ -51,7 +39,7 @@ class IndexUpdatingListener(
     }
 
     override fun fileChanged(e: FileMonitor.FileEvent) {
-        if (isRelevantFileForThisIndex(e.file)) {
+        if (indexManager.fileIsRelevantForIndex(e.file)) {
             when (e.type) {
                 FILE_CREATED -> fileCreated(e.file)
                 FILE_DELETED -> fileDeleted(e.file)

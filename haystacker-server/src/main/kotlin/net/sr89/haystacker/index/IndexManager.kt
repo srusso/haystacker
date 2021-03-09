@@ -106,7 +106,7 @@ private const val setTermIdValue = "true"
 private const val observedEvents = FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
 private val fileMonitor = FileMonitor.getInstance()
 
-private class IndexManagerImpl(private val taskManager: BackgroundTaskManager,
+private class IndexManagerImpl(taskManager: BackgroundTaskManager,
                                private val indexPath: String) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
@@ -117,7 +117,7 @@ private class IndexManagerImpl(private val taskManager: BackgroundTaskManager,
     private val indexLock = ReentrantReadWriteLock()
 
     private val watchedDirectories: MutableSet<File> = mutableSetOf()
-    private val listeners: MutableSet<IndexUpdatingListener> = mutableSetOf()
+    private val fileSystemListener = IndexUpdatingListener(this, taskManager)
 
     override fun createNewIndex() {
         val iwc = IndexWriterConfig(analyzer)
@@ -173,11 +173,11 @@ private class IndexManagerImpl(private val taskManager: BackgroundTaskManager,
 
     override fun stopWatchingFileSystemChanges() {
         watchedDirectories.forEach(fileMonitor::removeWatch)
-        listeners.forEach(fileMonitor::removeFileListener)
+        fileMonitor.removeFileListener(fileSystemListener)
     }
 
     override fun startWatchingFileSystemChanges() {
-        registerFSEventListener()
+        fileMonitor.addFileListener(fileSystemListener)
 
         for (indexedDirectory in indexedDirectories()) {
             println("Watching $indexedDirectory")
@@ -204,13 +204,6 @@ private class IndexManagerImpl(private val taskManager: BackgroundTaskManager,
 
         watchedDirectories.add(directoryFile)
         fileMonitor.addWatch(directoryFile, observedEvents)
-    }
-
-    private fun registerFSEventListener() {
-        val listener = IndexUpdatingListener(this, taskManager)
-
-        fileMonitor.addFileListener(listener)
-        listeners.add(listener)
     }
 
     private fun fetchDocument(docID: Int): Document {

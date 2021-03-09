@@ -15,7 +15,7 @@ import org.kodein.di.instance
 import org.kodein.di.singleton
 import java.nio.file.Path
 
-private fun handlersModule() = DI.Module(name = "HandlersModule") {
+private val handlersModule = DI.Module(name = "HandlersModule") {
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
     bind<CreateIndexHandler>() with factory { settingsManager: SettingsManager -> CreateIndexHandler(instance(), settingsManager) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
@@ -24,7 +24,7 @@ private fun handlersModule() = DI.Module(name = "HandlersModule") {
 }
 
 fun serverDI() = DI {
-    import(handlersModule())
+    import(handlersModule)
 
     bind<AsyncBackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager() }
     bind<SettingsManager>() with factory { settingsDirectory: Path ->  SettingsManager(settingsDirectory) }

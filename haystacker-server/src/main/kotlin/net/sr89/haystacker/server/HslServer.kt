@@ -101,10 +101,10 @@ class HslServer(
         fun server(settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
             val hslServer by serverModule().newInstance {
                 HslServer(
-                    instance(),
-                    instance(arg = settingsDirectory),
-                    instance(),
-                    shutdownDelay
+                    indexManagerProvider = instance(),
+                    settingsManager = instance(arg = settingsDirectory),
+                    taskManager = instance(),
+                    shutdownDelay = shutdownDelay
                 )
             }
 

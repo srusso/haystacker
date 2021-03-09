@@ -1,113 +1,53 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
-import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
-import net.sr89.haystacker.server.handlers.HaystackerRoutes
-import org.http4k.core.HttpHandler
-import org.http4k.core.Method.DELETE
-import org.http4k.core.Method.GET
-import org.http4k.core.Method.POST
-import org.http4k.core.RequestContexts
-import org.http4k.core.Response
-import org.http4k.core.Status.Companion.OK
-import org.http4k.core.then
-import org.http4k.filter.ServerFilters
-import org.http4k.routing.bind
-import org.http4k.routing.routes
+import net.sr89.haystacker.server.handlers.QuitHandler
 import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
-import org.http4k.server.asServer
 import org.kodein.di.DI
 import org.kodein.di.instance
 import org.kodein.di.newInstance
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 
 class HslServer(
-    private val haystackerRoutes: HaystackerRoutes,
+    private val restServer: Http4kServer,
     private val indexManagerProvider: IndexManagerProvider,
-    private val settingsManager: SettingsManager,
-    private val taskManager: BackgroundTaskManager,
-    private val shutdownDelay: Duration
+    private val settingsManager: SettingsManager
 ) {
-    var serverInstance: Http4kServer? = null
-
-    private fun quitHandler(): HttpHandler {
-        return {
-            run {
-
-                println("Stopping all filesystem watchers")
-                indexManagerProvider.getAll().forEach(IndexManager::stopWatchingFileSystemChanges)
-                println("Interrupting all running background tasks")
-                taskManager.interruptAllRunningTasks()
-
-                println("Shutting down in ${shutdownDelay.toMillis()}ms")
-                Thread {
-                    Thread.sleep(shutdownDelay.toMillis())
-                    if (serverInstance != null) {
-                        serverInstance!!.stop()
-                    }
-                }.start()
-                Response(OK)
-            }
-        }
-    }
-
-    /**
-     * Start a web server that routes requests to an [IndexManager].
-     */
-    private fun startRestServer(port: Int): Http4kServer {
-        val contexts = RequestContexts()
-
-        val app = ServerFilters.InitialiseRequestContext(contexts)
-            .then(ExceptionHandlingFilter())
-            .then(ServerFilters.CatchLensFailure())
-            .then(haystackerRoutes())
-
-        return app.asServer(Jetty(port)).start()
-    }
-
-    fun haystackerRoutes(): HttpHandler {
-        return routes(
-            "ping" bind GET to { Response(OK) },
-            "search" bind POST to haystackerRoutes.searchHandler,
-            "index" bind POST to haystackerRoutes.createIndexHandler,
-            "directory" bind POST to haystackerRoutes.directoryIndexHandler,
-            "directory" bind DELETE to haystackerRoutes.deindexHandler,
-            "task" bind GET to haystackerRoutes.taskProcessHandler,
-            "quit" bind POST to quitHandler()
-        )
-    }
-
     fun run() {
+        println("Starting REST server")
+
+        restServer.start()
+
         println("Setting up filesystem watchers for existing indexes")
 
         settingsManager.indexes()
             .map(indexManagerProvider::forPath)
             .forEach(IndexManager::startWatchingFileSystemChanges)
 
-        println("Starting REST server")
-
-        serverInstance = startRestServer(9000)
-
         println("Haystacker REST server started")
     }
 
     companion object {
-        fun server(di: DI, settingsDirectory: Path, shutdownDelay: Duration = Duration.ofSeconds(5)): HslServer {
+        fun server(di: DI, settingsDirectory: Path, port: Int): HslServer {
+            val config = ServerConfig(port, settingsDirectory)
+
+            val serverInstance: Http4kServer by di.instance(arg = config)
+
             val hslServer by di.newInstance {
                 HslServer(
-                    haystackerRoutes = instance(arg = settingsDirectory),
+                    restServer = serverInstance,
                     indexManagerProvider = instance(),
-                    settingsManager = instance(arg = settingsDirectory),
-                    taskManager = instance(),
-                    shutdownDelay = shutdownDelay
+                    settingsManager = instance(arg = config)
                 )
             }
+
+            val quitHandler: QuitHandler by di.instance(arg = config)
+
+            quitHandler.serverInstance = serverInstance
 
             return hslServer
         }
@@ -122,7 +62,7 @@ class HslServer(
                 Paths.get(args[0])
             }
 
-            server(serverDI(), settingsDirectory).run()
+            server(serverDI(), settingsDirectory, 9000).run()
         }
     }
 }

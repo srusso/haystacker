@@ -20,6 +20,9 @@ import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -144,7 +147,19 @@ internal class ServerFSMonitoringTest {
 
     private fun newServer(): HslServer {
         httpClient = ApacheClient()
-        return HslServer.server(serverDI(), settingsDirectory, shutdownDelay)
+
+        val testOverrides = DI.Module("DITestOverrides") {
+            bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { shutdownDelay }
+        }
+
+        val testDI = DI {
+            import(handlersModule)
+            import(managerModule)
+
+            import(testOverrides, allowOverride = true)
+        }
+
+        return HslServer.server(testDI, settingsDirectory, 9000)
     }
 
     private fun createIndex(indexFile: Path) {

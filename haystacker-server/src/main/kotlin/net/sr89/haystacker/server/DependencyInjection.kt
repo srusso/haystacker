@@ -7,6 +7,7 @@ import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
 import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
+import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.server.handlers.SearchHandler
 import org.kodein.di.DI
 import org.kodein.di.bind
@@ -17,10 +18,17 @@ import java.nio.file.Path
 
 private val handlersModule = DI.Module(name = "HandlersModule") {
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
-    bind<CreateIndexHandler>() with factory { settingsManager: SettingsManager -> CreateIndexHandler(instance(), settingsManager) }
+    bind<CreateIndexHandler>() with factory { settingsDirectory: Path -> CreateIndexHandler(instance(), instance(arg = settingsDirectory)) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
     bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
+    bind<HaystackerRoutes>() with factory { settingsDirectory: Path -> HaystackerRoutes(
+        instance(),
+        instance(arg = settingsDirectory),
+        instance(),
+        instance(),
+        instance()
+    ) }
 }
 
 fun serverDI() = DI {

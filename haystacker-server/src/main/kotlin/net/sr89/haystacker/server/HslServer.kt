@@ -5,11 +5,7 @@ import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
-import net.sr89.haystacker.server.handlers.CreateIndexHandler
-import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
-import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
-import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
-import net.sr89.haystacker.server.handlers.SearchHandler
+import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
@@ -24,7 +20,6 @@ import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
-import org.kodein.di.DI
 import org.kodein.di.instance
 import org.kodein.di.newInstance
 import java.nio.file.Path
@@ -32,18 +27,13 @@ import java.nio.file.Paths
 import java.time.Duration
 
 class HslServer(
-    private val di: DI,
+    private val haystackerRoutes: HaystackerRoutes,
     private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager,
     private val taskManager: BackgroundTaskManager,
     private val shutdownDelay: Duration
 ) {
     lateinit var serverInstance: Http4kServer
-    val searchHandler: SearchHandler by di.instance()
-    val createIndexHandler: CreateIndexHandler by di.instance(arg = settingsManager)
-    val directoryIndexHandler: DirectoryIndexHandler by di.instance()
-    val deindexHandler: DirectoryDeindexHandler by di.instance()
-    val taskProcessHandler: GetBackgroundTaskProgressHandler by di.instance()
 
     private fun quitHandler(): HttpHandler {
         return {
@@ -81,11 +71,11 @@ class HslServer(
     fun haystackerRoutes(): HttpHandler {
         return routes(
             "ping" bind GET to { Response(OK) },
-            "search" bind POST to searchHandler,
-            "index" bind POST to createIndexHandler,
-            "directory" bind POST to directoryIndexHandler,
-            "directory" bind DELETE to deindexHandler,
-            "task" bind GET to taskProcessHandler,
+            "search" bind POST to haystackerRoutes.searchHandler,
+            "index" bind POST to haystackerRoutes.createIndexHandler,
+            "directory" bind POST to haystackerRoutes.directoryIndexHandler,
+            "directory" bind DELETE to haystackerRoutes.deindexHandler,
+            "task" bind GET to haystackerRoutes.taskProcessHandler,
             "quit" bind POST to quitHandler()
         )
     }
@@ -110,7 +100,7 @@ class HslServer(
 
             val hslServer by di.newInstance {
                 HslServer(
-                    di = di,
+                    haystackerRoutes = instance(arg = settingsDirectory),
                     indexManagerProvider = instance(),
                     settingsManager = instance(arg = settingsDirectory),
                     taskManager = instance(),

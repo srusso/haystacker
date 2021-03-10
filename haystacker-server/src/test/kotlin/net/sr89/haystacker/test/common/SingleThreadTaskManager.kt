@@ -15,7 +15,7 @@ class SingleThreadTaskManager: BackgroundTaskManager {
 
     override fun status(taskId: TaskId): TaskStatus = TaskStatus(COMPLETED, "Done")
 
-    override fun interruptAllRunningTasks() {
+    override fun shutdownAndWaitForTasksToComplete() {
 
     }
 }

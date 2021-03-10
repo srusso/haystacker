@@ -19,9 +19,11 @@ class QuitHandler(private val indexManagerProvider: IndexManagerProvider,
         println("Stopping all filesystem watchers")
         indexManagerProvider.getAll().forEach(IndexManager::stopWatchingFileSystemChanges)
         println("Interrupting all running background tasks")
-        taskManager.interruptAllRunningTasks()
+        taskManager.shutdownAndWaitForTasksToComplete()
 
         println("Shutting down in ${shutdownDelay.toMillis()}ms")
+
+        // cannot use the taskManager itself here because we are shutting it down
         Thread {
             Thread.sleep(shutdownDelay.toMillis())
             serverInstance.stop()

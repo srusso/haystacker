@@ -17,15 +17,15 @@ class HaystackerApplication(
     private val settingsManager: SettingsManager
 ) {
     fun run() {
-        println("Starting REST server")
-
-        restServer.start()
-
         println("Setting up filesystem watchers for existing indexes")
 
         settingsManager.indexes()
             .map(indexManagerProvider::forPath)
             .forEach(IndexManager::startWatchingFileSystemChanges)
+
+        println("Starting REST server")
+
+        restServer.start()
 
         println("Haystacker REST server started")
     }

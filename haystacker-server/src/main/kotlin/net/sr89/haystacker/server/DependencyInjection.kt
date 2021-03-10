@@ -22,7 +22,6 @@ import org.http4k.server.asServer
 import org.kodein.di.DI
 import org.kodein.di.bind
 import org.kodein.di.instance
-import org.kodein.di.multiton
 import org.kodein.di.singleton
 import java.time.Duration
 
@@ -39,33 +38,33 @@ private fun buildRestServer(haystackerRoutes: HaystackerRoutes, port: Int): Http
 
 val handlersModule = DI.Module(name = "HandlersModule") {
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
-    bind<CreateIndexHandler>() with multiton { conf: ServerConfig -> CreateIndexHandler(instance(), instance(arg = conf)) }
+    bind<CreateIndexHandler>() with singleton { CreateIndexHandler(instance(), instance()) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
     bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
-    bind<QuitHandler>() with multiton { conf: ServerConfig -> QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
+    bind<QuitHandler>() with singleton { QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
 
-    bind<HaystackerRoutes>() with multiton { conf: ServerConfig ->
+    bind<HaystackerRoutes>() with singleton {
         HaystackerRoutes(
             instance(),
-            instance(arg = conf),
             instance(),
             instance(),
             instance(),
-            instance(arg = conf)
+            instance(),
+            instance()
         )
     }
 }
 
-val managerModule = DI.Module("Managers") {
+fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
     bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager() }
-    bind<SettingsManager>() with multiton { conf: ServerConfig -> SettingsManager(conf) }
+    bind<SettingsManager>() with singleton { SettingsManager(conf) }
     bind<IndexManagerProvider>() with singleton { IndexManagerProvider(instance()) }
-    bind<Http4kServer>() with multiton { conf: ServerConfig -> buildRestServer(instance(arg = conf), conf.httpPort) }
+    bind<Http4kServer>() with singleton { buildRestServer(instance(), conf.httpPort) }
     bind<Duration>(tag = "shutdownDelay") with singleton { Duration.ofSeconds(5) }
 }
 
-fun applicationModule() = DI {
+fun applicationModule(conf: ServerConfig) = DI {
     import(handlersModule)
-    import(managerModule)
+    import(managerModule(conf))
 }

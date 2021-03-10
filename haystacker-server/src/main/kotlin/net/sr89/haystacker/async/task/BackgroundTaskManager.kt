@@ -38,7 +38,7 @@ interface BackgroundTaskManager {
      */
     fun submit(task: BackgroundTask): TaskId?
     fun status(taskId: TaskId): TaskStatus
-    fun interruptAllRunningTasks()
+    fun shutdownAndWaitForTasksToComplete()
 }
 
 class AsyncBackgroundTaskManager : BackgroundTaskManager {
@@ -89,7 +89,7 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
         }
     }
 
-    override fun interruptAllRunningTasks() {
+    override fun shutdownAndWaitForTasksToComplete() {
         executor.shutdown()
 
         println("Waiting up to 30 seconds for all currently running tasks to complete")

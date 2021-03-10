@@ -12,6 +12,7 @@ import net.sr89.haystacker.test.common.TaskCreatedResponseType
 import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
+import net.sr89.haystacker.test.common.tryAssertingRepeatedly
 import org.http4k.client.ApacheClient
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
@@ -106,12 +107,11 @@ internal class ServerFSMonitoringTest {
 
             removeDirectoryFromIndex(indexFile, subDirectory)
 
-            // let's give some time to the file system watcher
-            Thread.sleep(1000L)
-
-            // assert that the new file was indexed based on file system changes
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"), "Expected new file to be added to the index by the file system watcher")
-            assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf(), "Subdirectory was removed from the index")
+            // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
+            tryAssertingRepeatedly(Duration.ofSeconds(1)) {
+                assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"), "Expected new file to be added to the index by the file system watcher")
+                assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf(), "Subdirectory was removed from the index")
+            }
         }
 
         println()
@@ -129,25 +129,28 @@ internal class ServerFSMonitoringTest {
 
             directoryToIndex.resolve("newfile.txt").toFile().delete()
 
-            // let's give some time to the file system watcher
-            Thread.sleep(1000L)
-
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(), "The file was removed, so it shouldn't be returned by the search anymore")
-            assertSearchResult(
-                searchIndex(indexFile, "name = ignoredbecauseinremoveddirectory.txt"),
-                listOf(),
-                "Subdirectory $subDirectory was excluded from the index, so we are not expecting changes there to be picked up by the file system watcher and updated in the index again"
-            )
-            assertSearchResult(
-                searchIndex(indexFile, "name = filecreatedafterrestart.txt"),
-                listOf("fileCreatedAfterRestart.txt"),
-                "Expected file in $directoryToIndex to be indexed by the file system watcher even after restarting the server"
-            )
+            // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
+            // TODO give list of actions/asserts to try, and only retry those who fail
+            tryAssertingRepeatedly(Duration.ofSeconds(1)) {
+                assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(), "The file was removed, so it shouldn't be returned by the search anymore")
+                assertSearchResult(
+                    searchIndex(indexFile, "name = ignoredbecauseinremoveddirectory.txt"),
+                    listOf(),
+                    "Subdirectory $subDirectory was excluded from the index, so we are not expecting changes there to be picked up by the file system watcher and updated in the index again"
+                )
+                assertSearchResult(
+                    searchIndex(indexFile, "name = filecreatedafterrestart.txt"),
+                    listOf("fileCreatedAfterRestart.txt"),
+                    "Expected file in $directoryToIndex to be indexed by the file system watcher even after restarting the server"
+                )
+            }
         }
     }
 
     private fun newServer(): HaystackerApplication {
         httpClient = ApacheClient()
+
+        val config = ServerConfig(9000, settingsDirectory)
 
         val testOverrides = DI.Module("DITestOverrides") {
             bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { shutdownDelay }
@@ -155,12 +158,12 @@ internal class ServerFSMonitoringTest {
 
         val testDI = DI {
             import(handlersModule)
-            import(managerModule)
+            import(managerModule(config))
 
             import(testOverrides, allowOverride = true)
         }
 
-        return HaystackerApplication.application(testDI, ServerConfig(9000, settingsDirectory))
+        return HaystackerApplication.application(testDI)
     }
 
     private fun createIndex(indexFile: Path) {

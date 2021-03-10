@@ -12,6 +12,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.FileTime
+import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertEquals
 
@@ -32,9 +33,6 @@ fun assertSearchResult(response: Response, expectedFilenames: List<String>, mess
         .map { path -> Paths.get(path).fileName.toString() }
 
     assertEquals(expectedFilenames.toSet(), foundFilenames.toSet(), message)
-//    expectedFilenames.forEach { path ->
-//        assertTrue(path in foundFilenames, "Expected path $path not found among results: $foundFilenames")
-//    }
 }
 
 fun createServerTestFiles(
@@ -63,3 +61,23 @@ fun createServerTestFiles(
         it.write("Some example file contents (subdirectory file)".toByteArray())
     }
 }
+
+fun tryAssertingRepeatedly(timeout: Duration, action: () -> Unit) {
+    val start = System.nanoTime()
+
+    lateinit var assertionError: AssertionError
+
+    while (durationSince(start) < timeout) {
+        try {
+            action()
+            return
+        } catch (e: AssertionError) {
+            assertionError = e
+            Thread.sleep(5L)
+        }
+    }
+
+    throw assertionError
+}
+
+private fun durationSince(nanos: Long) = Duration.ofNanos(System.nanoTime() - nanos)

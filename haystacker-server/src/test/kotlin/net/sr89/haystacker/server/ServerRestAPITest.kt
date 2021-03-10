@@ -9,7 +9,6 @@ import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
-import net.sr89.haystacker.server.handlers.QuitHandler
 import net.sr89.haystacker.test.common.NoOpServer
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
@@ -27,12 +26,10 @@ import org.junit.jupiter.api.Test
 import org.kodein.di.DI
 import org.kodein.di.bind
 import org.kodein.di.instance
-import org.kodein.di.multiton
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
@@ -69,25 +66,21 @@ internal class HaystackerApplicationKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
+        val config = ServerConfig(0, Paths.get("."))
+
         val testOverrides = DI.Module("DITestOverrides") {
             bind<BackgroundTaskManager>(overrides = true) with singleton { SingleThreadTaskManager() }
-            bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { Duration.ofMillis(1L) }
-            bind<Http4kServer>(overrides = true) with multiton { conf: ServerConfig -> NoOpServer() }
+            bind<Http4kServer>(overrides = true) with singleton { NoOpServer() }
         }
 
         val testDI = DI {
             import(handlersModule)
-            import(managerModule)
+            import(managerModule(config))
 
             import(testOverrides, allowOverride = true)
         }
 
-        val config = ServerConfig(0, Paths.get(""))
-        val myRoutes: HaystackerRoutes by testDI.instance(arg = config)
-        val serverInstance: Http4kServer by testDI.instance(arg = config)
-        val quitHandler: QuitHandler by testDI.instance(arg = config)
-
-        quitHandler.serverInstance = serverInstance
+        val myRoutes: HaystackerRoutes by testDI.instance()
 
         routes = myRoutes.routesHandler()
 
@@ -217,11 +210,13 @@ internal class HaystackerApplicationKtTest {
         indexFile: Path,
         directoryToIndex: Path
     ) {
-        val taskResponse = routes(Request(Method.POST, "/directory")
-            .with(
-                directory of directoryToIndex.toString(),
-                indexPath of indexFile.toAbsolutePath().toString()
-            ))
+        val taskResponse = routes(
+            Request(Method.POST, "/directory")
+                .with(
+                    directory of directoryToIndex.toString(),
+                    indexPath of indexFile.toAbsolutePath().toString()
+                )
+        )
 
         val taskId = objectMapper.readValue(taskResponse.bodyString(), TaskCreatedResponseType())!!
 
@@ -231,11 +226,18 @@ internal class HaystackerApplicationKtTest {
     }
 
     private fun getTaskStatus(taskId: String): TaskExecutionState {
-        val response = routes(Request(Method.GET, "/task")
-            .with(
-                net.sr89.haystacker.server.api.taskId of taskId
-            ))
+        val response = routes(
+            Request(Method.GET, "/task")
+                .with(
+                    net.sr89.haystacker.server.api.taskId of taskId
+                )
+        )
 
-        return TaskExecutionState.valueOf(objectMapper.readValue(response.bodyString(), TaskStatusResponseType())!!.status)
+        return TaskExecutionState.valueOf(
+            objectMapper.readValue(
+                response.bodyString(),
+                TaskStatusResponseType()
+            )!!.status
+        )
     }
 }

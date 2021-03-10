@@ -12,7 +12,7 @@ This will create the CLI client jar.
 
 ## Running the server
 
-Simply run `HslServer.kt`.
+Simply run `HaystackerApplication.kt`.
 
 ## Running the shell client
 

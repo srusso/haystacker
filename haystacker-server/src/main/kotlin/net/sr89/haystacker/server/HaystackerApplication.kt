@@ -31,16 +31,16 @@ class HaystackerApplication(
     }
 
     companion object {
-        fun application(di: DI, config: ServerConfig): HaystackerApplication {
+        fun application(di: DI): HaystackerApplication {
             val application by di.newInstance {
                 HaystackerApplication(
-                    restServer = instance(arg = config),
+                    restServer = instance(),
                     indexManagerProvider = instance(),
-                    settingsManager = instance(arg = config)
+                    settingsManager = instance()
                 )
             }
 
-            val quitHandler: QuitHandler by di.instance(arg = config)
+            val quitHandler: QuitHandler by di.instance()
 
             // ugly circular dependency
             quitHandler.serverInstance = application.restServer
@@ -58,7 +58,7 @@ class HaystackerApplication(
                 Paths.get(args[0])
             }
 
-            application(applicationModule(), ServerConfig(9000, settingsDirectory)).run()
+            application(applicationModule(ServerConfig(9000, settingsDirectory))).run()
         }
     }
 }

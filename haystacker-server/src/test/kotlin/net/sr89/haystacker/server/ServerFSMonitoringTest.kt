@@ -7,6 +7,7 @@ import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
 import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
@@ -20,6 +21,9 @@ import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -29,7 +33,7 @@ import java.time.Month
 import java.time.ZoneOffset
 
 internal class ServerFSMonitoringTest {
-    private fun <R> HslServer.runServer(testCase: HslServer.() -> R) {
+    private fun <R> HaystackerApplication.runServer(testCase: HaystackerApplication.() -> R) {
         try {
             this.run()
             testCase()
@@ -142,9 +146,21 @@ internal class ServerFSMonitoringTest {
         }
     }
 
-    private fun newServer(): HslServer {
+    private fun newServer(): HaystackerApplication {
         httpClient = ApacheClient()
-        return HslServer.server(settingsDirectory, shutdownDelay)
+
+        val testOverrides = DI.Module("DITestOverrides") {
+            bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { shutdownDelay }
+        }
+
+        val testDI = DI {
+            import(handlersModule)
+            import(managerModule)
+
+            import(testOverrides, allowOverride = true)
+        }
+
+        return HaystackerApplication.application(testDI, ServerConfig(9000, settingsDirectory))
     }
 
     private fun createIndex(indexFile: Path) {

@@ -1,11 +1,17 @@
 package net.sr89.haystacker.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.config.ServerConfig
+import net.sr89.haystacker.server.handlers.HaystackerRoutes
+import net.sr89.haystacker.server.handlers.QuitHandler
+import net.sr89.haystacker.test.common.NoOpServer
+import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
 import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
@@ -14,17 +20,25 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.with
+import org.http4k.server.Http4kServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.instance
+import org.kodein.di.multiton
+import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
 
-internal class HslServerKtTest {
+internal class HaystackerApplicationKtTest {
     private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     private val objectMapper = ObjectMapper()
 
@@ -55,9 +69,27 @@ internal class HslServerKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        val server = HslServer.server(settingsDirectory)
+        val testOverrides = DI.Module("DITestOverrides") {
+            bind<BackgroundTaskManager>(overrides = true) with singleton { SingleThreadTaskManager() }
+            bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { Duration.ofMillis(1L) }
+            bind<Http4kServer>(overrides = true) with multiton { conf: ServerConfig -> NoOpServer() }
+        }
 
-        routes = server.haystackerRoutes()
+        val testDI = DI {
+            import(handlersModule)
+            import(managerModule)
+
+            import(testOverrides, allowOverride = true)
+        }
+
+        val config = ServerConfig(0, Paths.get(""))
+        val myRoutes: HaystackerRoutes by testDI.instance(arg = config)
+        val serverInstance: Http4kServer by testDI.instance(arg = config)
+        val quitHandler: QuitHandler by testDI.instance(arg = config)
+
+        quitHandler.serverInstance = serverInstance
+
+        routes = myRoutes.routesHandler()
 
         routes(createRequest)
         addDirectoryToIndex(indexFile, directoryToIndex)
@@ -65,6 +97,8 @@ internal class HslServerKtTest {
 
     @AfterEach
     internal fun tearDown() {
+        println("Shutting down server: ${routes(Request(Method.POST, "/quit"))}")
+
         directoryToIndex.toFile().deleteRecursively()
         settingsDirectory.toFile().deleteRecursively()
         indexFile.toFile().deleteRecursively()

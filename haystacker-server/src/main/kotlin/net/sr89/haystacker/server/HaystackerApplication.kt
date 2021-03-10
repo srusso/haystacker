@@ -40,7 +40,7 @@ class HaystackerApplication(
                 )
             }
 
-            val quitHandler: QuitHandler by di.instance(arg = config)
+            val quitHandler: QuitHandler by di.instance()
 
             // ugly circular dependency
             quitHandler.serverInstance = application.restServer

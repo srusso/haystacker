@@ -43,7 +43,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
     bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
-    bind<QuitHandler>() with multiton { conf: ServerConfig -> QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
+    bind<QuitHandler>() with singleton { QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
 
     bind<HaystackerRoutes>() with multiton { conf: ServerConfig ->
         HaystackerRoutes(
@@ -52,7 +52,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
             instance(),
             instance(),
             instance(),
-            instance(arg = conf)
+            instance()
         )
     }
 }

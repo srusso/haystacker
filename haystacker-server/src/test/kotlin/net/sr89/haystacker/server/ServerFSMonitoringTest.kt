@@ -130,6 +130,7 @@ internal class ServerFSMonitoringTest {
             directoryToIndex.resolve("newfile.txt").toFile().delete()
 
             // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
+            // TODO give list of actions/asserts to try, and only retry those who fail
             tryAssertingRepeatedly(Duration.ofSeconds(1)) {
                 assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(), "The file was removed, so it shouldn't be returned by the search anymore")
                 assertSearchResult(
@@ -149,18 +150,20 @@ internal class ServerFSMonitoringTest {
     private fun newServer(): HaystackerApplication {
         httpClient = ApacheClient()
 
+        val config = ServerConfig(9000, settingsDirectory)
+
         val testOverrides = DI.Module("DITestOverrides") {
             bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { shutdownDelay }
         }
 
         val testDI = DI {
-            import(handlersModule)
-            import(managerModule)
+            import(handlersModule(config))
+            import(managerModule(config))
 
             import(testOverrides, allowOverride = true)
         }
 
-        return HaystackerApplication.application(testDI, ServerConfig(9000, settingsDirectory))
+        return HaystackerApplication.application(testDI)
     }
 
     private fun createIndex(indexFile: Path) {

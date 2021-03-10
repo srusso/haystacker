@@ -31,12 +31,12 @@ class HaystackerApplication(
     }
 
     companion object {
-        fun application(di: DI, config: ServerConfig): HaystackerApplication {
+        fun application(di: DI): HaystackerApplication {
             val application by di.newInstance {
                 HaystackerApplication(
-                    restServer = instance(arg = config),
+                    restServer = instance(),
                     indexManagerProvider = instance(),
-                    settingsManager = instance(arg = config)
+                    settingsManager = instance()
                 )
             }
 
@@ -58,7 +58,7 @@ class HaystackerApplication(
                 Paths.get(args[0])
             }
 
-            application(applicationModule(), ServerConfig(9000, settingsDirectory)).run()
+            application(applicationModule(ServerConfig(9000, settingsDirectory))).run()
         }
     }
 }

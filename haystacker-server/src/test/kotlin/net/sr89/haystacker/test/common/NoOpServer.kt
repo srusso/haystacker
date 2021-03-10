@@ -4,14 +4,14 @@ import org.http4k.server.Http4kServer
 
 class NoOpServer: Http4kServer {
     override fun port(): Int {
-        TODO("Not yet implemented")
+        return 0
     }
 
     override fun start(): Http4kServer {
-        TODO("Not yet implemented")
+        return this
     }
 
     override fun stop(): Http4kServer {
-        TODO("Not yet implemented")
+        return this
     }
 }

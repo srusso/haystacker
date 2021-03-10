@@ -9,7 +9,6 @@ import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
-import net.sr89.haystacker.server.handlers.QuitHandler
 import net.sr89.haystacker.test.common.NoOpServer
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
@@ -32,7 +31,6 @@ import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
@@ -71,7 +69,6 @@ internal class HaystackerApplicationKtTest {
 
         val testOverrides = DI.Module("DITestOverrides") {
             bind<BackgroundTaskManager>(overrides = true) with singleton { SingleThreadTaskManager() }
-            bind<Duration>(overrides = true, tag = "shutdownDelay") with singleton { Duration.ofMillis(1L) }
             bind<Http4kServer>(overrides = true) with multiton { conf: ServerConfig -> NoOpServer() }
         }
 
@@ -84,10 +81,6 @@ internal class HaystackerApplicationKtTest {
 
         val config = ServerConfig(0, Paths.get(""))
         val myRoutes: HaystackerRoutes by testDI.instance(arg = config)
-        val serverInstance: Http4kServer by testDI.instance(arg = config)
-        val quitHandler: QuitHandler by testDI.instance(arg = config)
-
-        quitHandler.serverInstance = serverInstance
 
         routes = myRoutes.routesHandler()
 

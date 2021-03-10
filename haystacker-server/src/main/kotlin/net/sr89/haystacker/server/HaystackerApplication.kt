@@ -9,7 +9,6 @@ import org.http4k.server.Http4kServer
 import org.kodein.di.DI
 import org.kodein.di.instance
 import org.kodein.di.newInstance
-import java.nio.file.Path
 import java.nio.file.Paths
 
 class HaystackerApplication(
@@ -32,14 +31,10 @@ class HaystackerApplication(
     }
 
     companion object {
-        fun server(di: DI, settingsDirectory: Path, port: Int): HaystackerApplication {
-            val config = ServerConfig(port, settingsDirectory)
-
-            val serverInstance: Http4kServer by di.instance(arg = config)
-
+        fun server(di: DI, config: ServerConfig): HaystackerApplication {
             val hslServer by di.newInstance {
                 HaystackerApplication(
-                    restServer = serverInstance,
+                    restServer = instance(arg = config),
                     indexManagerProvider = instance(),
                     settingsManager = instance(arg = config)
                 )
@@ -47,7 +42,7 @@ class HaystackerApplication(
 
             val quitHandler: QuitHandler by di.instance(arg = config)
 
-            quitHandler.serverInstance = serverInstance
+            quitHandler.serverInstance = hslServer.restServer
 
             return hslServer
         }
@@ -62,7 +57,7 @@ class HaystackerApplication(
                 Paths.get(args[0])
             }
 
-            server(serverDI(), settingsDirectory, 9000).run()
+            server(applicationModule(), ServerConfig(9000, settingsDirectory)).run()
         }
     }
 }

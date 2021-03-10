@@ -7,6 +7,7 @@ import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.test.common.TaskCreatedResponseType
 import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
@@ -159,7 +160,7 @@ internal class ServerFSMonitoringTest {
             import(testOverrides, allowOverride = true)
         }
 
-        return HaystackerApplication.server(testDI, settingsDirectory, 9000)
+        return HaystackerApplication.server(testDI, ServerConfig(9000, settingsDirectory))
     }
 
     private fun createIndex(indexFile: Path) {

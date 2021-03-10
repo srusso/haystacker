@@ -65,7 +65,7 @@ val managerModule = DI.Module("Managers") {
     bind<Duration>(tag = "shutdownDelay") with singleton { Duration.ofSeconds(5) }
 }
 
-fun serverDI() = DI {
+fun applicationModule() = DI {
     import(handlersModule)
     import(managerModule)
 }

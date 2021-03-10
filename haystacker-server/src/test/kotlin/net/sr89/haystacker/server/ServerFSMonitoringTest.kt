@@ -160,7 +160,7 @@ internal class ServerFSMonitoringTest {
             import(testOverrides, allowOverride = true)
         }
 
-        return HaystackerApplication.server(testDI, ServerConfig(9000, settingsDirectory))
+        return HaystackerApplication.application(testDI, ServerConfig(9000, settingsDirectory))
     }
 
     private fun createIndex(indexFile: Path) {

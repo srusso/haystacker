@@ -36,7 +36,7 @@ private fun buildRestServer(haystackerRoutes: HaystackerRoutes, port: Int): Http
     return app.asServer(Jetty(port))
 }
 
-fun handlersModule(conf: ServerConfig) = DI.Module(name = "HandlersModule") {
+val handlersModule = DI.Module(name = "HandlersModule") {
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
     bind<CreateIndexHandler>() with singleton { CreateIndexHandler(instance(), instance()) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
@@ -65,6 +65,6 @@ fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
 }
 
 fun applicationModule(conf: ServerConfig) = DI {
-    import(handlersModule(conf))
+    import(handlersModule)
     import(managerModule(conf))
 }

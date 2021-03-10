@@ -157,7 +157,7 @@ internal class ServerFSMonitoringTest {
         }
 
         val testDI = DI {
-            import(handlersModule(config))
+            import(handlersModule)
             import(managerModule(config))
 
             import(testOverrides, allowOverride = true)

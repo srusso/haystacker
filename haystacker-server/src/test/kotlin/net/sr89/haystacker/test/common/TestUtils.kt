@@ -80,4 +80,4 @@ fun tryAssertingRepeatedly(timeout: Duration, action: () -> Unit) {
     throw assertionError
 }
 
-private fun durationSince(nanos: Long) = Duration.ofNanos(System.nanoTime() - nanos)
+fun durationSince(nanos: Long): Duration = Duration.ofNanos(System.nanoTime() - nanos)

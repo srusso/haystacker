@@ -58,18 +58,48 @@ internal class AsyncBackgroundTaskManagerTest {
     internal fun submitTaskThatCompletesSuccessfully() {
         val taskId = manager.submit(MockBackgroundTask(30))
 
-        expectTaskCompletion(taskId!!, 50)
+        expectTaskCompletion(taskId!!, 500)
+    }
+
+    @Test
+    internal fun submitManyTasks() {
+        val taskDuration = 10L
+
+        val taskIds = (1..50).map {
+            manager.submit(MockBackgroundTask(taskDuration))!!
+        }
+
+        expectAllTaskCompletedWithin(taskIds, 5000)
+    }
+
+    private fun expectAllTaskCompletedWithin(taskIds: List<TaskId>, timeout: Long) {
+        val start = System.nanoTime()
+
+        var remainingTasks = taskIds.toList()
+
+        while (durationSince(start).toMillis() < timeout) {
+            remainingTasks = remainingTasks.filter{
+                !isTaskCompleted(it)
+            }
+            if (remainingTasks.isEmpty()) {
+                return
+            }
+        }
+
+        fail(AssertionError("Expected all ${taskIds.size} tasks to be completed within $timeout ms, but ${remainingTasks.size} tasks are still running"))
     }
 
     private fun expectTaskCompletion(taskId: TaskId, timeout: Long) {
         val start = System.nanoTime()
 
         while (durationSince(start).toMillis() < timeout) {
-            if (manager.status(taskId).state == COMPLETED) {
+            if (isTaskCompleted(taskId)) {
                 return
             }
         }
 
         fail(AssertionError("Expected task to be completed within $timeout ms, but its state is still '${manager.status(taskId).state}'"))
     }
+
+    private fun isTaskCompleted(taskId: TaskId) = manager.status(taskId).state == COMPLETED
 }

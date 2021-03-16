@@ -63,7 +63,8 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
                     finishedTasks.put(id, task)
                 }
         } catch (e: RejectedExecutionException) {
-            e.printStackTrace()
+            println("The task was rejected by the executor service: ${e.message}")
+            runningTasks.remove(id)
             return null
         }
 
@@ -90,5 +91,9 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
         println("Waiting up to 30 seconds for all currently running tasks to complete")
 
         executor.awaitTermination(30, SECONDS)
+    }
+
+    fun runningTasks(): List<TaskId> {
+        return runningTasks.keys.toList()
     }
 }

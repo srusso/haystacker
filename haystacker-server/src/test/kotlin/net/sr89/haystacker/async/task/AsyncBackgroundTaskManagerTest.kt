@@ -4,6 +4,7 @@ import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.test.common.TaskRejectingExecutorService
 import net.sr89.haystacker.test.common.durationSince
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,7 +13,9 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 private class MockBackgroundTask(val durationMillis: Long): BackgroundTask {
     private val interrupted = AtomicBoolean(false)
@@ -80,6 +83,20 @@ internal class AsyncBackgroundTaskManagerTest {
 
         // new tasks are not started after shutdownAndWaitForTasksToComplete() is called
         assertNull(manager.submit(MockBackgroundTask(1000L)))
+    }
+
+    @Test
+    internal fun taskExecutionIsRejected() {
+        manager = AsyncBackgroundTaskManager(TaskRejectingExecutorService())
+
+        assertNull(manager.submit(MockBackgroundTask(Duration.ofSeconds(30).toMillis())))
+        assertEquals(0, manager.runningTasks().size)
+
+        val start = System.nanoTime()
+        manager.shutdownAndWaitForTasksToComplete()
+        val end = System.nanoTime()
+
+        assertTrue(Duration.ofNanos(end - start) < Duration.ofSeconds(1))
     }
 
     private fun expectAllTaskCompletedWithin(taskIds: List<TaskId>, timeout: Long) {

@@ -89,14 +89,17 @@ internal class AsyncBackgroundTaskManagerTest {
     internal fun taskExecutionIsRejected() {
         manager = AsyncBackgroundTaskManager(TaskRejectingExecutorService())
 
-        assertNull(manager.submit(MockBackgroundTask(Duration.ofSeconds(30).toMillis())))
-        assertEquals(0, manager.runningTasks().size)
+        val task = MockBackgroundTask(Duration.ofSeconds(30).toMillis())
+
+        assertEquals(NOT_STARTED, task.currentStatus().state)
+        assertNull(manager.submit(task))
 
         val start = System.nanoTime()
         manager.shutdownAndWaitForTasksToComplete()
         val end = System.nanoTime()
 
         assertTrue(Duration.ofNanos(end - start) < Duration.ofSeconds(1))
+        assertEquals(NOT_STARTED, task.currentStatus().state)
     }
 
     private fun expectAllTaskCompletedWithin(taskIds: List<TaskId>, timeout: Long) {

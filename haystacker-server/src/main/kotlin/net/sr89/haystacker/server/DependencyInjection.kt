@@ -22,8 +22,11 @@ import org.http4k.server.asServer
 import org.kodein.di.DI
 import org.kodein.di.bind
 import org.kodein.di.instance
+import org.kodein.di.provider
 import org.kodein.di.singleton
 import java.time.Duration
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 private fun buildRestServer(haystackerRoutes: HaystackerRoutes, port: Int): Http4kServer {
     val contexts = RequestContexts()
@@ -34,6 +37,10 @@ private fun buildRestServer(haystackerRoutes: HaystackerRoutes, port: Int): Http
         .then(haystackerRoutes.routesHandler())
 
     return app.asServer(Jetty(port))
+}
+
+val utilModule = DI.Module(name = "UtilsModule") {
+    bind<ExecutorService>() with provider { Executors.newFixedThreadPool(15) }
 }
 
 val handlersModule = DI.Module(name = "HandlersModule") {
@@ -57,7 +64,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
 }
 
 fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
-    bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager() }
+    bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager(instance()) }
     bind<SettingsManager>() with singleton { SettingsManager(conf) }
     bind<IndexManagerProvider>() with singleton { IndexManagerProvider(instance()) }
     bind<Http4kServer>() with singleton { buildRestServer(instance(), conf.httpPort) }
@@ -65,6 +72,7 @@ fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
 }
 
 fun applicationModule(conf: ServerConfig) = DI {
+    import(utilModule)
     import(handlersModule)
     import(managerModule(conf))
 }

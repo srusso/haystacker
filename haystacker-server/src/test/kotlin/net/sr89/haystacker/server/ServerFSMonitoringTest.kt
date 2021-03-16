@@ -157,6 +157,7 @@ internal class ServerFSMonitoringTest {
         }
 
         val testDI = DI {
+            import(utilModule)
             import(handlersModule)
             import(managerModule(config))
 

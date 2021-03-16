@@ -2,11 +2,11 @@ package net.sr89.haystacker.async.task
 
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
-import net.sr89.haystacker.server.collection.CircularQueue
+import net.sr89.haystacker.server.collection.FifoConcurrentMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -41,11 +41,10 @@ interface BackgroundTaskManager {
     fun shutdownAndWaitForTasksToComplete()
 }
 
-class AsyncBackgroundTaskManager : BackgroundTaskManager {
+class AsyncBackgroundTaskManager(private val executor: ExecutorService) : BackgroundTaskManager {
 
-    private val completedTasks: CircularQueue<Pair<TaskId, BackgroundTask>> = CircularQueue(100)
+    private val finishedTasks: FifoConcurrentMap<TaskId, BackgroundTask> = FifoConcurrentMap(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
-    private val executor = Executors.newFixedThreadPool(15)
 
     override fun submit(task: BackgroundTask): TaskId? {
         if (executor.isShutdown) {
@@ -55,18 +54,17 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
 
         val id = TaskId(UUID.randomUUID())
 
+        runningTasks[id] = task
+
         try {
-            CompletableFuture.runAsync(
-                {
-                    runningTasks[id] = task
-                    task.run()
-                }, executor)
+            CompletableFuture.runAsync(task::run, executor)
                 .whenComplete { _, _ ->
                     runningTasks.remove(id)
-                    completedTasks.add(Pair(id, task))
+                    finishedTasks.put(id, task)
                 }
         } catch (e: RejectedExecutionException) {
-            e.printStackTrace()
+            println("The task was rejected by the executor service: ${e.message}")
+            runningTasks.remove(id)
             return null
         }
 
@@ -76,21 +74,19 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
     override fun status(taskId: TaskId): TaskStatus {
         val runningTask = runningTasks[taskId]
 
-        if (runningTask != null) {
-            return runningTask.currentStatus()
+        return if (runningTask != null) {
+            runningTask.currentStatus()
         } else {
-            for (completedTask in completedTasks) {
-                if (completedTask.first == taskId) {
-                    return completedTask.second.currentStatus()
-                }
-            }
+            val finishedTask = finishedTasks.get(taskId)
 
-            return TaskStatus(NOT_FOUND, "Not found")
+            finishedTask?.currentStatus() ?: TaskStatus(NOT_FOUND, "Not found")
         }
     }
 
     override fun shutdownAndWaitForTasksToComplete() {
         executor.shutdown()
+
+        runningTasks.forEach { (_, task) -> task.interrupt() }
 
         println("Waiting up to 30 seconds for all currently running tasks to complete")
 

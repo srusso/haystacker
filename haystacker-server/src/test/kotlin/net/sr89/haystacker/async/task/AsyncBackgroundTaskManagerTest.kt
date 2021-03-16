@@ -52,6 +52,7 @@ internal class AsyncBackgroundTaskManagerTest {
 
     @AfterEach
     fun tearDown() {
+
     }
 
     @Test
@@ -84,6 +85,7 @@ internal class AsyncBackgroundTaskManagerTest {
             if (remainingTasks.isEmpty()) {
                 return
             }
+            Thread.sleep(5L)
         }
 
         fail(AssertionError("Expected all ${taskIds.size} tasks to be completed within $timeout ms, but ${remainingTasks.size} tasks are still running"))
@@ -96,6 +98,7 @@ internal class AsyncBackgroundTaskManagerTest {
             if (isTaskCompleted(taskId)) {
                 return
             }
+            Thread.sleep(5L)
         }
 
         fail(AssertionError("Expected task to be completed within $timeout ms, but its state is still '${manager.status(taskId).state}'"))

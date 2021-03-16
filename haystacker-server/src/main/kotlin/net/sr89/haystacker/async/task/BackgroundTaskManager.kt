@@ -89,6 +89,8 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
     override fun shutdownAndWaitForTasksToComplete() {
         executor.shutdown()
 
+        runningTasks.forEach { (_, task) -> task.interrupt() }
+
         println("Waiting up to 30 seconds for all currently running tasks to complete")
 
         executor.awaitTermination(30, SECONDS)

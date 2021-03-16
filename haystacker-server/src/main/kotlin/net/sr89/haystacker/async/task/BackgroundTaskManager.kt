@@ -6,7 +6,7 @@ import net.sr89.haystacker.server.collection.FifoConcurrentMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -41,11 +41,10 @@ interface BackgroundTaskManager {
     fun shutdownAndWaitForTasksToComplete()
 }
 
-class AsyncBackgroundTaskManager : BackgroundTaskManager {
+class AsyncBackgroundTaskManager(private val executor: ExecutorService) : BackgroundTaskManager {
 
     private val finishedTasks: FifoConcurrentMap<TaskId, BackgroundTask> = FifoConcurrentMap(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
-    private val executor = Executors.newFixedThreadPool(15)
 
     override fun submit(task: BackgroundTask): TaskId? {
         if (executor.isShutdown) {

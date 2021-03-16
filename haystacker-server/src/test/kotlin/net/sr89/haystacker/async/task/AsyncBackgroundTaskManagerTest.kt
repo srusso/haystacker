@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import java.time.Duration
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertNull
@@ -48,7 +49,7 @@ internal class AsyncBackgroundTaskManagerTest {
 
     @BeforeEach
     fun setUp() {
-        manager = AsyncBackgroundTaskManager()
+        manager = AsyncBackgroundTaskManager(Executors.newFixedThreadPool(15))
     }
 
     @Test

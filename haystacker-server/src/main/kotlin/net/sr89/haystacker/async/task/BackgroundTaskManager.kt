@@ -55,13 +55,10 @@ class AsyncBackgroundTaskManager : BackgroundTaskManager {
 
         val id = TaskId(UUID.randomUUID())
 
+        runningTasks[id] = task
+
         try {
-            CompletableFuture.runAsync(
-                {
-                    runningTasks[id] = task
-                    task.run()
-                }, executor
-            )
+            CompletableFuture.runAsync(task::run, executor)
                 .whenComplete { _, _ ->
                     runningTasks.remove(id)
                     finishedTasks.put(id, task)

@@ -5,12 +5,13 @@ import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
 import net.sr89.haystacker.test.common.durationSince
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.test.assertNull
 
 private class MockBackgroundTask(val durationMillis: Long): BackgroundTask {
     private val interrupted = AtomicBoolean(false)
@@ -50,16 +51,11 @@ internal class AsyncBackgroundTaskManagerTest {
         manager = AsyncBackgroundTaskManager()
     }
 
-    @AfterEach
-    fun tearDown() {
-
-    }
-
     @Test
     internal fun submitTaskThatCompletesSuccessfully() {
         val taskId = manager.submit(MockBackgroundTask(30))
 
-        expectTaskCompletion(taskId!!, 500)
+        expectTaskCompleted(taskId!!, 500)
     }
 
     @Test
@@ -73,6 +69,18 @@ internal class AsyncBackgroundTaskManagerTest {
         expectAllTaskCompletedWithin(taskIds, 5000)
     }
 
+    @Test
+    internal fun shutdownWhileTaskIsRunning() {
+        val taskId = manager.submit(MockBackgroundTask(Duration.ofSeconds(30).toMillis()))
+
+        manager.shutdownAndWaitForTasksToComplete()
+
+        expectTaskInterrupted(taskId!!, 500)
+
+        // new tasks are not started after shutdownAndWaitForTasksToComplete() is called
+        assertNull(manager.submit(MockBackgroundTask(1000L)))
+    }
+
     private fun expectAllTaskCompletedWithin(taskIds: List<TaskId>, timeout: Long) {
         val start = System.nanoTime()
 
@@ -80,7 +88,7 @@ internal class AsyncBackgroundTaskManagerTest {
 
         while (durationSince(start).toMillis() < timeout) {
             remainingTasks = remainingTasks.filter{
-                !isTaskCompleted(it)
+                !taskHasState(it, COMPLETED)
             }
             if (remainingTasks.isEmpty()) {
                 return
@@ -91,11 +99,19 @@ internal class AsyncBackgroundTaskManagerTest {
         fail(AssertionError("Expected all ${taskIds.size} tasks to be completed within $timeout ms, but ${remainingTasks.size} tasks are still running"))
     }
 
-    private fun expectTaskCompletion(taskId: TaskId, timeout: Long) {
+    private fun expectTaskInterrupted(taskId: TaskId, timeout: Long) {
+        expectTaskStateWithinTimeout(taskId, INTERRUPTED ,timeout)
+    }
+
+    private fun expectTaskCompleted(taskId: TaskId, timeout: Long) {
+        expectTaskStateWithinTimeout(taskId, COMPLETED ,timeout)
+    }
+
+    private fun expectTaskStateWithinTimeout(taskId: TaskId, state: TaskExecutionState, timeout: Long) {
         val start = System.nanoTime()
 
         while (durationSince(start).toMillis() < timeout) {
-            if (isTaskCompleted(taskId)) {
+            if (taskHasState(taskId, state)) {
                 return
             }
             Thread.sleep(5L)
@@ -104,5 +120,5 @@ internal class AsyncBackgroundTaskManagerTest {
         fail(AssertionError("Expected task to be completed within $timeout ms, but its state is still '${manager.status(taskId).state}'"))
     }
 
-    private fun isTaskCompleted(taskId: TaskId) = manager.status(taskId).state == COMPLETED
+    private fun taskHasState(taskId: TaskId, state: TaskExecutionState) = manager.status(taskId).state == state
 }

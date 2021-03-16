@@ -93,7 +93,7 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
         executor.awaitTermination(30, SECONDS)
     }
 
-    fun runningTasks(): List<TaskId> {
+    internal fun runningTasks(): List<TaskId> {
         return runningTasks.keys.toList()
     }
 }

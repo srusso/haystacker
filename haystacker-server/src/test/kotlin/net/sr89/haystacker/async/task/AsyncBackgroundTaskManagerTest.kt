@@ -77,9 +77,11 @@ internal class AsyncBackgroundTaskManagerTest {
     internal fun shutdownWhileTaskIsRunning() {
         val taskId = manager.submit(MockBackgroundTask(Duration.ofSeconds(30).toMillis()))
 
-        manager.shutdownAndWaitForTasksToComplete()
+        expectTaskRunning(taskId!!, 500)
 
-        expectTaskInterrupted(taskId!!, 500)
+        expectQuickShutdown()
+
+        expectTaskInterrupted(taskId, 500)
 
         // new tasks are not started after shutdownAndWaitForTasksToComplete() is called
         assertNull(manager.submit(MockBackgroundTask(1000L)))
@@ -94,12 +96,16 @@ internal class AsyncBackgroundTaskManagerTest {
         assertEquals(NOT_STARTED, task.currentStatus().state)
         assertNull(manager.submit(task))
 
+        expectQuickShutdown()
+        assertEquals(NOT_STARTED, task.currentStatus().state)
+    }
+
+    private fun expectQuickShutdown() {
         val start = System.nanoTime()
         manager.shutdownAndWaitForTasksToComplete()
         val end = System.nanoTime()
 
         assertTrue(Duration.ofNanos(end - start) < Duration.ofSeconds(1))
-        assertEquals(NOT_STARTED, task.currentStatus().state)
     }
 
     private fun expectAllTaskCompletedWithin(taskIds: List<TaskId>, timeout: Long) {
@@ -118,6 +124,10 @@ internal class AsyncBackgroundTaskManagerTest {
         }
 
         fail(AssertionError("Expected all ${taskIds.size} tasks to be completed within $timeout ms, but ${remainingTasks.size} tasks are still running"))
+    }
+
+    private fun expectTaskRunning(taskId: TaskId, timeout: Long) {
+        expectTaskStateWithinTimeout(taskId, RUNNING ,timeout)
     }
 
     private fun expectTaskInterrupted(taskId: TaskId, timeout: Long) {

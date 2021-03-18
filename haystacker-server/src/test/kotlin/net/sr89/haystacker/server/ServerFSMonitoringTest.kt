@@ -45,7 +45,7 @@ internal class ServerFSMonitoringTest {
 
     private lateinit var httpClient: HttpHandler
     private val objectMapper = ObjectMapper()
-    private val shutdownDelay = Duration.ofMillis(100L)
+    private val shutdownDelay = Duration.ofMillis(10L)
 
     val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 

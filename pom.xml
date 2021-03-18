@@ -11,6 +11,7 @@
 
     <modules>
         <module>haystacker-common</module>
+        <module>haystacker-lang</module>
         <module>haystacker-server</module>
         <module>haystacker-shell</module>
     </modules>

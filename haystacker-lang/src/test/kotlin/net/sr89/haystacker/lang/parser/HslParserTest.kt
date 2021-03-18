@@ -7,7 +7,7 @@ import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
-import net.sr89.haystacker.test.common.having
+import net.sr89.haystacker.lang.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test

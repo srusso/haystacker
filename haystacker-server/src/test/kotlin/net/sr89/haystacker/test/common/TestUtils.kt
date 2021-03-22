@@ -35,6 +35,18 @@ fun assertSearchResult(response: Response, expectedFilenames: List<String>, mess
     assertEquals(expectedFilenames.toSet(), foundFilenames.toSet(), message)
 }
 
+fun assertSortedSearchResult(
+    searchResult: SearchResponse,
+    expectedFilenamesInOrder: List<String>,
+    message: String? = null
+) {
+    val foundFilenames: List<String> = searchResult.results
+        .map(SearchResult::path)
+        .map { path -> Paths.get(path).fileName.toString() }
+
+    assertEquals(expectedFilenamesInOrder, foundFilenames, message)
+}
+
 fun createServerTestFiles(
     fileTime: Instant,
     directoryToIndex: Path,

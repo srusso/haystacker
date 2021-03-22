@@ -1,11 +1,11 @@
 package net.sr89.haystacker.lang.translate.visit
 
 import net.sr89.haystacker.lang.ast.HslAndClause
+import net.sr89.haystacker.lang.ast.HslClauseVisitor
 import net.sr89.haystacker.lang.ast.HslDate
 import net.sr89.haystacker.lang.ast.HslInstant
 import net.sr89.haystacker.lang.ast.HslNodeClause
 import net.sr89.haystacker.lang.ast.HslOrClause
-import net.sr89.haystacker.lang.ast.HslQueryVisitor
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.exception.InvalidHslDataSizeException
@@ -61,7 +61,7 @@ private fun HslNodeClause.toLuceneTerm(): Query {
     }
 }
 
-class ToLuceneQueryVisitor : HslQueryVisitor<Query> {
+class ToLuceneClauseVisitor : HslClauseVisitor<Query> {
     override fun visit(query: HslAndClause): Query {
         val left = query.left.accept(this)
         val right = query.right.accept(this)

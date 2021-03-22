@@ -11,8 +11,9 @@ import net.sr89.haystacker.lang.ast.HslValue
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.SortOrder
 import net.sr89.haystacker.lang.ast.Symbol
-import net.sr89.haystacker.lang.exception.HslParseException
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
+import net.sr89.haystacker.lang.exception.InvalidHslOrderByClause
+import net.sr89.haystacker.lang.exception.InvalidSemanticException
 import org.jparsec.OperatorTable
 import org.jparsec.Parser
 import org.jparsec.Parsers
@@ -73,7 +74,11 @@ private val nodeClauseParser: Parser<HslNodeClause> = Parsers.sequence(
 private val sortFieldParser: Parser<HslSortField> = Parsers.sequence(
     symbolParser.followedBy(whitespaces),
     sortOrderParser.followedBy(whitespaces)
-) { symbol, sortOrder -> HslSortField(symbol, sortOrder) }
+) { symbol, sortOrder ->
+    if (symbol == Symbol.NAME) {
+        throw InvalidHslOrderByClause(symbol)
+    }
+    HslSortField(symbol, sortOrder) }
 
 private val comma = Patterns.isChar(',').toScanner("comma (,)")
 
@@ -105,7 +110,7 @@ class HslParser {
             return parser().parse(queryString.trim())
         } catch (e: ParserException) {
             val cause = e.cause
-            if (cause is HslParseException) {
+            if (cause is InvalidSemanticException) {
                 throw cause
             } else {
                 throw InvalidHslGrammarException(queryString, e.line, e.column)

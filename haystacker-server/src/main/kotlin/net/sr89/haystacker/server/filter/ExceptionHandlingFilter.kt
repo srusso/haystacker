@@ -4,6 +4,7 @@ import net.sr89.haystacker.lang.exception.InvalidHslDataSizeException
 import net.sr89.haystacker.lang.exception.InvalidHslDateException
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.exception.InvalidHslOperatorException
+import net.sr89.haystacker.lang.exception.InvalidHslOrderByClause
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.lang.exception.SettingsUpdateException
 import net.sr89.haystacker.server.api.stringBody
@@ -25,6 +26,9 @@ class ExceptionHandler(val next: HttpHandler) : HttpHandler {
         } catch (e: InvalidHslDateException) {
             Response(BAD_REQUEST)
                 .with(stringBody of "Symbol '${e.symbol}' expects a date, but '${e.date}' is neither an \"ISO-8601/UTC date time\" (ex: 2011-12-03T10:15:30Z), nor an \"ISO-8601/date time with offset\" (ex: 2011-12-03T10:15:30+01:00) nor a date (ex: 2011-12-03)")
+        } catch (e: InvalidHslOrderByClause) {
+            Response(BAD_REQUEST)
+                .with(stringBody of "Symbol '${e.symbol}' cannot be used in an \"order by\" clause")
         } catch (e: InvalidHslDataSizeException) {
             Response(BAD_REQUEST)
                 .with(stringBody of "Symbol '${e.symbol}' expects a data-size value, but was '${e.dataSize}'")

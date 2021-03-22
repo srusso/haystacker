@@ -13,6 +13,7 @@ import net.sr89.haystacker.lang.ast.Symbol.CREATED
 import net.sr89.haystacker.lang.ast.Symbol.LAST_MODIFIED
 import net.sr89.haystacker.lang.ast.Symbol.SIZE
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
+import net.sr89.haystacker.lang.exception.InvalidHslOrderByClause
 import net.sr89.haystacker.lang.having
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.fail
@@ -37,7 +38,7 @@ class HslParserTest {
         val query = parser.parse("name = \"name with spaces.txt\"")
 
         assertTrue(query.sort.sortFields.isEmpty())
-        
+
         having(query.clause)
             .ofType(HslNodeClause::class)
             .then {
@@ -186,13 +187,13 @@ class HslParserTest {
             .then {
                 having(it.left)
                     .ofType(HslNodeClause::class)
-                    .then {left ->
+                    .then { left ->
                         left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)
                     .ofType(HslNodeClause::class)
-                    .then {right ->
+                    .then { right ->
                         right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
@@ -209,13 +210,13 @@ class HslParserTest {
             .then {
                 having(it.left)
                     .ofType(HslNodeClause::class)
-                    .then {left ->
+                    .then { left ->
                         left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
                 having(it.right)
                     .ofType(HslNodeClause::class)
-                    .then {right ->
+                    .then { right ->
                         right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
@@ -237,7 +238,7 @@ class HslParserTest {
 
                 having(it.right)
                     .ofType(HslNodeClause::class)
-                    .then {right ->
+                    .then { right ->
                         right.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("file.txt"))
                     }
             }
@@ -254,7 +255,7 @@ class HslParserTest {
             .then {
                 having(it.left)
                     .ofType(HslNodeClause::class)
-                    .then {left ->
+                    .then { left ->
                         left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
@@ -267,7 +268,8 @@ class HslParserTest {
 
     @Test
     fun spacesAreIgnored() {
-        val query = parser.parse("  created  <   '$date'     AND    (  created   <   '$date'   OR  name   =   \"file.txt\"  ) ")
+        val query =
+            parser.parse("  created  <   '$date'     AND    (  created   <   '$date'   OR  name   =   \"file.txt\"  ) ")
 
         assertTrue(query.sort.sortFields.isEmpty())
 
@@ -276,7 +278,7 @@ class HslParserTest {
             .then {
                 having(it.left)
                     .ofType(HslNodeClause::class)
-                    .then {left ->
+                    .then { left ->
                         left.isNodeClause(Symbol.CREATED, Operator.LESS, HslValue(date))
                     }
 
@@ -369,6 +371,16 @@ class HslParserTest {
             .then {
                 it.isNodeClause(Symbol.NAME, Operator.EQUALS, HslValue("name with spaces.txt"))
             }
+    }
+
+    @Test
+    fun cannotOrderByName() {
+        try {
+            parser.parse("name = \"name with spaces.txt\" order by name desc")
+            fail<String>("Expected parsing to fail for a broken HSL query")
+        } catch (e: InvalidHslOrderByClause) {
+            assertEquals(Symbol.NAME, e.symbol)
+        }
     }
 
     @Test

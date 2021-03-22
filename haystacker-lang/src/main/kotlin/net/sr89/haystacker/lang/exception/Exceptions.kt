@@ -3,7 +3,7 @@ package net.sr89.haystacker.lang.exception
 import net.sr89.haystacker.lang.ast.Operator
 import net.sr89.haystacker.lang.ast.Symbol
 
-class InvalidHslGrammarException(val hslQuery: String, val line: Int, val column: Int) : RuntimeException()
+class InvalidHslGrammarException(val hslQuery: String, val line: Int, val column: Int) : RuntimeException("Invalid grammar in query '$hslQuery' at line $line, column $column")
 
 class HslParseException : RuntimeException()
 

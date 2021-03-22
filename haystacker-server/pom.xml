@@ -17,10 +17,6 @@
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jparsec</groupId>
-            <artifactId>jparsec</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
@@ -37,16 +33,8 @@
             <artifactId>http4k-format-jackson</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
@@ -58,6 +46,11 @@
         </dependency>
         <dependency>
             <artifactId>haystacker-common</artifactId>
+            <groupId>net.sr89</groupId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>haystacker-lang</artifactId>
             <groupId>net.sr89</groupId>
             <version>${project.parent.version}</version>
         </dependency>

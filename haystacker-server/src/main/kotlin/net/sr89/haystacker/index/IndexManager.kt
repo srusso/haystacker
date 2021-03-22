@@ -4,6 +4,12 @@ import com.sun.jna.platform.FileMonitor
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.filesystem.IndexUpdatingListener
+import net.sr89.haystacker.lang.ast.HslQuery
+import net.sr89.haystacker.lang.ast.HslSortField
+import net.sr89.haystacker.lang.ast.SortOrder
+import net.sr89.haystacker.lang.translate.visit.ToLuceneClauseVisitor
+import net.sr89.haystacker.server.api.SearchResponse
+import net.sr89.haystacker.server.api.SearchResult
 import net.sr89.haystacker.server.file.isParentOf
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
@@ -20,6 +26,9 @@ import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.ScoreDoc
+import org.apache.lucene.search.Sort
+import org.apache.lucene.search.SortField
+import org.apache.lucene.search.SortField.Type
 import org.apache.lucene.search.TermQuery
 import org.apache.lucene.store.FSDirectory
 import java.io.File
@@ -44,7 +53,7 @@ class IndexManagerProvider(private val taskManager: BackgroundTaskManager) {
     }
 }
 
-data class IndexSearchResult(
+private data class LuceneSearchResult(
     val totalResults: Long,
     val returnedResults: Int,
     val results: List<Document>
@@ -59,7 +68,7 @@ interface IndexManager {
     /**
      * Search the index.
      */
-    fun search(query: Query, maxResults: Int = 5): IndexSearchResult
+    fun search(query: HslQuery, maxResults: Int = 5): SearchResponse
 
     /**
      * Remove a directory from the index, recursively. Do not remove the directory itself.
@@ -69,7 +78,7 @@ interface IndexManager {
     /**
      * Add a new directory and all its contents, recursively, to the index.
      */
-    fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean)
+    fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, startWatchingDirectory: Boolean)
 
     /**
      * Returns true if the file or directory specified by [file] is of interest for this index.
@@ -103,11 +112,18 @@ private val excludedRootSubDirectoriesId = Term("excludedRootSubDirectories")
 private const val setTermValueDelimiter = ",~#~,"
 private const val setTermIdValue = "true"
 
-private const val observedEvents = FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
+private const val observedEvents =
+    FileMonitor.FILE_CREATED or FileMonitor.FILE_DELETED or FileMonitor.FILE_RENAMED or FileMonitor.FILE_SIZE_CHANGED
 private val fileMonitor = FileMonitor.getInstance()
 
-private class IndexManagerImpl(taskManager: BackgroundTaskManager,
-                               private val indexPath: String) : IndexManager {
+private fun toSearchResult(document: Document): SearchResult {
+    return SearchResult(document.getField("path").stringValue())
+}
+
+internal class IndexManagerImpl(
+    taskManager: BackgroundTaskManager,
+    private val indexPath: String
+) : IndexManager {
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
@@ -127,14 +143,21 @@ private class IndexManagerImpl(taskManager: BackgroundTaskManager,
         IndexWriter(initIndexDirectory(), iwc).close()
     }
 
-    override fun search(query: Query, maxResults: Int): IndexSearchResult {
-        initSearcher()
+    override fun search(query: HslQuery, maxResults: Int): SearchResponse {
+        val luceneQuery = query.clause.accept(ToLuceneClauseVisitor())
 
-        val hits = searcher.search(query, maxResults)
+        val luceneSearchResult = if (query.sort.sortFields.isEmpty()) {
+            lowLevelLuceneSearch(luceneQuery, maxResults)
+        } else {
+            val luceneSort = Sort(*query.sort.sortFields.map(this::toLuceneSortField).toTypedArray())
+            lowLevelLuceneSearch(luceneQuery, maxResults, luceneSort)
+        }
 
-        val foundDocuments = hits.scoreDocs.map(ScoreDoc::doc).map(::fetchDocument).toList()
-
-        return IndexSearchResult(hits.totalHits.value, hits.scoreDocs.size, foundDocuments)
+        return SearchResponse(
+            luceneSearchResult.totalResults,
+            luceneSearchResult.returnedResults,
+            luceneSearchResult.results.map(::toSearchResult)
+        )
     }
 
     override fun removeDirectory(path: Path, updateListOfIndexedDirectories: Boolean) {
@@ -150,8 +173,8 @@ private class IndexManagerImpl(taskManager: BackgroundTaskManager,
         }
     }
 
-    override fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, updateListOfIndexedDirectories: Boolean) {
-        val addDirectoryToWatchedList = updateListOfIndexedDirectories && Files.isDirectory(path)
+    override fun addNewDirectory(path: Path, status: AtomicReference<TaskStatus>, startWatchingDirectory: Boolean) {
+        val addDirectoryToWatchedList = startWatchingDirectory && Files.isDirectory(path)
 
         indexLock.write {
             newIndexWriter().use {
@@ -191,6 +214,30 @@ private class IndexManagerImpl(taskManager: BackgroundTaskManager,
             .any { indexedDirectory -> indexedDirectory.isParentOf(filePath) }
             .and(excludedDirectories()
                 .none { excludedDirectory -> excludedDirectory.isParentOf(filePath) })
+    }
+
+    private fun lowLevelLuceneSearch(query: Query, maxResults: Int = 5, sort: Sort? = null): LuceneSearchResult {
+        initSearcher()
+
+        val hits = if (sort == null) {
+            searcher.search(query, maxResults)
+        } else {
+            searcher.search(query, maxResults, sort)
+        }
+
+        val foundDocuments = hits.scoreDocs.map(ScoreDoc::doc).map(::fetchDocument).toList()
+
+        return LuceneSearchResult(hits.totalHits.value, hits.scoreDocs.size, foundDocuments)
+    }
+
+    private fun toLuceneSortField(hslSortField: HslSortField): SortField {
+        val reverse = when(hslSortField.sortOrder) {
+            SortOrder.ASCENDING -> false
+            SortOrder.DESCENDING -> true
+        }
+
+        // TODO remove hardcoded Type.LONG from here
+        return SortField(hslSortField.field.luceneQueryName, Type.LONG, reverse)
     }
 
     private fun indexedDirectories() =
@@ -240,7 +287,7 @@ private class IndexManagerImpl(taskManager: BackgroundTaskManager,
     }
 
     private fun getSetValue(term: Term): Pair<Document, Set<String>> {
-        val hits = search(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
+        val hits = lowLevelLuceneSearch(TermQuery(Term(idTermForSetDocument(term), setTermIdValue)))
 
         return if (hits.totalResults == 1L) {
             val existingDoc = hits.results[0]

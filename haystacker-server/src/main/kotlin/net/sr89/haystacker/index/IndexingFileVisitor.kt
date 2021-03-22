@@ -7,9 +7,11 @@ import net.sr89.haystacker.lang.ast.Symbol
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
+import org.apache.lucene.document.NumericDocValuesField
 import org.apache.lucene.document.StringField
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.IndexWriter
+import org.apache.lucene.index.IndexableField
 import org.apache.lucene.index.Term
 import java.io.IOException
 import java.nio.file.FileVisitResult
@@ -20,7 +22,8 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.atomic.AtomicReference
 
-class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val status: AtomicReference<TaskStatus>) : SimpleFileVisitor<Path>() {
+class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val status: AtomicReference<TaskStatus>) :
+    SimpleFileVisitor<Path>() {
     private val indexPath = Paths.get(indexPathStr)
     private var visitedFiles = 0
 
@@ -81,15 +84,28 @@ class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val sta
         return doc
     }
 
-    private fun fieldsFor(symbol: Symbol, path: Path, attrs: BasicFileAttributes): List<Field> {
+    private fun fieldsFor(symbol: Symbol, path: Path, attrs: BasicFileAttributes): List<IndexableField> {
+        val creationTime = attrs.creationTime().toMillis()
+        val modifiedTime = attrs.lastModifiedTime().toMillis()
+        val size = attrs.size()
+
         return when (symbol) {
             Symbol.NAME -> listOf(
                 TextField(Symbol.NAME.luceneQueryName, path.toString(), Field.Store.YES),
                 StringField("id", path.toString(), Field.Store.NO)
             )
-            Symbol.SIZE -> listOf(LongPoint(Symbol.SIZE.luceneQueryName, attrs.size()))
-            Symbol.CREATED -> listOf(LongPoint(Symbol.CREATED.luceneQueryName, attrs.creationTime().toMillis()))
-            Symbol.LAST_MODIFIED -> listOf(LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, attrs.lastModifiedTime().toMillis()))
+            Symbol.SIZE -> listOf(
+                LongPoint(Symbol.SIZE.luceneQueryName, size),
+                NumericDocValuesField(Symbol.SIZE.luceneQueryName, size)
+            )
+            Symbol.CREATED -> listOf<IndexableField>(
+                LongPoint(Symbol.CREATED.luceneQueryName, creationTime),
+                NumericDocValuesField(Symbol.CREATED.luceneQueryName, creationTime)
+            )
+            Symbol.LAST_MODIFIED -> listOf(
+                LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime),
+                NumericDocValuesField(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime)
+            )
         }
     }
 }

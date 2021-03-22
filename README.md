@@ -97,6 +97,15 @@ Examples:
     last_modified < 2020-01-05T10:00:00Z OR name = "file.txt"
     created < '2020-01-05' AND (last_modified > '2020-01-10' OR name = "file.txt")
     
+### Sorting results
+
+One or more optional `order by` clauses can be used to sort results.
+
+Examples:
+
+    name = archive AND size > 100mb order by created desc, last_modified desc
+    name = archive AND size > 100mb order by size desc
+    
 ## Keeping the index updated
 
 Haystacker uses JNA's [FileMonitor](https://github.com/java-native-access/jna/blob/master/www/PlatformLibrary.md) to receive notifications from the operating system about changes to the file system.

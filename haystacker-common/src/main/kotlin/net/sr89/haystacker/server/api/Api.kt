@@ -26,6 +26,13 @@ data class TaskIdResponse(
     @JsonProperty("taskId") val taskId: String
 )
 
+data class TaskInterruptResponse(
+    /**
+     * True if the task was running and was sent an interrupt, false otherwise.
+     */
+    @JsonProperty("interruptSent") val interruptSent: Boolean
+)
+
 val hslQuery = Query.string().required("hslQuery")
 
 val indexPath = Query.string().required("indexPath")

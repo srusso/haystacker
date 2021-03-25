@@ -4,8 +4,8 @@ import net.sr89.haystacker.async.task.BackgroundTask
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskId
-import net.sr89.haystacker.async.task.TaskInterruptResult
 import net.sr89.haystacker.async.task.TaskStatus
+import net.sr89.haystacker.server.api.TaskInterruptResponse
 import java.util.UUID
 
 class SingleThreadTaskManager: BackgroundTaskManager {
@@ -16,7 +16,7 @@ class SingleThreadTaskManager: BackgroundTaskManager {
 
     override fun status(taskId: TaskId): TaskStatus = TaskStatus(COMPLETED, "Done")
 
-    override fun sendInterrupt(taskId: TaskId): TaskInterruptResult {
+    override fun sendInterrupt(taskId: TaskId): TaskInterruptResponse {
         TODO("Not yet implemented")
     }
 

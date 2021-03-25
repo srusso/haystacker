@@ -123,6 +123,26 @@ internal class HaystackerApplicationKtTest {
     }
 
     @Test
+    internal fun searchByFilenameIsCaseInsensitive() {
+        val search1 = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "name = OLDFILE.txt",
+                maxResults of 15,
+                indexPath of indexFile.toAbsolutePath().toString()
+            )
+
+        val search2 = Request(Method.POST, "/search")
+            .with(
+                hslQuery of "name = OlDfIlE.txt",
+                maxResults of 15,
+                indexPath of indexFile.toAbsolutePath().toString()
+            )
+
+        assertSearchResult(routes(search1), listOf("oldFile.txt"))
+        assertSearchResult(routes(search2), listOf("oldFile.txt"))
+    }
+
+    @Test
     internal fun searchByFileSize() {
         val searchSmallFiles = Request(Method.POST, "/search")
             .with(

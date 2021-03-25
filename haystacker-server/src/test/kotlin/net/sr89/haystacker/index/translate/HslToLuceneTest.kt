@@ -1,11 +1,12 @@
-package net.sr89.haystacker.lang.translate
+package net.sr89.haystacker.index.translate
 
+import net.sr89.haystacker.lang.ToLuceneClauseVisitor
 import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.ast.Symbol.CREATED
 import net.sr89.haystacker.lang.ast.Symbol.LAST_MODIFIED
 import net.sr89.haystacker.lang.ast.Symbol.SIZE
 import net.sr89.haystacker.lang.parser.HslParser
-import net.sr89.haystacker.lang.translate.visit.ToLuceneClauseVisitor
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.BooleanClause.Occur.MUST
@@ -26,7 +27,7 @@ internal class HslToLuceneTest {
     val hslParser: HslParser = HslParser()
 
     private fun toLuceneQuery(hsl: String): Query {
-        return hslParser.parse(hsl).clause.accept(ToLuceneClauseVisitor())
+        return hslParser.parse(hsl).clause.accept(ToLuceneClauseVisitor(StandardAnalyzer()))
     }
 
     @Test

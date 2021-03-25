@@ -1,4 +1,4 @@
-package net.sr89.haystacker.lang.translate.visit
+package net.sr89.haystacker.lang
 
 import net.sr89.haystacker.lang.ast.HslAndClause
 import net.sr89.haystacker.lang.ast.HslClauseVisitor
@@ -11,14 +11,17 @@ import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.lang.exception.InvalidHslDataSizeException
 import net.sr89.haystacker.lang.exception.InvalidHslOperatorException
 import net.sr89.haystacker.lang.parser.parseHslDateTime
-import net.sr89.haystacker.lang.translate.and
-import net.sr89.haystacker.lang.translate.or
+import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TermQuery
 import org.springframework.util.unit.DataSize
 import java.time.ZoneOffset
+
+private fun normalizeValueToLuceneRepresentation(clause: HslNodeClause, analyzer: Analyzer): String {
+    return analyzer.normalize(clause.symbol.luceneQueryName, clause.value.str).utf8ToString()
+}
 
 private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query {
     return when (operator) {
@@ -30,9 +33,9 @@ private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query
     }
 }
 
-private fun toFileNameQuery(clause: HslNodeClause): Query {
+private fun toFileNameQuery(clause: HslNodeClause, analyzer: Analyzer): Query {
     return when (clause.operator) {
-        Operator.EQUALS -> TermQuery(Term(clause.symbol.luceneQueryName, clause.value.str))
+        Operator.EQUALS -> TermQuery(Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer)))
         else -> throw InvalidHslOperatorException(clause.symbol, clause.operator, clause.value.str)
     }
 }
@@ -53,15 +56,15 @@ private fun toDateQuery(clause: HslNodeClause): Query {
     }
 }
 
-private fun HslNodeClause.toLuceneTerm(): Query {
+private fun HslNodeClause.toLuceneTerm(analyzer: Analyzer): Query {
     return when (symbol) {
-        Symbol.NAME -> toFileNameQuery(this)
+        Symbol.NAME -> toFileNameQuery(this, analyzer)
         Symbol.CREATED, Symbol.LAST_MODIFIED -> toDateQuery(this)
         Symbol.SIZE -> toDataSizeQuery(this)
     }
 }
 
-class ToLuceneClauseVisitor : HslClauseVisitor<Query> {
+class ToLuceneClauseVisitor(val analyzer: Analyzer) : HslClauseVisitor<Query> {
     override fun visit(query: HslAndClause): Query {
         val left = query.left.accept(this)
         val right = query.right.accept(this)
@@ -77,6 +80,6 @@ class ToLuceneClauseVisitor : HslClauseVisitor<Query> {
     }
 
     override fun visit(query: HslNodeClause): Query {
-        return query.toLuceneTerm()
+        return query.toLuceneTerm(analyzer)
     }
 }

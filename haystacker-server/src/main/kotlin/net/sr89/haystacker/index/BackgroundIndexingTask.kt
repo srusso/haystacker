@@ -30,6 +30,7 @@ class BackgroundIndexingTask(
     }
 
     override fun interrupt() {
+        // TODO refactor this. it's horrible to interrupt the task by setting the task status
         latestStatus.set(TaskStatus(INTERRUPTED, "Interrupt command received"))
     }
 

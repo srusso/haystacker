@@ -6,12 +6,10 @@ import net.sr89.haystacker.server.api.directory
 import net.sr89.haystacker.server.api.hslQuery
 import net.sr89.haystacker.server.api.indexPath
 import net.sr89.haystacker.server.api.maxResults
-import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.api.taskId
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Request
-import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.springframework.core.Ordered
@@ -21,8 +19,6 @@ import org.springframework.shell.core.CommandMarker
 import org.springframework.shell.core.annotation.CliCommand
 import org.springframework.shell.core.annotation.CliOption
 import org.springframework.stereotype.Component
-import java.net.SocketException
-import java.time.Duration
 
 
 @Component
@@ -174,27 +170,7 @@ class HslShell : CommandMarker {
         }
     }
 
-    private fun executeTimed(request: Request): TimedHttpResponse {
-        val start = System.currentTimeMillis()
-        return try {
-            val response = httpClient(request)
-            return if (response.status == Status.CONNECTION_REFUSED) {
-                couldNotConnectError(start)
-            } else {
-                TimedHttpResponse(response, durationSince(start))
-            }
-        } catch (e: SocketException) {
-            couldNotConnectError(start)
-        }
-    }
 
-    private fun couldNotConnectError(start: Long): TimedHttpResponse {
-        val response = Response(Status.CONNECTION_REFUSED)
-            .with(stringBody of "Could not connect to $baseUrl. Is the server running at the specified address?")
-        return TimedHttpResponse(response, durationSince(start))
-    }
-
-    private fun durationSince(start: Long) = Duration.ofMillis(System.currentTimeMillis() - start)
 }
 
 fun main(args: Array<String>) {

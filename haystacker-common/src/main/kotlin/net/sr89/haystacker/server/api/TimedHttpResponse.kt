@@ -1,4 +1,4 @@
-package net.sr89.haystacker.client.cli
+package net.sr89.haystacker.server.api
 
 import org.http4k.core.Body
 import org.http4k.core.Headers

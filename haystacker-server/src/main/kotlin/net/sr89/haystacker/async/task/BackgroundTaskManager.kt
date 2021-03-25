@@ -2,6 +2,7 @@ package net.sr89.haystacker.async.task
 
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
+import net.sr89.haystacker.server.api.TaskInterruptResponse
 import net.sr89.haystacker.server.collection.FifoConcurrentMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -37,7 +38,14 @@ interface BackgroundTaskManager {
      * @return A [TaskId] that uniquely identifies the new task, or null if the task couldn't be started
      */
     fun submit(task: BackgroundTask): TaskId?
+
     fun status(taskId: TaskId): TaskStatus
+
+    /**
+     * Send an interrupt to the [BackgroundTask] identified by [taskId].
+     */
+    fun sendInterrupt(taskId: TaskId): TaskInterruptResponse
+
     fun shutdownAndWaitForTasksToComplete()
 }
 
@@ -81,6 +89,19 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
 
             finishedTask?.currentStatus() ?: TaskStatus(NOT_FOUND, "Not found")
         }
+    }
+
+    override fun sendInterrupt(taskId: TaskId): TaskInterruptResponse {
+        val runningTask = runningTasks[taskId]
+
+        val interruptSent = if (runningTask != null) {
+            runningTask.interrupt()
+            true
+        } else {
+            false
+        }
+
+        return TaskInterruptResponse(interruptSent)
     }
 
     override fun shutdownAndWaitForTasksToComplete() {

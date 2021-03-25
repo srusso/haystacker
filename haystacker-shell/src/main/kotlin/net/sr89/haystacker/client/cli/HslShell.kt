@@ -120,6 +120,22 @@ class HslShell : CommandMarker {
         }
     }
 
+    @CliCommand(value = ["task-interrupt"], help = "Sends interrupt signal to running task")
+    fun taskInterrupt(
+        @CliOption(key = [""], help = "The task ID") taskIdParam: String
+    ): String {
+        val taskStatusRequest = Request(Method.POST, "$baseUrl/task/interrupt")
+            .with(taskId of taskIdParam)
+
+        val response = executeTimed(taskStatusRequest)
+
+        return if (response.status == Status.OK) {
+            response.response.bodyString()
+        } else {
+            "Error:\n${response.bodyString()}"
+        }
+    }
+
     @CliCommand(value = ["server-shutdown"], help = "Shutdown the server")
     fun shutdownServer(): String {
         val response = executeTimed(Request(Method.POST, "$baseUrl/quit"))

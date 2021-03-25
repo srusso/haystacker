@@ -26,6 +26,13 @@ data class TaskIdResponse(
     @JsonProperty("taskId") val taskId: String
 )
 
+data class TaskInterruptResponse(
+    /**
+     * True if the task was running and was sent an interrupt, false otherwise.
+     */
+    @JsonProperty("interruptSent") val interruptSent: Boolean
+)
+
 val hslQuery = Query.string().required("hslQuery")
 
 val indexPath = Query.string().required("indexPath")
@@ -35,4 +42,5 @@ val maxResults = Query.int().optional("maxResults")
 val stringBody = Body.string(ContentType.TEXT_PLAIN).toLens()
 val directoryIndexResponse = Body.auto<TaskIdResponse>().toLens()
 val backgroundTaskStatusResponse = Body.auto<BackgroundTaskStatusResponse>().toLens()
+val interruptBackgroundTaskResponse = Body.auto<TaskInterruptResponse>().toLens()
 val searchResponse = Body.auto<SearchResponse>().toLens()

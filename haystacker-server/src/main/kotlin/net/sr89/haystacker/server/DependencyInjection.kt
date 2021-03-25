@@ -11,6 +11,7 @@ import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
 import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
+import net.sr89.haystacker.server.handlers.InterruptBackgroundTaskHandler
 import net.sr89.haystacker.server.handlers.QuitHandler
 import net.sr89.haystacker.server.handlers.SearchHandler
 import org.http4k.core.RequestContexts
@@ -49,10 +50,12 @@ val handlersModule = DI.Module(name = "HandlersModule") {
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
     bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
+    bind<InterruptBackgroundTaskHandler>() with singleton { InterruptBackgroundTaskHandler(instance()) }
     bind<QuitHandler>() with singleton { QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
 
     bind<HaystackerRoutes>() with singleton {
         HaystackerRoutes(
+            instance(),
             instance(),
             instance(),
             instance(),

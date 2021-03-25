@@ -4,10 +4,10 @@ import com.sun.jna.platform.FileMonitor
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.filesystem.IndexUpdatingListener
+import net.sr89.haystacker.lang.ToLuceneClauseVisitor
 import net.sr89.haystacker.lang.ast.HslQuery
 import net.sr89.haystacker.lang.ast.HslSortField
 import net.sr89.haystacker.lang.ast.SortOrder
-import net.sr89.haystacker.lang.translate.visit.ToLuceneClauseVisitor
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.SearchResult
 import net.sr89.haystacker.server.file.isParentOf
@@ -144,7 +144,7 @@ internal class IndexManagerImpl(
     }
 
     override fun search(query: HslQuery, maxResults: Int): SearchResponse {
-        val luceneQuery = query.clause.accept(ToLuceneClauseVisitor())
+        val luceneQuery = query.clause.accept(ToLuceneClauseVisitor(analyzer))
 
         val luceneSearchResult = if (query.sort.sortFields.isEmpty()) {
             lowLevelLuceneSearch(luceneQuery, maxResults)

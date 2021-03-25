@@ -1,4 +1,4 @@
-package net.sr89.haystacker.lang.translate
+package net.sr89.haystacker.lang
 
 import org.apache.lucene.search.BooleanClause.Occur.MUST
 import org.apache.lucene.search.BooleanClause.Occur.SHOULD

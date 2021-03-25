@@ -98,7 +98,16 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
     }
 
     override fun sendInterrupt(taskId: TaskId): TaskInterruptResult {
-        TODO("Not yet implemented")
+        val runningTask = runningTasks[taskId]
+
+        val interruptSent = if (runningTask != null) {
+            runningTask.interrupt()
+            true
+        } else {
+            false
+        }
+
+        return TaskInterruptResult(interruptSent)
     }
 
     override fun shutdownAndWaitForTasksToComplete() {

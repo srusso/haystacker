@@ -30,6 +30,13 @@ enum class TaskExecutionState {
     NOT_FOUND, NOT_STARTED, RUNNING, COMPLETED, ERROR, INTERRUPTED
 }
 
+data class TaskInterruptResult(
+    /**
+     * True if the task was running and was sent an interrupt, false otherwise.
+     */
+    val interruptSent: Boolean
+)
+
 interface BackgroundTaskManager {
     /**
      * Submits and immediately run the task.
@@ -37,7 +44,14 @@ interface BackgroundTaskManager {
      * @return A [TaskId] that uniquely identifies the new task, or null if the task couldn't be started
      */
     fun submit(task: BackgroundTask): TaskId?
+
     fun status(taskId: TaskId): TaskStatus
+
+    /**
+     * Send an interrupt to the [BackgroundTask] identified by [taskId].
+     */
+    fun sendInterrupt(taskId: TaskId): TaskInterruptResult
+
     fun shutdownAndWaitForTasksToComplete()
 }
 
@@ -81,6 +95,10 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
 
             finishedTask?.currentStatus() ?: TaskStatus(NOT_FOUND, "Not found")
         }
+    }
+
+    override fun sendInterrupt(taskId: TaskId): TaskInterruptResult {
+        TODO("Not yet implemented")
     }
 
     override fun shutdownAndWaitForTasksToComplete() {

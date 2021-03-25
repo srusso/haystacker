@@ -14,10 +14,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private class MockBackgroundTask(val durationMillis: Long): BackgroundTask {
+private class MockBackgroundTask(val durationMillis: Long) : BackgroundTask {
     private val interrupted = AtomicBoolean(false)
     private val status = AtomicReference(TaskStatus(NOT_STARTED, ""))
 
@@ -25,7 +26,7 @@ private class MockBackgroundTask(val durationMillis: Long): BackgroundTask {
         status.set(TaskStatus(RUNNING, ""))
 
         val loopDuration = 10L
-        val loops = durationMillis/loopDuration
+        val loops = durationMillis / loopDuration
 
         for (i in 1..loops) {
             Thread.sleep(loopDuration)
@@ -44,6 +45,7 @@ private class MockBackgroundTask(val durationMillis: Long): BackgroundTask {
 
     override fun currentStatus(): TaskStatus = status.get()
 
+    fun wasInterrupted() = interrupted.get()
 }
 
 internal class AsyncBackgroundTaskManagerTest {
@@ -88,6 +90,38 @@ internal class AsyncBackgroundTaskManagerTest {
     }
 
     @Test
+    internal fun interruptRunningTask() {
+        val task = MockBackgroundTask(Duration.ofSeconds(30).toMillis())
+        val taskId = manager.submit(task)!!
+
+        expectTaskRunning(taskId, 500)
+
+        val interruptResult = manager.sendInterrupt(taskId)
+
+        assertTrue(interruptResult.interruptSent)
+        assertTrue(task.wasInterrupted())
+        expectTaskInterrupted(taskId, 500)
+    }
+
+    @Test
+    internal fun interruptAlreadyCompletedTask() {
+        val task = MockBackgroundTask(30)
+        val taskId = manager.submit(task)
+
+        expectTaskCompleted(taskId!!, 500)
+
+        val interruptResult = manager.sendInterrupt(taskId)
+
+        assertFalse(interruptResult.interruptSent)
+        assertFalse(task.wasInterrupted())
+    }
+
+    @Test
+    internal fun interruptNotFoundTask() {
+        assertFalse(manager.sendInterrupt(TaskId.fromString("76665095-f471-47be-9d09-9ff41afb065d")).interruptSent)
+    }
+
+    @Test
     internal fun taskExecutionIsRejected() {
         manager = AsyncBackgroundTaskManager(TaskRejectingExecutorService())
 
@@ -114,7 +148,7 @@ internal class AsyncBackgroundTaskManagerTest {
         var remainingTasks = taskIds.toList()
 
         while (durationSince(start).toMillis() < timeout) {
-            remainingTasks = remainingTasks.filter{
+            remainingTasks = remainingTasks.filter {
                 !taskHasState(it, COMPLETED)
             }
             if (remainingTasks.isEmpty()) {
@@ -127,15 +161,15 @@ internal class AsyncBackgroundTaskManagerTest {
     }
 
     private fun expectTaskRunning(taskId: TaskId, timeout: Long) {
-        expectTaskStateWithinTimeout(taskId, RUNNING ,timeout)
+        expectTaskStateWithinTimeout(taskId, RUNNING, timeout)
     }
 
     private fun expectTaskInterrupted(taskId: TaskId, timeout: Long) {
-        expectTaskStateWithinTimeout(taskId, INTERRUPTED ,timeout)
+        expectTaskStateWithinTimeout(taskId, INTERRUPTED, timeout)
     }
 
     private fun expectTaskCompleted(taskId: TaskId, timeout: Long) {
-        expectTaskStateWithinTimeout(taskId, COMPLETED ,timeout)
+        expectTaskStateWithinTimeout(taskId, COMPLETED, timeout)
     }
 
     private fun expectTaskStateWithinTimeout(taskId: TaskId, state: TaskExecutionState, timeout: Long) {
@@ -148,7 +182,15 @@ internal class AsyncBackgroundTaskManagerTest {
             Thread.sleep(5L)
         }
 
-        fail(AssertionError("Expected task to be completed within $timeout ms, but its state is still '${manager.status(taskId).state}'"))
+        fail(
+            AssertionError(
+                "Expected task to be completed within $timeout ms, but its state is still '${
+                    manager.status(
+                        taskId
+                    ).state
+                }'"
+            )
+        )
     }
 
     private fun taskHasState(taskId: TaskId, state: TaskExecutionState) = manager.status(taskId).state == state

@@ -113,12 +113,12 @@ internal class HaystackerApplicationKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldfile.txt"))
-        assertSearchResult(routes(searchFileByNameInSubDirectory), listOf("subfile.txt"))
+        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldFile.txt"))
+        assertSearchResult(routes(searchFileByNameInSubDirectory), listOf("subFile.txt"))
 
         routes(removeSubdirectoryFromIndexRequest)
 
-        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldfile.txt"))
+        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldFile.txt"))
         assertSearchResult(routes(searchFileByNameInSubDirectory), emptyList())
     }
 
@@ -139,7 +139,7 @@ internal class HaystackerApplicationKtTest {
             )
 
         assertSearchResult(routes(searchBigFiles), listOf("bigbinary.dat"))
-        assertSearchResult(routes(searchSmallFiles), listOf("oldfile.txt", "binary.dat", "subfile.txt"))
+        assertSearchResult(routes(searchSmallFiles), listOf("oldFile.txt", "binary.dat", "subFile.txt"))
     }
 
     @Test
@@ -158,8 +158,8 @@ internal class HaystackerApplicationKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchOldFiles), listOf("oldfile.txt"))
-        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subfile.txt"))
+        assertSearchResult(routes(searchOldFiles), listOf("oldFile.txt"))
+        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
     }
 
     @Test
@@ -178,8 +178,8 @@ internal class HaystackerApplicationKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(searchOldFiles), listOf("oldfile.txt"))
-        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subfile.txt"))
+        assertSearchResult(routes(searchOldFiles), listOf("oldFile.txt"))
+        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
     }
 
     @Test
@@ -203,7 +203,7 @@ internal class HaystackerApplicationKtTest {
                 indexPath of indexFile.toAbsolutePath().toString()
             )
 
-        assertSearchResult(routes(oldFilesOrSpecific), listOf("oldfile.txt", "subfile.txt"))
+        assertSearchResult(routes(oldFilesOrSpecific), listOf("oldFile.txt", "subFile.txt"))
     }
 
     private fun addDirectoryToIndex(

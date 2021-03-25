@@ -52,7 +52,7 @@ fun createServerTestFiles(
     directoryToIndex: Path,
     subDirectory: Path
 ) {
-    val oldFile = directoryToIndex.resolve("oldfile.txt")
+    val oldFile = directoryToIndex.resolve("oldFile.txt")
 
     Files.newOutputStream(oldFile).use {
         it.write("Some example file contents".toByteArray())
@@ -69,7 +69,7 @@ fun createServerTestFiles(
 
     Files.createDirectory(subDirectory)
 
-    Files.newOutputStream(subDirectory.resolve("subfile.txt")).use {
+    Files.newOutputStream(subDirectory.resolve("subFile.txt")).use {
         it.write("Some example file contents (subdirectory file)".toByteArray())
     }
 }

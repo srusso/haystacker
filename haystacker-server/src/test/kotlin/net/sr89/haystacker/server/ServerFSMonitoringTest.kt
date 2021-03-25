@@ -97,11 +97,11 @@ internal class ServerFSMonitoringTest {
             createIndex(indexFile)
             addDirectoryToIndex(indexFile, directoryToIndex)
 
-            assertSearchResult(searchIndex(indexFile, "name = oldfile.txt"), listOf("oldfile.txt"))
+            assertSearchResult(searchIndex(indexFile, "name = oldfile.txt"), listOf("oldFile.txt"))
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf())
-            assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf("subfile.txt"))
+            assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf("subFile.txt"))
 
-            Files.newOutputStream(directoryToIndex.resolve("newfile.txt")).use {
+            Files.newOutputStream(directoryToIndex.resolve("newFile.txt")).use {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
@@ -109,7 +109,7 @@ internal class ServerFSMonitoringTest {
 
             // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
             tryAssertingRepeatedly(Duration.ofSeconds(1)) {
-                assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"), "Expected new file to be added to the index by the file system watcher")
+                assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newFile.txt"), "Expected new file to be added to the index by the file system watcher")
                 assertSearchResult(searchIndex(indexFile, "name = subfile.txt"), listOf(), "Subdirectory was removed from the index")
             }
         }
@@ -117,7 +117,7 @@ internal class ServerFSMonitoringTest {
         println()
 
         newServer().runServer {
-            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newfile.txt"))
+            assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newFile.txt"))
 
             Files.newOutputStream(directoryToIndex.resolve("fileCreatedAfterRestart.txt")).use {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
@@ -127,7 +127,7 @@ internal class ServerFSMonitoringTest {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
-            directoryToIndex.resolve("newfile.txt").toFile().delete()
+            directoryToIndex.resolve("newFile.txt").toFile().delete()
 
             // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
             // TODO give list of actions/asserts to try, and only retry those who fail

@@ -5,7 +5,6 @@ import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
 import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
-import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.index.Trigger.COMMAND
 import java.nio.file.Path
@@ -25,7 +24,7 @@ class BackgroundIndexingTask(
         try {
             indexManager.addNewDirectory(directoryToIndex, latestStatus, trigger == COMMAND)
 
-            if (latestStatus.get().state == RUNNING) {
+            if (latestStatus.get().state !in setOf(INTERRUPTED, ERROR)) {
                 latestStatus.set(TaskStatus(COMPLETED, "Indexed $directoryToIndex and subdirectories"))
             }
         } catch (e: Exception) {

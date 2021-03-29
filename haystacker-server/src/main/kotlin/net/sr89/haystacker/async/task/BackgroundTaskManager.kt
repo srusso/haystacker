@@ -94,12 +94,7 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
     override fun sendInterrupt(taskId: TaskId): TaskInterruptResponse {
         val runningTask = runningTasks[taskId]
 
-        val interruptSent = if (runningTask != null) {
-            runningTask.interrupt()
-            true
-        } else {
-            false
-        }
+        val interruptSent = runningTask?.interrupt() ?: false
 
         return TaskInterruptResponse(interruptSent)
     }

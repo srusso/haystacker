@@ -48,7 +48,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
     bind<CreateIndexHandler>() with singleton { CreateIndexHandler(instance(), instance()) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }
-    bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance()) }
+    bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance(), instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
     bind<InterruptBackgroundTaskHandler>() with singleton { InterruptBackgroundTaskHandler(instance()) }
     bind<QuitHandler>() with singleton { QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }

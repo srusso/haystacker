@@ -39,8 +39,9 @@ private class MockBackgroundTask(val durationMillis: Long) : BackgroundTask {
         status.set(TaskStatus(COMPLETED, ""))
     }
 
-    override fun interrupt() {
+    override fun interrupt(): Boolean {
         interrupted.set(true)
+        return true
     }
 
     override fun currentStatus(): TaskStatus = status.get()

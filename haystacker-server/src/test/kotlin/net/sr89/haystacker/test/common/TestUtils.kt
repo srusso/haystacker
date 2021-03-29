@@ -1,12 +1,7 @@
 package net.sr89.haystacker.test.common
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
-import net.sr89.haystacker.server.api.BackgroundTaskStatusResponse
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.SearchResult
-import net.sr89.haystacker.server.api.TaskIdResponse
-import org.http4k.core.Response
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -22,12 +17,7 @@ fun Path.setTimes(lastModified: Instant, created: Instant): Path {
     return this
 }
 
-class SearchResponseType : TypeReference<SearchResponse>()
-class TaskCreatedResponseType : TypeReference<TaskIdResponse>()
-class TaskStatusResponseType : TypeReference<BackgroundTaskStatusResponse>()
-
-fun assertSearchResult(response: Response, expectedFilenames: List<String>, message: String? = null) {
-    val searchResponse = ObjectMapper().readValue(response.bodyString(), SearchResponseType())
+fun assertSearchResult(searchResponse: SearchResponse, expectedFilenames: List<String>, message: String? = null) {
     val foundFilenames: List<String> = searchResponse.results
         .map(SearchResult::path)
         .map { path -> Paths.get(path).fileName.toString() }

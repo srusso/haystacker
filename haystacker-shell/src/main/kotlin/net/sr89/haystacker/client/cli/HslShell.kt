@@ -119,7 +119,7 @@ class HslShell : CommandMarker {
             if (response.responseBody().interruptSent) {
                 "The task $taskIdParam was running and has been sent an interrupt signal"
             } else {
-                "Interrupt signal not sent to task $taskIdParam: it was either completed, or not found"
+                "Interrupt signal not sent to task $taskIdParam: it was either completed, not found, or the task is not interruptible"
             }
         } else {
             genericErrorMessage(response)

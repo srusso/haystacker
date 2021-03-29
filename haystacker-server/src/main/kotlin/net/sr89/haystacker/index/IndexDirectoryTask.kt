@@ -31,9 +31,10 @@ class IndexDirectoryTask(
         }
     }
 
-    override fun interrupt() {
+    override fun interrupt(): Boolean {
         println("Interrupting task to index $directoryToIndex")
         latestStatus.set(TaskStatus(INTERRUPTED, "Interrupt command received"))
+        return true
     }
 
     override fun currentStatus(): TaskStatus = latestStatus.get()

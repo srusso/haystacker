@@ -96,7 +96,6 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
 
         val interruptSent = if (runningTask != null) {
             runningTask.interrupt()
-            true
         } else {
             false
         }

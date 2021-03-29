@@ -31,8 +31,8 @@ class DeindexDirectoryTask(
         }
     }
 
-    override fun interrupt() {
-    }
+    // currently, this task is not interruptible
+    override fun interrupt() = false
 
     override fun currentStatus(): TaskStatus = latestStatus.get()
 }

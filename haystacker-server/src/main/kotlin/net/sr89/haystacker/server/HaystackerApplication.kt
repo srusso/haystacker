@@ -2,6 +2,8 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.cmdline.getPortOrDefault
+import net.sr89.haystacker.server.cmdline.getSettingsDirectory
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.handlers.QuitHandler
@@ -17,17 +19,19 @@ class HaystackerApplication(
     private val settingsManager: SettingsManager
 ) {
     fun run() {
+        println("Using settings directory '${settingsManager.config.settingsDirectory}'")
+
         println("Setting up filesystem watchers for existing indexes")
 
         settingsManager.indexes()
             .map(indexManagerProvider::forPath)
             .forEach(IndexManager::startWatchingFileSystemChanges)
 
-        println("Starting REST server")
+        println("Starting REST server on port ${restServer.port()}")
 
         restServer.start()
 
-        println("Haystacker REST server started")
+        println("Haystacker REST server started on port ${restServer.port()}")
     }
 
     companion object {
@@ -50,15 +54,10 @@ class HaystackerApplication(
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val settingsDirectory = if (args.isEmpty()) {
-                println("Using Haystacker executable directory (${Paths.get(".").toAbsolutePath()}) as settings directory")
-                Paths.get(".")
-            } else {
-                println("Using settings directory ${args[0]}")
-                Paths.get(args[0])
-            }
+            val settingsDirectory = Paths.get(args.getSettingsDirectory())
+            val port = args.getPortOrDefault()
 
-            application(applicationModule(ServerConfig(9000, settingsDirectory))).run()
+            application(applicationModule(ServerConfig(port, settingsDirectory))).run()
         }
     }
 }

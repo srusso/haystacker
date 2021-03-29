@@ -2,9 +2,9 @@ package net.sr89.haystacker.server.handlers
 
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.lang.parser.HslParser
-import net.sr89.haystacker.server.api.hslQuery
-import net.sr89.haystacker.server.api.indexPath
-import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.api.hslStringQuery
+import net.sr89.haystacker.server.api.indexPathQuery
+import net.sr89.haystacker.server.api.maxResultsQuery
 import net.sr89.haystacker.server.api.searchResponse
 import net.sr89.haystacker.server.api.stringBody
 import org.http4k.core.HttpHandler
@@ -18,11 +18,11 @@ private val hslParser = HslParser()
 
 class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : HttpHandler {
     override fun invoke(request: Request): Response {
-        val hslQuery: String = hslQuery(request)
+        val hslQuery: String = hslStringQuery(request)
 
         val parsedQuery = hslParser.parse(hslQuery)
-        val maxResults: Int = maxResults(request) ?: 10
-        val indexPath: String = indexPath(request)
+        val maxResults: Int = maxResultsQuery(request) ?: 10
+        val indexPath: String = indexPathQuery(request)
         val indexManager = indexManagerProvider.forPath(indexPath)
 
         println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")

@@ -5,8 +5,8 @@ import net.sr89.haystacker.async.task.Trigger.COMMAND
 import net.sr89.haystacker.index.DeindexDirectoryTask
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.api.TaskIdResponse
-import net.sr89.haystacker.server.api.directory
-import net.sr89.haystacker.server.api.indexPath
+import net.sr89.haystacker.server.api.directoryQuery
+import net.sr89.haystacker.server.api.indexPathQuery
 import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.api.taskIdResponse
 import org.http4k.core.HttpHandler
@@ -20,8 +20,8 @@ class DirectoryDeindexHandler(
     val taskManager: BackgroundTaskManager,
     val indexManagerProvider: IndexManagerProvider): HttpHandler {
     override fun invoke(request: Request): Response {
-        val indexPath: String = indexPath(request)
-        val directoryToDeindex = Paths.get(directory(request))
+        val indexPath: String = indexPathQuery(request)
+        val directoryToDeindex = Paths.get(directoryQuery(request))
 
         println("Received request to remove directory $directoryToDeindex from index $indexPath")
 

@@ -14,7 +14,7 @@ import java.time.Duration
 class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandler) {
     fun createIndex(indexPath: String): TimedHttpResponse<String> {
         val request = Request(Method.POST, "$baseUrl/index")
-            .with(net.sr89.haystacker.server.api.indexPath of indexPath)
+            .with(indexPathQuery of indexPath)
 
         return executeTimed(request, object: TypeReference<String>() {})
     }
@@ -22,8 +22,8 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
     fun indexDirectory(indexPath: String, dirPath: String): TimedHttpResponse<TaskIdResponse> {
         val request = Request(Method.POST, "$baseUrl/directory")
             .with(
-                net.sr89.haystacker.server.api.indexPath of indexPath,
-                directory of dirPath
+                indexPathQuery of indexPath,
+                directoryQuery of dirPath
             )
 
         return executeTimed(request, object: TypeReference<TaskIdResponse>() {})
@@ -32,8 +32,8 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
     fun deindexDirectory(indexPath: String, dirPath: String): TimedHttpResponse<TaskIdResponse> {
         val request = Request(Method.DELETE, "$baseUrl/directory")
             .with(
-                net.sr89.haystacker.server.api.indexPath of indexPath,
-                directory of dirPath
+                indexPathQuery of indexPath,
+                directoryQuery of dirPath
             )
 
         return executeTimed(request, object: TypeReference<TaskIdResponse>() {})
@@ -41,14 +41,14 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
 
     fun taskStatus(taskId: String): TimedHttpResponse<BackgroundTaskStatusResponse> {
         val request = Request(Method.GET, "$baseUrl/task")
-            .with(net.sr89.haystacker.server.api.taskId of taskId)
+            .with(taskIdQuery of taskId)
 
         return executeTimed(request, object: TypeReference<BackgroundTaskStatusResponse>() {})
     }
 
     fun taskInterrupt(taskId: String): TimedHttpResponse<TaskInterruptResponse> {
         val request = Request(Method.POST, "$baseUrl/task/interrupt")
-            .with(net.sr89.haystacker.server.api.taskId of taskId)
+            .with(taskIdQuery of taskId)
 
         return executeTimed(request, object: TypeReference<TaskInterruptResponse>() {})
     }
@@ -60,9 +60,9 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
     fun search(query: String, maxResults: Int, indexPath: String): TimedHttpResponse<SearchResponse> {
         val request = Request(Method.POST, "$baseUrl/search")
             .with(
-                hslQuery of query,
-                net.sr89.haystacker.server.api.indexPath of indexPath,
-                net.sr89.haystacker.server.api.maxResults of maxResults
+                hslStringQuery of query,
+                indexPathQuery of indexPath,
+                maxResultsQuery of maxResults
             )
 
         return executeTimed(request, object: TypeReference<SearchResponse>() {})

@@ -5,8 +5,8 @@ import net.sr89.haystacker.async.task.Trigger.COMMAND
 import net.sr89.haystacker.index.IndexDirectoryTask
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.api.TaskIdResponse
-import net.sr89.haystacker.server.api.directory
-import net.sr89.haystacker.server.api.indexPath
+import net.sr89.haystacker.server.api.directoryQuery
+import net.sr89.haystacker.server.api.indexPathQuery
 import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.api.taskIdResponse
 import org.http4k.core.HttpHandler
@@ -20,8 +20,8 @@ class DirectoryIndexHandler(
     private val indexManagerProvider: IndexManagerProvider,
     private val taskManager: BackgroundTaskManager): HttpHandler {
     override fun invoke(request: Request): Response {
-        val indexPath: String = indexPath(request)
-        val directoryToIndex = Paths.get(directory(request))
+        val indexPath: String = indexPathQuery(request)
+        val directoryToIndex = Paths.get(directoryQuery(request))
 
         println("Received request to add directory $directoryToIndex to index $indexPath")
 

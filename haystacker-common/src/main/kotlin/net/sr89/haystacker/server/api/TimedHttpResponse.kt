@@ -8,19 +8,20 @@ import java.time.Duration
 
 private val mapper = ObjectMapper()
 
-class TimedHttpResponse<T>(private val response: Response, val duration: Duration) {
+class TimedHttpResponse<T>(
+    private val response: Response,
+    private val typeReference: TypeReference<T>,
+    val duration: Duration
+) {
+
     val status: Status
         get() = response.status
-
-    private class JacksonTypeClass<T> : TypeReference<T>()
-
-    private val jacksonType = JacksonTypeClass<T>()
 
     private var parsedResponse: T? = null
 
     fun responseBody(): T {
         if (parsedResponse == null) {
-            parsedResponse = mapper.readValue(response.bodyString(), jacksonType)
+            parsedResponse = mapper.readValue(response.bodyString(), typeReference)
         }
 
         return parsedResponse!!

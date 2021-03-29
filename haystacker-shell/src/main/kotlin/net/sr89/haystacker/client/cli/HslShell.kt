@@ -1,6 +1,7 @@
 package net.sr89.haystacker.client.cli
 
 import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.server.api.TimedHttpResponse
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 import org.springframework.core.Ordered
@@ -10,7 +11,6 @@ import org.springframework.shell.core.CommandMarker
 import org.springframework.shell.core.annotation.CliCommand
 import org.springframework.shell.core.annotation.CliOption
 import org.springframework.stereotype.Component
-
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -38,13 +38,19 @@ class HslShell : CommandMarker {
     }
 
     @CliCommand(value = ["create-index"], help = "Create a new index in the server machine")
-    fun createIndex(@CliOption(key = [""], help = "Where to create the new index, on the server's filesystem") path: String): String {
+    fun createIndex(
+        @CliOption(
+            key = [""],
+            help = "Where to create the new index, on the server's filesystem"
+        ) path: String
+    ): String {
         val response = restClient.createIndex(path)
 
         return if (response.status == Status.OK) {
-            "Created index at $path"
+            setCurrentIndex(path)
+            "Created index at $path, and set that as the 'current' index"
         } else {
-            "Error:\n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
@@ -57,10 +63,13 @@ class HslShell : CommandMarker {
         val response = restClient.indexDirectory(ci, dirPath)
 
         return if (response.status == Status.OK) {
-            "Started task to add $dirPath to index $ci: ${response.rawBody()}" +
-                "\nTook: ${response.duration.toMillis()} ms"
+            val taskId = response.responseBody()
+            """
+                Started task to add $dirPath to index $ci
+                Task ID: ${taskId.taskId}
+            """.trimIndent()
         } else {
-            "Error:\n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
@@ -73,10 +82,12 @@ class HslShell : CommandMarker {
         val response = restClient.deindexDirectory(ci, dirPath)
 
         return if (response.status == Status.OK) {
-            "Removed $dirPath to index $ci" +
-                "\nTook: ${response.duration.toMillis()} ms"
+            """
+                Removed $dirPath from index $ci
+                Took: ${response.duration.toMillis()} ms
+            """.trimIndent()
         } else {
-            "Error:\n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
@@ -87,9 +98,14 @@ class HslShell : CommandMarker {
         val response = restClient.taskStatus(taskIdParam)
 
         return if (response.status == Status.OK) {
-            response.rawBody()
+            val taskStatus = response.responseBody()
+            """
+                Task: ${taskStatus.taskId}
+                Status: ${taskStatus.status}
+                Description: ${taskStatus.description}
+            """.trimIndent()
         } else {
-            "Error:\n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
@@ -100,9 +116,13 @@ class HslShell : CommandMarker {
         val response = restClient.taskInterrupt(taskIdParam)
 
         return if (response.status == Status.OK) {
-            response.rawBody()
+            if (response.responseBody().interruptSent) {
+                "The task $taskIdParam was running and has been sent an interrupt signal"
+            } else {
+                "Interrupt signal not sent to task $taskIdParam: it was either completed, or not found"
+            }
         } else {
-            "Error:\n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
@@ -113,14 +133,19 @@ class HslShell : CommandMarker {
         return if (response.status == Status.OK) {
             "Sent shutdown request to ${restClient.baseUrl}."
         } else {
-            "Error stopping server at ${restClient.baseUrl}: \n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
 
     @CliCommand(value = ["search"], help = "Search the current index using HSL (Haystacker Search Language)")
     fun searchIndex(
         @CliOption(key = [""], help = "The HSL query") hsl: String,
-        @CliOption(key = ["max-results", "mr"], mandatory = false, specifiedDefaultValue = "10", unspecifiedDefaultValue = "10") max: Int
+        @CliOption(
+            key = ["max-results", "mr"],
+            mandatory = false,
+            specifiedDefaultValue = "10",
+            unspecifiedDefaultValue = "10"
+        ) max: Int
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
@@ -134,9 +159,15 @@ class HslShell : CommandMarker {
                 searchResponse.results.joinToString("\n") { result -> "Path: ${result.path}" } +
                 "\nTook: ${response.duration.toMillis()} ms"
         } else {
-            "Could not search $ci: \n${response.rawBody()}"
+            genericErrorMessage(response)
         }
     }
+
+    private fun <T> genericErrorMessage(response: TimedHttpResponse<T>) =
+        """
+            Error:
+            ${response.rawBody()}
+        """.trimIndent()
 }
 
 fun main(args: Array<String>) {

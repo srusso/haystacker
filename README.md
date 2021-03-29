@@ -12,17 +12,17 @@ This will create the CLI client jar.
 
 ## Running the server
 
-Simply run `HaystackerApplication.kt`.
+Simply run `HaystackerApplication.kt`, optionally specifying the port by using the `--port` command line argument, such as `--port 9000`.
 
 ## Running the shell client
 
 From a terminal (won't work from IntelliJ):
 
-    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost
     
 Or in debug mode:
 
-    java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar
+    java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost
 
 ## Using the shell client
 

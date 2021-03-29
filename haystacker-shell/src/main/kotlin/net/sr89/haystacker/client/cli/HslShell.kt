@@ -2,6 +2,8 @@ package net.sr89.haystacker.client.cli
 
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.TimedHttpResponse
+import net.sr89.haystacker.server.cmdline.getHostOrDefault
+import net.sr89.haystacker.server.cmdline.getPortOrDefault
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 import org.springframework.core.Ordered
@@ -12,13 +14,12 @@ import org.springframework.shell.core.annotation.CliCommand
 import org.springframework.shell.core.annotation.CliOption
 import org.springframework.stereotype.Component
 
+private lateinit var restClient: HaystackerRestClient
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class HslShell : CommandMarker {
     private val noIndexSetErrorMessage = "Please set the current index with 'set-index'"
-
-    // TODO use config for URL and port
-    private val restClient = HaystackerRestClient("http://localhost:9000", ApacheClient())
 
     private var currentIndex: String? = null
 
@@ -171,5 +172,14 @@ class HslShell : CommandMarker {
 }
 
 fun main(args: Array<String>) {
-    Bootstrap.main(args)
+    val host = args.getHostOrDefault()
+    val port = args.getPortOrDefault()
+
+    val baseUrl = "http://$host:$port"
+
+    println("Starting shell with base url of $baseUrl")
+
+    restClient = HaystackerRestClient(baseUrl, ApacheClient())
+
+    Bootstrap.main(Array(0) { "" })
 }

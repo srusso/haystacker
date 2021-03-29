@@ -13,7 +13,7 @@ private data class HaystackerSettings(@JsonProperty("indexes") val indexes: Set<
     fun addIndex(index: String): HaystackerSettings = HaystackerSettings(indexes.plus(index))
 }
 
-class SettingsManager(config: ServerConfig) {
+class SettingsManager(val config: ServerConfig) {
     private val settingsFile: Path = config.settingsDirectory.resolve("haystacker-settings.json")
     private val objectMapper = ObjectMapper()
 

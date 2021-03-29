@@ -13,19 +13,10 @@ class TimedHttpResponse<T>(
     private val typeReference: TypeReference<T>,
     val duration: Duration
 ) {
-
     val status: Status
         get() = response.status
 
-    private var parsedResponse: T? = null
-
-    fun responseBody(): T {
-        if (parsedResponse == null) {
-            parsedResponse = mapper.readValue(response.bodyString(), typeReference)
-        }
-
-        return parsedResponse!!
-    }
+    fun responseBody(): T = mapper.readValue(response.bodyString(), typeReference)
 
     fun rawBody(): String = response.bodyString()
 }

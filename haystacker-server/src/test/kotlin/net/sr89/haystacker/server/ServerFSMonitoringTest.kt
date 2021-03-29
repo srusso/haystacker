@@ -1,24 +1,14 @@
 package net.sr89.haystacker.server
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
-import net.sr89.haystacker.server.api.directory
-import net.sr89.haystacker.server.api.hslQuery
-import net.sr89.haystacker.server.api.indexPath
-import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.config.ServerConfig
-import net.sr89.haystacker.test.common.TaskCreatedResponseType
-import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import net.sr89.haystacker.test.common.tryAssertingRepeatedly
 import org.http4k.client.ApacheClient
-import org.http4k.core.HttpHandler
-import org.http4k.core.Method
-import org.http4k.core.Request
-import org.http4k.core.Response
-import org.http4k.core.with
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,8 +33,7 @@ internal class ServerFSMonitoringTest {
         }
     }
 
-    private lateinit var httpClient: HttpHandler
-    private val objectMapper = ObjectMapper()
+    private lateinit var client: HaystackerRestClient
     private val shutdownDelay = Duration.ofMillis(10L)
 
     val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -130,7 +119,6 @@ internal class ServerFSMonitoringTest {
             directoryToIndex.resolve("newFile.txt").toFile().delete()
 
             // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
-            // TODO give list of actions/asserts to try, and only retry those who fail
             tryAssertingRepeatedly(Duration.ofSeconds(1)) {
                 assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf(), "The file was removed, so it shouldn't be returned by the search anymore")
                 assertSearchResult(
@@ -148,7 +136,7 @@ internal class ServerFSMonitoringTest {
     }
 
     private fun newServer(): HaystackerApplication {
-        httpClient = ApacheClient()
+        client = HaystackerRestClient(baseUrl, ApacheClient())
 
         val config = ServerConfig(9000, settingsDirectory)
 
@@ -168,14 +156,11 @@ internal class ServerFSMonitoringTest {
     }
 
     private fun createIndex(indexFile: Path) {
-        httpClient(Request(Method.POST, "$baseUrl/index")
-            .with(
-                indexPath of indexFile.toAbsolutePath().toString()
-            ))
+        client.createIndex(indexFile.toAbsolutePath().toString())
     }
 
     private fun quitServer() {
-        httpClient(Request(Method.POST, "$baseUrl/quit"))
+        client.shutdownServer()
 
         Thread.sleep(shutdownDelay.toMillis() * 3)
     }
@@ -184,15 +169,10 @@ internal class ServerFSMonitoringTest {
         indexFile: Path,
         directoryToIndex: Path
     ) {
-        val taskResponse = httpClient(Request(Method.POST, "$baseUrl/directory")
-            .with(
-                directory of directoryToIndex.toString(),
-                indexPath of indexFile.toAbsolutePath().toString()
-            ))
+        val taskResponse = client.indexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
+            .responseBody()
 
-        val taskId = objectMapper.readValue(taskResponse.bodyString(), TaskCreatedResponseType())!!
-
-        while (getTaskStatus(taskId.taskId) != COMPLETED) {
+        while (getTaskStatus(taskResponse.taskId) != COMPLETED) {
             Thread.sleep(10L)
         }
     }
@@ -201,28 +181,18 @@ internal class ServerFSMonitoringTest {
         indexFile: Path,
         directoryToIndex: Path
     ) {
-        httpClient(Request(Method.DELETE, "$baseUrl/directory")
-            .with(
-                directory of directoryToIndex.toString(),
-                indexPath of indexFile.toAbsolutePath().toString()
-            ))
+        client.deindexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
     }
 
     private fun getTaskStatus(taskId: String): TaskExecutionState {
-        val response = httpClient(Request(Method.GET, "$baseUrl/task")
-            .with(
-                net.sr89.haystacker.server.api.taskId of taskId
-            ))
-
-        return TaskExecutionState.valueOf(objectMapper.readValue(response.bodyString(), TaskStatusResponseType())!!.status)
+        return TaskExecutionState.valueOf(client.taskStatus(taskId).responseBody().status)
     }
 
-    private fun searchIndex(indexFile: Path, searchQuery: String): Response {
-        return httpClient(Request(Method.POST, "$baseUrl/search")
-            .with(
-                hslQuery of searchQuery,
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            ))
+    private fun searchIndex(indexFile: Path, searchQuery: String): SearchResponse {
+        return client.search(
+                searchQuery,
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
     }
 }

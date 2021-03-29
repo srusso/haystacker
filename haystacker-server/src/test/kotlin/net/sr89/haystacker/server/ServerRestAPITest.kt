@@ -1,24 +1,15 @@
 package net.sr89.haystacker.server
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState
-import net.sr89.haystacker.server.api.directory
-import net.sr89.haystacker.server.api.hslQuery
-import net.sr89.haystacker.server.api.indexPath
-import net.sr89.haystacker.server.api.maxResults
+import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.test.common.NoOpServer
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
-import net.sr89.haystacker.test.common.TaskCreatedResponseType
-import net.sr89.haystacker.test.common.TaskStatusResponseType
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
-import org.http4k.core.HttpHandler
-import org.http4k.core.Method
-import org.http4k.core.Request
-import org.http4k.core.with
+import org.http4k.core.Status
 import org.http4k.server.Http4kServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -34,17 +25,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
+import kotlin.test.assertEquals
 
 internal class HaystackerApplicationKtTest {
     private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-    private val objectMapper = ObjectMapper()
 
-    lateinit var routes: HttpHandler
     lateinit var directoryToIndex: Path
     lateinit var settingsDirectory: Path
     lateinit var subDirectory: Path
     lateinit var indexFile: Path
-    lateinit var removeSubdirectoryFromIndexRequest: Request
+
+    lateinit var client: HaystackerRestClient
 
     @BeforeEach
     internal fun setUp() {
@@ -54,17 +45,6 @@ internal class HaystackerApplicationKtTest {
         indexFile = Files.createTempDirectory("index")
 
         createServerTestFiles(oldInstant, directoryToIndex, subDirectory)
-
-        val createRequest = Request(Method.POST, "/index")
-            .with(
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
-
-        removeSubdirectoryFromIndexRequest = Request(Method.DELETE, "/directory")
-            .with(
-                directory of subDirectory.toString(),
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
 
         val config = ServerConfig(0, Paths.get("."))
 
@@ -82,15 +62,15 @@ internal class HaystackerApplicationKtTest {
 
         val myRoutes: HaystackerRoutes by testDI.instance()
 
-        routes = myRoutes.routesHandler()
+        client = HaystackerRestClient("", myRoutes.routesHandler())
 
-        routes(createRequest)
+        client.createIndex(indexFile.toAbsolutePath().toString())
         addDirectoryToIndex(indexFile, directoryToIndex)
     }
 
     @AfterEach
     internal fun tearDown() {
-        println("Shutting down server: ${routes(Request(Method.POST, "/quit"))}")
+        println("Shutting down server: ${client.shutdownServer()}")
 
         directoryToIndex.toFile().deleteRecursively()
         settingsDirectory.toFile().deleteRecursively()
@@ -99,165 +79,137 @@ internal class HaystackerApplicationKtTest {
 
     @Test
     internal fun searchByFilename() {
-        val searchFileByNameInDirectory = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "name = oldfile.txt",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchFileByNameInDirectory = client.search(
+                "name = oldfile.txt",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        val searchFileByNameInSubDirectory = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "name = \"subfile.txt\"",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchFileByNameInSubDirectory = client.search(
+                "name = \"subfile.txt\"",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldFile.txt"))
-        assertSearchResult(routes(searchFileByNameInSubDirectory), listOf("subFile.txt"))
+        assertSearchResult(searchFileByNameInDirectory, listOf("oldFile.txt"))
+        assertSearchResult(searchFileByNameInSubDirectory, listOf("subFile.txt"))
 
-        routes(removeSubdirectoryFromIndexRequest)
+        val deleteResponse = client.deindexDirectory(indexFile.toAbsolutePath().toString(), subDirectory.toString())
 
-        assertSearchResult(routes(searchFileByNameInDirectory), listOf("oldFile.txt"))
-        assertSearchResult(routes(searchFileByNameInSubDirectory), emptyList())
+        assertEquals(Status.OK, deleteResponse.status)
+        assertSearchResult(searchFileByNameInDirectory, listOf("oldFile.txt"))
+        assertSearchResult(searchFileByNameInSubDirectory, emptyList())
     }
 
     @Test
     internal fun searchByFilenameIsCaseInsensitive() {
-        val search1 = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "name = OLDFILE.txt",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val search1 = client.search(
+                "name = OLDFILE.txt",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        val search2 = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "name = OlDfIlE.txt",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val search2 = client.search(
+                "name = OlDfIlE.txt",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(search1), listOf("oldFile.txt"))
-        assertSearchResult(routes(search2), listOf("oldFile.txt"))
+        assertSearchResult(search1, listOf("oldFile.txt"))
+        assertSearchResult(search2, listOf("oldFile.txt"))
     }
 
     @Test
     internal fun searchByFileSize() {
-        val searchSmallFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "size < 500",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchSmallFiles = client.search(
+                "size < 500",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        val searchBigFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "size > 500",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchBigFiles = client.search(
+                "size > 500",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(searchBigFiles), listOf("bigbinary.dat"))
-        assertSearchResult(routes(searchSmallFiles), listOf("oldFile.txt", "binary.dat", "subFile.txt"))
+        assertSearchResult(searchBigFiles, listOf("bigbinary.dat"))
+        assertSearchResult(searchSmallFiles, listOf("oldFile.txt", "binary.dat", "subFile.txt"))
     }
 
     @Test
     internal fun searchByLastModifiedTime() {
-        val searchOldFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "last_modified < 2016-03-01",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchOldFiles = client.search(
+                "last_modified < 2016-03-01",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        val searchNewFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "last_modified > 2016-03-01",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchNewFiles = client.search(
+                "last_modified > 2016-03-01",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(searchOldFiles), listOf("oldFile.txt"))
-        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
+        assertSearchResult(searchOldFiles, listOf("oldFile.txt"))
+        assertSearchResult(searchNewFiles, listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
     }
 
     @Test
     internal fun searchByCreatedTime() {
-        val searchOldFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "created < 2016-03-01",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchOldFiles = client.search(
+                "created < 2016-03-01",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        val searchNewFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "created > 2016-03-01",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchNewFiles = client.search(
+                "created > 2016-03-01",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(searchOldFiles), listOf("oldFile.txt"))
-        assertSearchResult(routes(searchNewFiles), listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
+        assertSearchResult(searchOldFiles, listOf("oldFile.txt"))
+        assertSearchResult(searchNewFiles, listOf("bigbinary.dat", "binary.dat", "subFile.txt"))
     }
 
     @Test
     internal fun searchWithAndClause() {
-        val searchNewAndBigFiles = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "created > 2016-03-01 AND size > 500",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val searchNewAndBigFiles = client.search(
+                "created > 2016-03-01 AND size > 500",
+                15,
+                indexFile.toAbsolutePath().toString()
+            ).responseBody()
 
-        assertSearchResult(routes(searchNewAndBigFiles), listOf("bigbinary.dat"))
+        assertSearchResult(searchNewAndBigFiles, listOf("bigbinary.dat"))
     }
 
     @Test
     internal fun searchWithOrClause() {
-        val oldFilesOrSpecific = Request(Method.POST, "/search")
-            .with(
-                hslQuery of "created < 2016-03-01 OR name = subfile.txt",
-                maxResults of 15,
-                indexPath of indexFile.toAbsolutePath().toString()
-            )
+        val oldFilesOrSpecific = client.search(
+            "created < 2016-03-01 OR name = subfile.txt",
+            15,
+            indexFile.toAbsolutePath().toString()
+        ).responseBody()
 
-        assertSearchResult(routes(oldFilesOrSpecific), listOf("oldFile.txt", "subFile.txt"))
+        assertSearchResult(oldFilesOrSpecific, listOf("oldFile.txt", "subFile.txt"))
     }
 
     private fun addDirectoryToIndex(
         indexFile: Path,
         directoryToIndex: Path
     ) {
-        val taskResponse = routes(
-            Request(Method.POST, "/directory")
-                .with(
-                    directory of directoryToIndex.toString(),
-                    indexPath of indexFile.toAbsolutePath().toString()
-                )
-        )
+        val taskId = client.indexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
+            .responseBody().taskId
 
-        val taskId = objectMapper.readValue(taskResponse.bodyString(), TaskCreatedResponseType())!!
-
-        while (getTaskStatus(taskId.taskId) != TaskExecutionState.COMPLETED) {
+        while (getTaskStatus(taskId) != TaskExecutionState.COMPLETED) {
             Thread.sleep(10L)
         }
     }
 
     private fun getTaskStatus(taskId: String): TaskExecutionState {
-        val response = routes(
-            Request(Method.GET, "/task")
-                .with(
-                    net.sr89.haystacker.server.api.taskId of taskId
-                )
-        )
+        val response = client.taskStatus(taskId)
 
-        return TaskExecutionState.valueOf(
-            objectMapper.readValue(
-                response.bodyString(),
-                TaskStatusResponseType()
-            )!!.status
-        )
+        return TaskExecutionState.valueOf(response.responseBody().status)
     }
 }

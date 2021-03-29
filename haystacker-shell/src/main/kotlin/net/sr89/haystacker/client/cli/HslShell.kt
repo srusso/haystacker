@@ -1,17 +1,10 @@
 package net.sr89.haystacker.client.cli
 
 import net.sr89.haystacker.server.JacksonModule
+import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.SearchResponse
-import net.sr89.haystacker.server.api.directory
-import net.sr89.haystacker.server.api.hslQuery
-import net.sr89.haystacker.server.api.indexPath
-import net.sr89.haystacker.server.api.maxResults
-import net.sr89.haystacker.server.api.taskId
 import org.http4k.client.ApacheClient
-import org.http4k.core.Method
-import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.core.with
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.shell.Bootstrap
@@ -26,10 +19,8 @@ import org.springframework.stereotype.Component
 class HslShell : CommandMarker {
     private val noIndexSetErrorMessage = "Please set the current index with 'set-index'"
 
-    private val httpClient = ApacheClient()
-
-    // TODO use config for this
-    private val baseUrl = "http://localhost:9000"
+    // TODO use config for URL and port
+    private val restClient = HaystackerRestClient("http://localhost:9000", ApacheClient())
 
     private var currentIndex: String? = null
 
@@ -50,10 +41,7 @@ class HslShell : CommandMarker {
 
     @CliCommand(value = ["create-index"], help = "Create a new index in the server machine")
     fun createIndex(@CliOption(key = [""], help = "Where to create the new index, on the server's filesystem") path: String): String {
-        val createRequest = Request(Method.POST, "$baseUrl/index")
-            .with(indexPath of path)
-
-        val response = httpClient(createRequest)
+        val response = restClient.createIndex(path)
 
         return if (response.status == Status.OK) {
             "Created index at $path"
@@ -68,10 +56,7 @@ class HslShell : CommandMarker {
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
-        val indexRequest = Request(Method.POST, "$baseUrl/directory")
-            .with(indexPath of ci, directory of dirPath)
-
-        val response = executeTimed(indexRequest)
+        val response = restClient.indexDirectory(ci, dirPath)
 
         return if (response.status == Status.OK) {
             "Started task to add $dirPath to index $ci: ${response.bodyString()}" +
@@ -87,10 +72,7 @@ class HslShell : CommandMarker {
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
-        val deindexRequest = Request(Method.DELETE, "$baseUrl/directory")
-            .with(indexPath of ci, directory of dirPath)
-
-        val response = executeTimed(deindexRequest)
+        val response = restClient.deindexDirectory(ci, dirPath)
 
         return if (response.status == Status.OK) {
             "Removed $dirPath to index $ci" +
@@ -104,10 +86,7 @@ class HslShell : CommandMarker {
     fun taskStatus(
         @CliOption(key = [""], help = "The task ID") taskIdParam: String
     ): String {
-        val taskStatusRequest = Request(Method.GET, "$baseUrl/task")
-            .with(taskId of taskIdParam)
-
-        val response = executeTimed(taskStatusRequest)
+        val response = restClient.taskStatus(taskIdParam)
 
         return if (response.status == Status.OK) {
             response.response.bodyString()
@@ -120,10 +99,7 @@ class HslShell : CommandMarker {
     fun taskInterrupt(
         @CliOption(key = [""], help = "The task ID") taskIdParam: String
     ): String {
-        val taskStatusRequest = Request(Method.POST, "$baseUrl/task/interrupt")
-            .with(taskId of taskIdParam)
-
-        val response = executeTimed(taskStatusRequest)
+        val response = restClient.taskInterrupt(taskIdParam)
 
         return if (response.status == Status.OK) {
             response.response.bodyString()
@@ -134,12 +110,12 @@ class HslShell : CommandMarker {
 
     @CliCommand(value = ["server-shutdown"], help = "Shutdown the server")
     fun shutdownServer(): String {
-        val response = executeTimed(Request(Method.POST, "$baseUrl/quit"))
+        val response = restClient.shutdownServer()
 
         return if (response.status == Status.OK) {
-            "Sent shutdown request to $baseUrl."
+            "Sent shutdown request to ${restClient.baseUrl}."
         } else {
-            "Error stopping server at $baseUrl: \n${response.bodyString()}"
+            "Error stopping server at ${restClient.baseUrl}: \n${response.bodyString()}"
         }
     }
 
@@ -150,13 +126,7 @@ class HslShell : CommandMarker {
     ): String {
         val ci = currentIndex ?: return noIndexSetErrorMessage
 
-        val searchRequest = Request(Method.POST, "$baseUrl/search")
-            .with(hslQuery of hsl,
-                indexPath of ci,
-                maxResults of max
-            )
-
-        val response = executeTimed(searchRequest)
+        val response = restClient.search(hsl, max, ci)
 
         return if (response.status == Status.OK) {
             val searchResponse = JacksonModule.asA(response.bodyString(), SearchResponse::class)
@@ -169,8 +139,6 @@ class HslShell : CommandMarker {
             "Could not search $ci: \n${response.bodyString()}"
         }
     }
-
-
 }
 
 fun main(args: Array<String>) {

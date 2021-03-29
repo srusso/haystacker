@@ -18,7 +18,56 @@ class TaskCreatedResponseType : TypeReference<TaskIdResponse>()
 class TaskStatusResponseType : TypeReference<BackgroundTaskStatusResponse>()
 
 class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandler) {
-    fun search(query: String, maxResults: Int, indexPath: String): SearchResponse {
+    fun createIndex(indexPath: String): TimedHttpResponse {
+        val request = Request(Method.POST, "$baseUrl/index")
+            .with(net.sr89.haystacker.server.api.indexPath of indexPath)
+
+        return executeTimed(request)
+    }
+
+    fun indexDirectory(indexPath: String, dirPath: String): TimedHttpResponse {
+        val request = Request(Method.POST, "$baseUrl/directory")
+            .with(
+                net.sr89.haystacker.server.api.indexPath of indexPath,
+                directory of dirPath
+            )
+
+        // TODO response with body of type TaskCreatedResponseType
+        return executeTimed(request)
+    }
+
+    fun deindexDirectory(indexPath: String, dirPath: String): TimedHttpResponse {
+        val request = Request(Method.DELETE, "$baseUrl/directory")
+            .with(
+                net.sr89.haystacker.server.api.indexPath of indexPath,
+                directory of dirPath
+            )
+
+        // TODO response with body of type TaskCreatedResponseType
+        return executeTimed(request)
+    }
+
+    fun taskStatus(taskId: String): TimedHttpResponse {
+        val request = Request(Method.GET, "$baseUrl/task")
+            .with(net.sr89.haystacker.server.api.taskId of taskId)
+
+        // TODO response with body of type TaskStatusResponseType
+        return executeTimed(request)
+    }
+
+    fun taskInterrupt(taskId: String): TimedHttpResponse {
+        val request = Request(Method.POST, "$baseUrl/task/interrupt")
+            .with(net.sr89.haystacker.server.api.taskId of taskId)
+
+        // TODO response with body of type TaskStatusResponseType
+        return executeTimed(request)
+    }
+
+    fun shutdownServer(): TimedHttpResponse {
+        return executeTimed(Request(Method.POST, "$baseUrl/quit"))
+    }
+
+    fun search(query: String, maxResults: Int, indexPath: String): TimedHttpResponse {
         val request = Request(Method.POST, "$baseUrl/search")
             .with(
                 hslQuery of query,
@@ -26,7 +75,9 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
                 net.sr89.haystacker.server.api.maxResults of maxResults
             )
 
-        return mapper.readValue(executeTimed(request).bodyString(), SearchResponseType())
+        // TODO response with body of type SearchResponseType
+//        return mapper.readValue(executeTimed(request).bodyString(), SearchResponseType())
+        return executeTimed(request)
     }
 
     private fun executeTimed(request: Request): TimedHttpResponse {

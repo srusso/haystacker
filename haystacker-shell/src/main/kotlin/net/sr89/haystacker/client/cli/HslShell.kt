@@ -1,8 +1,6 @@
 package net.sr89.haystacker.client.cli
 
-import net.sr89.haystacker.server.JacksonModule
 import net.sr89.haystacker.server.api.HaystackerRestClient
-import net.sr89.haystacker.server.api.SearchResponse
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 import org.springframework.core.Ordered
@@ -46,7 +44,7 @@ class HslShell : CommandMarker {
         return if (response.status == Status.OK) {
             "Created index at $path"
         } else {
-            "Error:\n${response.bodyString()}"
+            "Error:\n${response.rawBody()}"
         }
     }
 
@@ -59,10 +57,10 @@ class HslShell : CommandMarker {
         val response = restClient.indexDirectory(ci, dirPath)
 
         return if (response.status == Status.OK) {
-            "Started task to add $dirPath to index $ci: ${response.bodyString()}" +
+            "Started task to add $dirPath to index $ci: ${response.rawBody()}" +
                 "\nTook: ${response.duration.toMillis()} ms"
         } else {
-            "Error:\n${response.bodyString()}"
+            "Error:\n${response.rawBody()}"
         }
     }
 
@@ -78,7 +76,7 @@ class HslShell : CommandMarker {
             "Removed $dirPath to index $ci" +
                 "\nTook: ${response.duration.toMillis()} ms"
         } else {
-            "Error:\n${response.bodyString()}"
+            "Error:\n${response.rawBody()}"
         }
     }
 
@@ -89,9 +87,9 @@ class HslShell : CommandMarker {
         val response = restClient.taskStatus(taskIdParam)
 
         return if (response.status == Status.OK) {
-            response.response.bodyString()
+            response.rawBody()
         } else {
-            "Error:\n${response.bodyString()}"
+            "Error:\n${response.rawBody()}"
         }
     }
 
@@ -102,9 +100,9 @@ class HslShell : CommandMarker {
         val response = restClient.taskInterrupt(taskIdParam)
 
         return if (response.status == Status.OK) {
-            response.response.bodyString()
+            response.rawBody()
         } else {
-            "Error:\n${response.bodyString()}"
+            "Error:\n${response.rawBody()}"
         }
     }
 
@@ -115,7 +113,7 @@ class HslShell : CommandMarker {
         return if (response.status == Status.OK) {
             "Sent shutdown request to ${restClient.baseUrl}."
         } else {
-            "Error stopping server at ${restClient.baseUrl}: \n${response.bodyString()}"
+            "Error stopping server at ${restClient.baseUrl}: \n${response.rawBody()}"
         }
     }
 
@@ -129,14 +127,14 @@ class HslShell : CommandMarker {
         val response = restClient.search(hsl, max, ci)
 
         return if (response.status == Status.OK) {
-            val searchResponse = JacksonModule.asA(response.bodyString(), SearchResponse::class)
+            val searchResponse = response.responseBody()
             "Total results: ${searchResponse.totalResults}\n" +
                 "Returned results: ${searchResponse.returnedResults}\n" +
                 "Items:\n" +
                 searchResponse.results.joinToString("\n") { result -> "Path: ${result.path}" } +
                 "\nTook: ${response.duration.toMillis()} ms"
         } else {
-            "Could not search $ci: \n${response.bodyString()}"
+            "Could not search $ci: \n${response.rawBody()}"
         }
     }
 }

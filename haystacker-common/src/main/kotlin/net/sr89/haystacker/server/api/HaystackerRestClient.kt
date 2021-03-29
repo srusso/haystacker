@@ -29,14 +29,14 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
         return executeTimed(request, object: TypeReference<TaskIdResponse>() {})
     }
 
-    fun deindexDirectory(indexPath: String, dirPath: String): TimedHttpResponse<String> {
+    fun deindexDirectory(indexPath: String, dirPath: String): TimedHttpResponse<TaskIdResponse> {
         val request = Request(Method.DELETE, "$baseUrl/directory")
             .with(
                 net.sr89.haystacker.server.api.indexPath of indexPath,
                 directory of dirPath
             )
 
-        return executeTimed(request, object: TypeReference<String>() {})
+        return executeTimed(request, object: TypeReference<TaskIdResponse>() {})
     }
 
     fun taskStatus(taskId: String): TimedHttpResponse<BackgroundTaskStatusResponse> {

@@ -6,13 +6,12 @@ import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
 import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
 import net.sr89.haystacker.async.task.TaskStatus
-import net.sr89.haystacker.index.Trigger.COMMAND
+import net.sr89.haystacker.async.task.Trigger
+import net.sr89.haystacker.async.task.Trigger.COMMAND
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
 
-enum class Trigger { FS_UPDATE, COMMAND }
-
-class BackgroundIndexingTask(
+class IndexDirectoryTask(
     val trigger: Trigger,
     val indexManager: IndexManager,
     val directoryToIndex: Path

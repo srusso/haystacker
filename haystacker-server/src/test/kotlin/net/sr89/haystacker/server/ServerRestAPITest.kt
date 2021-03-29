@@ -9,7 +9,6 @@ import net.sr89.haystacker.test.common.NoOpServer
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
-import org.http4k.core.Status
 import org.http4k.server.Http4kServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +24,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
-import kotlin.test.assertEquals
 
 internal class HaystackerApplicationKtTest {
     private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -70,7 +68,7 @@ internal class HaystackerApplicationKtTest {
 
     @AfterEach
     internal fun tearDown() {
-        println("Shutting down server: ${client.shutdownServer()}")
+        println("Shutting down server: ${client.shutdownServer().status}")
 
         directoryToIndex.toFile().deleteRecursively()
         settingsDirectory.toFile().deleteRecursively()
@@ -79,26 +77,31 @@ internal class HaystackerApplicationKtTest {
 
     @Test
     internal fun searchByFilename() {
-        val searchFileByNameInDirectory = client.search(
-                "name = oldfile.txt",
-                15,
-                indexFile.toAbsolutePath().toString()
-            ).responseBody()
+        assertSearchResult(client.search(
+            "name = oldfile.txt",
+            15,
+            indexFile.toAbsolutePath().toString()
+        ).responseBody(), listOf("oldFile.txt"))
 
-        val searchFileByNameInSubDirectory = client.search(
-                "name = \"subfile.txt\"",
-                15,
-                indexFile.toAbsolutePath().toString()
-            ).responseBody()
+        assertSearchResult(client.search(
+            "name = \"subfile.txt\"",
+            15,
+            indexFile.toAbsolutePath().toString()
+        ).responseBody(), listOf("subFile.txt"))
 
-        assertSearchResult(searchFileByNameInDirectory, listOf("oldFile.txt"))
-        assertSearchResult(searchFileByNameInSubDirectory, listOf("subFile.txt"))
+        removeDirectoryFromIndex(subDirectory)
 
-        val deleteResponse = client.deindexDirectory(indexFile.toAbsolutePath().toString(), subDirectory.toString())
+        assertSearchResult(client.search(
+            "name = oldfile.txt",
+            15,
+            indexFile.toAbsolutePath().toString()
+        ).responseBody(), listOf("oldFile.txt"))
 
-        assertEquals(Status.OK, deleteResponse.status)
-        assertSearchResult(searchFileByNameInDirectory, listOf("oldFile.txt"))
-        assertSearchResult(searchFileByNameInSubDirectory, emptyList())
+        assertSearchResult(client.search(
+            "name = \"subfile.txt\"",
+            15,
+            indexFile.toAbsolutePath().toString()
+        ).responseBody(), emptyList())
     }
 
     @Test
@@ -200,6 +203,17 @@ internal class HaystackerApplicationKtTest {
         directoryToIndex: Path
     ) {
         val taskId = client.indexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
+            .responseBody().taskId
+
+        while (getTaskStatus(taskId) != TaskExecutionState.COMPLETED) {
+            Thread.sleep(10L)
+        }
+    }
+
+    private fun removeDirectoryFromIndex(
+        directoryToIndex: Path
+    ) {
+        val taskId = client.deindexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
             .responseBody().taskId
 
         while (getTaskStatus(taskId) != TaskExecutionState.COMPLETED) {

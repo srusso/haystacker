@@ -94,7 +94,7 @@ internal class ServerFSMonitoringTest {
                 it.write("The file system watcher should pick up that this file was created!".toByteArray())
             }
 
-            removeDirectoryFromIndex(indexFile, subDirectory)
+            removeDirectoryFromIndex(subDirectory)
 
             // let's give it some time to pick up changes from the file system - try repeatedly for 1 second until success or timeout
             tryAssertingRepeatedly(Duration.ofSeconds(1)) {
@@ -178,10 +178,14 @@ internal class ServerFSMonitoringTest {
     }
 
     private fun removeDirectoryFromIndex(
-        indexFile: Path,
         directoryToIndex: Path
     ) {
-        client.deindexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
+        val taskId = client.deindexDirectory(indexFile.toAbsolutePath().toString(), directoryToIndex.toString())
+            .responseBody().taskId
+
+        while (getTaskStatus(taskId) != COMPLETED) {
+            Thread.sleep(10L)
+        }
     }
 
     private fun getTaskStatus(taskId: String): TaskExecutionState {

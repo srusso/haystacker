@@ -7,9 +7,10 @@ import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_NEW
 import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_OLD
 import com.sun.jna.platform.FileMonitor.FILE_SIZE_CHANGED
 import net.sr89.haystacker.async.task.BackgroundTaskManager
-import net.sr89.haystacker.index.BackgroundIndexingTask
+import net.sr89.haystacker.async.task.Trigger.FS_UPDATE
+import net.sr89.haystacker.index.DeindexDirectoryTask
+import net.sr89.haystacker.index.IndexDirectoryTask
 import net.sr89.haystacker.index.IndexManager
-import net.sr89.haystacker.index.Trigger.FS_UPDATE
 import java.io.File
 
 class IndexUpdatingListener(
@@ -18,12 +19,12 @@ class IndexUpdatingListener(
 
     private fun fileCreated(file: File) {
         println("File $file was created")
-        taskManager.submit(BackgroundIndexingTask(FS_UPDATE, indexManager, file.toPath()))
+        taskManager.submit(IndexDirectoryTask(FS_UPDATE, indexManager, file.toPath()))
     }
 
     private fun fileDeleted(file: File) {
         println("File $file was deleted")
-        indexManager.removeDirectory(file.toPath(), false)
+        taskManager.submit(DeindexDirectoryTask(FS_UPDATE, indexManager, file.toPath()))
     }
 
     private fun fileChangedOld(file: File) {

@@ -4,11 +4,13 @@ import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.config.ServerConfig
+import net.sr89.haystacker.server.filter.ExceptionHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.test.common.NoOpServer
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
+import org.http4k.core.Status
 import org.http4k.server.Http4kServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -24,6 +26,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
+import kotlin.test.assertEquals
 
 internal class HaystackerApplicationKtTest {
     private val oldInstant: Instant = LocalDate.of(2015, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -60,7 +63,7 @@ internal class HaystackerApplicationKtTest {
 
         val myRoutes: HaystackerRoutes by testDI.instance()
 
-        client = HaystackerRestClient("", myRoutes.routesHandler())
+        client = HaystackerRestClient("", ExceptionHandler(myRoutes.routesHandler()))
 
         client.createIndex(indexFile.toAbsolutePath().toString())
         addDirectoryToIndex(indexFile, directoryToIndex)
@@ -196,6 +199,33 @@ internal class HaystackerApplicationKtTest {
         ).responseBody()
 
         assertSearchResult(oldFilesOrSpecific, listOf("oldFile.txt", "subFile.txt"))
+    }
+
+    @Test
+    internal fun searchNonExistingIndexFolder() {
+        val errorResponse = client.search(
+            "name = myfile.txt",
+            15,
+            indexFile.resolve("not-an-index").toAbsolutePath().toString()
+        )
+
+        assertEquals(Status.NOT_FOUND, errorResponse.status)
+    }
+
+    @Test
+    internal fun searchEmptyIndexFolder() {
+        val emptyIndexDirectory = indexFile.resolve("not-an-index")
+
+        Files.createDirectory(emptyIndexDirectory)
+
+        val errorResponse = client.search(
+            "name = myfile.txt",
+            15,
+            emptyIndexDirectory.toAbsolutePath().toString()
+        )
+
+        assertEquals(Status.NOT_FOUND, errorResponse.status)
+        assertEquals("Index not found or corrupted", errorResponse.rawBody())
     }
 
     private fun addDirectoryToIndex(

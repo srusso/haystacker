@@ -5,6 +5,7 @@ import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.config.ServerConfig
+import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import net.sr89.haystacker.test.common.tryAssertingRepeatedly
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.kodein.di.DI
 import org.kodein.di.bind
+import org.kodein.di.instance
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,6 +24,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
+import kotlin.test.assertFalse
 
 internal class ServerFSMonitoringTest {
     private fun <R> HaystackerApplication.runServer(testCase: HaystackerApplication.() -> R) {
@@ -45,6 +48,7 @@ internal class ServerFSMonitoringTest {
     lateinit var settingsDirectory: Path
     lateinit var subDirectory: Path
     lateinit var indexFile: Path
+    lateinit var notFoundIndex: Path
 
     @BeforeEach
     internal fun setUp() {
@@ -52,6 +56,7 @@ internal class ServerFSMonitoringTest {
         settingsDirectory = Files.createTempDirectory("settings")
         subDirectory = directoryToIndex.resolve("subdirectory")
         indexFile = Files.createTempDirectory("index")
+        notFoundIndex = indexFile.parent.resolve("i-do-not-exist")
 
         createServerTestFiles(oldInstant, directoryToIndex, subDirectory)
     }
@@ -105,6 +110,8 @@ internal class ServerFSMonitoringTest {
 
         println()
 
+        assertFalse(Files.exists(notFoundIndex))
+
         newServer().runServer {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newFile.txt"))
 
@@ -151,6 +158,11 @@ internal class ServerFSMonitoringTest {
 
             import(testOverrides, allowOverride = true)
         }
+
+        val settings: SettingsManager by testDI.instance()
+
+        // adding a non existing index to make sure that it doesn't break the server
+        settings.addIndex(notFoundIndex.toAbsolutePath().toString())
 
         return HaystackerApplication.application(testDI)
     }

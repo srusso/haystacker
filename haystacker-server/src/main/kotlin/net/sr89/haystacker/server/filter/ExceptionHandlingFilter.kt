@@ -8,12 +8,14 @@ import net.sr89.haystacker.lang.exception.InvalidHslOrderByClause
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.lang.exception.SettingsUpdateException
 import net.sr89.haystacker.server.api.stringBody
+import org.apache.lucene.index.IndexNotFoundException
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.INTERNAL_SERVER_ERROR
+import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.with
 
 class ExceptionHandler(val next: HttpHandler) : HttpHandler {
@@ -41,6 +43,9 @@ class ExceptionHandler(val next: HttpHandler) : HttpHandler {
         } catch (e: SettingsUpdateException) {
             Response(INTERNAL_SERVER_ERROR)
                 .with(stringBody of "Request failed due to being enable to update settings file: ${e.message}")
+        } catch (e: IndexNotFoundException) {
+            Response(NOT_FOUND)
+                .with(stringBody of "Index not found or corrupted")
         } catch (e: Exception) {
             Response(INTERNAL_SERVER_ERROR).with(stringBody of e.message!!)
         }

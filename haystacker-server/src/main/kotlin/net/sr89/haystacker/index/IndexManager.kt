@@ -17,6 +17,7 @@ import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.index.IndexNotFoundException
 import org.apache.lucene.index.IndexReader
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
@@ -200,11 +201,17 @@ internal class IndexManagerImpl(
     }
 
     override fun startWatchingFileSystemChanges() {
-        fileMonitor.addFileListener(fileSystemListener)
+        try {
+            val indexedDirectories = indexedDirectories()
 
-        for (indexedDirectory in indexedDirectories()) {
-            println("Watching $indexedDirectory")
-            startWatching(indexedDirectory)
+            fileMonitor.addFileListener(fileSystemListener)
+
+            for (indexedDirectory in indexedDirectories) {
+                println("Watching $indexedDirectory")
+                startWatching(indexedDirectory)
+            }
+        } catch (e: IndexNotFoundException) {
+            println("WARN: Ignoring missing index $indexPath")
         }
     }
 
@@ -307,12 +314,19 @@ internal class IndexManagerImpl(
     }
 
     private fun initIndexDirectory(): FSDirectory {
+        val path = Paths.get(indexPath)
+
+        if (!Files.exists(path)) {
+            throw IndexNotFoundException("Unable to find index at $path")
+        }
+
         if (indexDirectory == null) {
-            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+            indexDirectory = FSDirectory.open(path)
         }
         return indexDirectory!!
     }
 
+    @Throws(IndexNotFoundException::class)
     private fun initSearcher() {
         // Probably fine to initialize this once per search.
         // If performance concerns arise, we should look into this.

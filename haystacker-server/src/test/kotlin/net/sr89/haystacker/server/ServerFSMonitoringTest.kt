@@ -19,7 +19,6 @@ import org.kodein.di.instance
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -49,6 +48,7 @@ internal class ServerFSMonitoringTest {
     lateinit var settingsDirectory: Path
     lateinit var subDirectory: Path
     lateinit var indexFile: Path
+    lateinit var notFoundIndex: Path
 
     @BeforeEach
     internal fun setUp() {
@@ -56,6 +56,7 @@ internal class ServerFSMonitoringTest {
         settingsDirectory = Files.createTempDirectory("settings")
         subDirectory = directoryToIndex.resolve("subdirectory")
         indexFile = Files.createTempDirectory("index")
+        notFoundIndex = indexFile.parent.resolve("i-do-not-exist")
 
         createServerTestFiles(oldInstant, directoryToIndex, subDirectory)
     }
@@ -109,8 +110,7 @@ internal class ServerFSMonitoringTest {
 
         println()
 
-        val notExistingIndexWasCreated = Files.exists(Paths.get("i-do-not-exist"))
-        assertFalse(notExistingIndexWasCreated)
+        assertFalse(Files.exists(notFoundIndex))
 
         newServer().runServer {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newFile.txt"))
@@ -162,7 +162,7 @@ internal class ServerFSMonitoringTest {
         val settings: SettingsManager by testDI.instance()
 
         // adding a non existing index to make sure that it doesn't break the server
-        settings.addIndex("i-do-not-exist")
+        settings.addIndex(notFoundIndex.toAbsolutePath().toString())
 
         return HaystackerApplication.application(testDI)
     }

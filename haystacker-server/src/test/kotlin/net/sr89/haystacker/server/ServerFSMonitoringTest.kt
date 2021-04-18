@@ -19,11 +19,13 @@ import org.kodein.di.instance
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
+import kotlin.test.assertFalse
 
 internal class ServerFSMonitoringTest {
     private fun <R> HaystackerApplication.runServer(testCase: HaystackerApplication.() -> R) {
@@ -106,6 +108,9 @@ internal class ServerFSMonitoringTest {
         }
 
         println()
+
+        val notExistingIndexWasCreated = Files.exists(Paths.get("i-do-not-exist"))
+        assertFalse(notExistingIndexWasCreated)
 
         newServer().runServer {
             assertSearchResult(searchIndex(indexFile, "name = newfile.txt"), listOf("newFile.txt"))

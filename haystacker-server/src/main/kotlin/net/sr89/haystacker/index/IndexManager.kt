@@ -314,8 +314,14 @@ internal class IndexManagerImpl(
     }
 
     private fun initIndexDirectory(): FSDirectory {
+        val path = Paths.get(indexPath)
+
+        if (!Files.exists(path)) {
+            throw IndexNotFoundException("Unable to find index at $path")
+        }
+
         if (indexDirectory == null) {
-            indexDirectory = FSDirectory.open(Paths.get(indexPath))
+            indexDirectory = FSDirectory.open(path)
         }
         return indexDirectory!!
     }

@@ -201,11 +201,17 @@ internal class IndexManagerImpl(
     }
 
     override fun startWatchingFileSystemChanges() {
-        fileMonitor.addFileListener(fileSystemListener)
+        try {
+            val indexedDirectories = indexedDirectories()
 
-        for (indexedDirectory in indexedDirectories()) {
-            println("Watching $indexedDirectory")
-            startWatching(indexedDirectory)
+            fileMonitor.addFileListener(fileSystemListener)
+
+            for (indexedDirectory in indexedDirectories) {
+                println("Watching $indexedDirectory")
+                startWatching(indexedDirectory)
+            }
+        } catch (e: IndexNotFoundException) {
+            println("WARN: Ignoring missing index $indexPath")
         }
     }
 

@@ -5,6 +5,7 @@ import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.config.ServerConfig
+import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import net.sr89.haystacker.test.common.tryAssertingRepeatedly
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.kodein.di.DI
 import org.kodein.di.bind
+import org.kodein.di.instance
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
@@ -151,6 +153,11 @@ internal class ServerFSMonitoringTest {
 
             import(testOverrides, allowOverride = true)
         }
+
+        val settings: SettingsManager by testDI.instance()
+
+        // adding a non existing index to make sure that it doesn't break the server
+        settings.addIndex("i-do-not-exist")
 
         return HaystackerApplication.application(testDI)
     }

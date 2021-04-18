@@ -2,8 +2,7 @@ package net.sr89.haystacker.client.cli
 
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.TimedHttpResponse
-import net.sr89.haystacker.server.cmdline.getHostOrDefault
-import net.sr89.haystacker.server.cmdline.getPortOrDefault
+import net.sr89.haystacker.server.cmdline.CmdLineArgs
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 import org.springframework.core.Ordered
@@ -172,8 +171,9 @@ class HslShell : CommandMarker {
 }
 
 fun main(args: Array<String>) {
-    val host = args.getHostOrDefault()
-    val port = args.getPortOrDefault()
+    val commandLineArgs = CmdLineArgs(args)
+    val host = commandLineArgs.host
+    val port = commandLineArgs.port
 
     val baseUrl = "http://$host:$port"
 
@@ -181,5 +181,5 @@ fun main(args: Array<String>) {
 
     restClient = HaystackerRestClient(baseUrl, ApacheClient())
 
-    Bootstrap.main(Array(0) { "" })
+    Bootstrap.main(commandLineArgs.getArgsForShell())
 }

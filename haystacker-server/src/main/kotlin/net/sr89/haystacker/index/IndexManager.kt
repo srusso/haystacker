@@ -17,6 +17,7 @@ import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.index.IndexNotFoundException
 import org.apache.lucene.index.IndexReader
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
@@ -313,6 +314,7 @@ internal class IndexManagerImpl(
         return indexDirectory!!
     }
 
+    @Throws(IndexNotFoundException::class)
     private fun initSearcher() {
         // Probably fine to initialize this once per search.
         // If performance concerns arise, we should look into this.

@@ -2,8 +2,7 @@ package net.sr89.haystacker.client.cli
 
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.TimedHttpResponse
-import net.sr89.haystacker.server.cmdline.getHostOrDefault
-import net.sr89.haystacker.server.cmdline.getPortOrDefault
+import net.sr89.haystacker.server.cmdline.CmdLineArgs
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 import org.springframework.core.Ordered
@@ -16,16 +15,16 @@ import org.springframework.stereotype.Component
 
 private lateinit var restClient: HaystackerRestClient
 
+private var currentIndex: String? = null
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class HslShell : CommandMarker {
     private val noIndexSetErrorMessage = "Please set the current index with 'set-index'"
 
-    private var currentIndex: String? = null
-
     @CliCommand(value = ["set-index"], help = "Sets the current index")
     fun setCurrentIndex(@CliOption(key = [""], help = "The index to use (server's filesystem)") index: String): String {
-        this.currentIndex = index
+        currentIndex = index
         return "Set current index to: $index"
     }
 
@@ -172,14 +171,21 @@ class HslShell : CommandMarker {
 }
 
 fun main(args: Array<String>) {
-    val host = args.getHostOrDefault()
-    val port = args.getPortOrDefault()
+    val commandLineArgs = CmdLineArgs(args)
+    val host = commandLineArgs.host
+    val port = commandLineArgs.port
+    currentIndex = if (commandLineArgs.index == "") null else commandLineArgs.index
 
     val baseUrl = "http://$host:$port"
 
-    println("Starting shell with base url of $baseUrl")
-
     restClient = HaystackerRestClient(baseUrl, ApacheClient())
 
-    Bootstrap.main(Array(0) { "" })
+    println("Server URL: $baseUrl")
+    if (!commandLineArgs.isEmpty()) {
+        println("Command line: ${commandLineArgs.getArgsForShell().asList()}")
+        Bootstrap.main(commandLineArgs.getArgsForShell())
+    } else {
+        println("Interactive mode")
+        Bootstrap.main(emptyArray())
+    }
 }

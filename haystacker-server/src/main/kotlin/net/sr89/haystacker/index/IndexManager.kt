@@ -141,7 +141,7 @@ internal class IndexManagerImpl(
         iwc.openMode = OpenMode.CREATE
 
         // creates the index
-        IndexWriter(initIndexDirectory(), iwc).close()
+        IndexWriter(initIndexDirectory(true), iwc).close()
     }
 
     override fun search(query: HslQuery, maxResults: Int): SearchResponse {
@@ -310,13 +310,13 @@ internal class IndexManagerImpl(
         val iwc = IndexWriterConfig(analyzer)
         iwc.openMode = OpenMode.APPEND
 
-        return IndexWriter(initIndexDirectory(), iwc)
+        return IndexWriter(initIndexDirectory(false), iwc)
     }
 
-    private fun initIndexDirectory(): FSDirectory {
+    private fun initIndexDirectory(creation: Boolean): FSDirectory {
         val path = Paths.get(indexPath)
 
-        if (!Files.exists(path)) {
+        if (!creation && !Files.exists(path)) {
             throw IndexNotFoundException("Unable to find index at $path")
         }
 
@@ -330,7 +330,7 @@ internal class IndexManagerImpl(
     private fun initSearcher() {
         // Probably fine to initialize this once per search.
         // If performance concerns arise, we should look into this.
-        reader = DirectoryReader.open(initIndexDirectory())
+        reader = DirectoryReader.open(initIndexDirectory(false))
         searcher = IndexSearcher(reader)
     }
 }

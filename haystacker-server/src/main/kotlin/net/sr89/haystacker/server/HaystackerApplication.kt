@@ -2,8 +2,7 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
-import net.sr89.haystacker.server.cmdline.getPortOrDefault
-import net.sr89.haystacker.server.cmdline.getSettingsDirectory
+import net.sr89.haystacker.server.cmdline.CmdLineArgs
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.handlers.QuitHandler
@@ -54,8 +53,9 @@ class HaystackerApplication(
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val settingsDirectory = Paths.get(args.getSettingsDirectory())
-            val port = args.getPortOrDefault()
+            val commandLineArgs = CmdLineArgs(args)
+            val settingsDirectory = Paths.get(commandLineArgs.settingsDirectory)
+            val port = commandLineArgs.port
 
             application(applicationModule(ServerConfig(port, settingsDirectory))).run()
         }

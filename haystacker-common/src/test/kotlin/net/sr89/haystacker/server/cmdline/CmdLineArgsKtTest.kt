@@ -7,25 +7,26 @@ import kotlin.test.assertNotNull
 internal class CmdLineArgsKtTest {
     @Test
     internal fun portAndHostSpecified() {
-        val args = argsOf("--port", "9191", "--host", "myhost")
+        val args = CmdLineArgs(argsOf("--port", "9191", "--host", "myhost"))
 
-        assertEquals(9191, args.getPortOrDefault())
-        assertEquals("myhost", args.getHostOrDefault())
+        assertEquals(9191, args.port)
+        assertEquals("myhost", args.host)
     }
 
     @Test
-    internal fun unknownArgumentsIgnored() {
-        val args = argsOf("--unknown", "--host", "myhost", "extra")
+    internal fun notParametersArePassedToBashStyleShell() {
+        val args = CmdLineArgs(argsOf("--unknown", "--host", "myhost", "extra"))
 
-        assertEquals("myhost", args.getHostOrDefault())
+        assertEquals("myhost", args.host)
+        assertEquals(listOf("--unknown", "extra"), args.getArgsForShell().toList())
     }
 
     @Test
     internal fun defaultValues() {
-        val args = argsOf()
+        val args = CmdLineArgs(argsOf())
 
-        assertNotNull(args.getPortOrDefault())
-        assertNotNull(args.getHostOrDefault())
+        assertNotNull(args.port)
+        assertNotNull(args.host)
     }
 
     private fun argsOf(vararg args: String) = args.toList().toTypedArray()

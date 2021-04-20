@@ -23,8 +23,10 @@ Running an interactive shell from the terminal (won't work from IntelliJ):
 The shell can also be run in "bash style":
 
     java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost create-index D:\my-index
-    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index add-to-index D:\\my-data
-    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index search name = "file.txt" --max-results 10
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index add-to-index D:\my-data
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index search "name = \"file.txt\"" --max-results 10
+
+Note that in bash style quotes need to be escaped as shown in the last example above.
 
 ## Using the shell client (interactive mode)
 

@@ -15,16 +15,16 @@ import org.springframework.stereotype.Component
 
 private lateinit var restClient: HaystackerRestClient
 
+private var currentIndex: String? = null
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class HslShell : CommandMarker {
     private val noIndexSetErrorMessage = "Please set the current index with 'set-index'"
 
-    private var currentIndex: String? = null
-
     @CliCommand(value = ["set-index"], help = "Sets the current index")
     fun setCurrentIndex(@CliOption(key = [""], help = "The index to use (server's filesystem)") index: String): String {
-        this.currentIndex = index
+        currentIndex = index
         return "Set current index to: $index"
     }
 
@@ -174,6 +174,7 @@ fun main(args: Array<String>) {
     val commandLineArgs = CmdLineArgs(args)
     val host = commandLineArgs.host
     val port = commandLineArgs.port
+    currentIndex = if (commandLineArgs.index == "") null else commandLineArgs.index
 
     val baseUrl = "http://$host:$port"
 

@@ -16,22 +16,24 @@ Simply run `HaystackerApplication.kt`, optionally specifying the port by using t
 
 ## Running the shell client
 
-From a terminal (won't work from IntelliJ):
+Running an interactive shell from the terminal (won't work from IntelliJ):
 
     java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost
     
-Or in debug mode:
+The shell can also be run in "bash style":
 
-    java.exe -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost create-index D:\my-index
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index add-to-index D:\\my-data
+    java -jar haystacker-shell\target\haystacker-shell-1.0-SNAPSHOT.jar --port 9000 --host localhost --index D:\my-index search name = "file.txt" --max-results 10
 
-## Using the shell client
+## Using the shell client (interactive mode)
 
-Then type `help` for help. Example usage:
+Type `help` for help. Example usage:
 
-    ; create an empty index at C:\\test-index on the server
+    ; create an empty index at C:\\my-index on the server
     haystacker> create-index C:\\my-index
     
-    ; set the current index to C:\\test-index (will be used by future commands)
+    ; set the current index to C:\\my-index (will be used by future commands)
     haystacker> set-index C:\\my-index
     
     ; adds directory D:\\my-data to the index, to make it searchable

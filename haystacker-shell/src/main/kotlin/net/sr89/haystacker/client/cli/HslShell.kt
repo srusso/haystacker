@@ -178,9 +178,14 @@ fun main(args: Array<String>) {
 
     val baseUrl = "http://$host:$port"
 
-    println("Starting shell with base url of $baseUrl")
-
     restClient = HaystackerRestClient(baseUrl, ApacheClient())
 
-    Bootstrap.main(commandLineArgs.getArgsForShell())
+    println("Server URL: $baseUrl")
+    if (!commandLineArgs.isEmpty()) {
+        println("Command line: ${commandLineArgs.getArgsForShell().asList()}")
+        Bootstrap.main(commandLineArgs.getArgsForShell())
+    } else {
+        println("Interactive mode")
+        Bootstrap.main(emptyArray())
+    }
 }

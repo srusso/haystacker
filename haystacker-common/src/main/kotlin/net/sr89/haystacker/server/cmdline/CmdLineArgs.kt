@@ -39,4 +39,5 @@ class CmdLineArgs(commandLineArgs: Array<String>) {
     val index: String = argList.getStringArgument("", "index", "i")
 
     fun getArgsForShell() = argList.toTypedArray()
+    fun isEmpty() = argList.isEmpty()
 }

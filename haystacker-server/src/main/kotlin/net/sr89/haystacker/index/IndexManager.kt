@@ -33,6 +33,7 @@ import org.apache.lucene.search.SortField.Type
 import org.apache.lucene.search.TermQuery
 import org.apache.lucene.store.FSDirectory
 import java.io.File
+import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -105,6 +106,11 @@ interface IndexManager {
      * Start observing changes to the directories that belong to this index, in order to keep the index up to date in almost real time.
      */
     fun startWatchingFileSystemChanges()
+
+    fun onDriveMounted(volume: Path)
+
+    fun onDriveUnmounted(volume: Path)
+
 }
 
 private val indexedRootDirectoriesId = Term("indexedRootDirectories")
@@ -207,12 +213,25 @@ internal class IndexManagerImpl(
             fileMonitor.addFileListener(fileSystemListener)
 
             for (indexedDirectory in indexedDirectories) {
-                println("Watching $indexedDirectory")
                 startWatching(indexedDirectory)
             }
         } catch (e: IndexNotFoundException) {
             println("WARN: Ignoring missing index $indexPath")
         }
+    }
+
+    override fun onDriveMounted(volume: Path) {
+        watchedDirectories
+            .map(File::toPath)
+            .filter { watchedDirectory -> volume.isParentOf(watchedDirectory) }
+            .forEach(this::setWatch)
+    }
+
+    override fun onDriveUnmounted(volume: Path) {
+        watchedDirectories
+            .map(File::toPath)
+            .filter { watchedDirectory -> volume.isParentOf(watchedDirectory) }
+            .forEach(this::stopWatch)
     }
 
     override fun fileIsRelevantForIndex(file: File): Boolean {
@@ -238,7 +257,7 @@ internal class IndexManagerImpl(
     }
 
     private fun toLuceneSortField(hslSortField: HslSortField): SortField {
-        val reverse = when(hslSortField.sortOrder) {
+        val reverse = when (hslSortField.sortOrder) {
             SortOrder.ASCENDING -> false
             SortOrder.DESCENDING -> true
         }
@@ -254,10 +273,22 @@ internal class IndexManagerImpl(
         getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
     private fun startWatching(directory: Path) {
-        val directoryFile = directory.toFile()
+        watchedDirectories.add(directory.toFile())
+        setWatch(directory)
+    }
 
-        watchedDirectories.add(directoryFile)
-        fileMonitor.addWatch(directoryFile, observedEvents)
+    private fun setWatch(directory: Path) {
+        try {
+            fileMonitor.addWatch(directory.toFile(), observedEvents)
+            println("Watching $directory")
+        } catch (e: FileNotFoundException) {
+            println("Not watching $directory (indexed in $indexPath) because it's not currently mounted")
+        }
+    }
+
+    private fun stopWatch(directory: Path) {
+        println("Stopped watching $directory")
+        fileMonitor.removeWatch(directory.toFile())
     }
 
     private fun fetchDocument(docID: Int): Document {

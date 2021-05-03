@@ -14,6 +14,14 @@ This will create the CLI client jar.
 
 Simply run `HaystackerApplication.kt`, optionally specifying the port by using the `--port` command line argument, such as `--port 9000`.
 
+## Running the UI client
+
+Download the javafx library from [here](https://gluonhq.com/products/javafx/) and extract it.
+Let's say it's extracted to `D:\tools\javafx-sdk-11.0.2\lib`.
+
+Run: `net.sr89.haystacker.ui.UIStart`
+With VM options: `--module-path D:\tools\javafx-sdk-11.0.2\lib --add-modules=javafx.controls`
+
 ## Running the shell client
 
 Running an interactive shell from the terminal (won't work from IntelliJ):

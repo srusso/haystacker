@@ -14,6 +14,7 @@
         <module>haystacker-lang</module>
         <module>haystacker-server</module>
         <module>haystacker-shell</module>
+        <module>haystacker-ui</module>
     </modules>
 
     <properties>

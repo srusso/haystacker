@@ -1,5 +1,6 @@
 package net.sr89.haystacker.async.task
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.api.TaskInterruptResponse
@@ -56,6 +57,8 @@ interface BackgroundTaskManager {
 
 class AsyncBackgroundTaskManager(private val executor: ExecutorService) : BackgroundTaskManager {
 
+    private val logger = KotlinLogging.logger {}
+
     private val finishedTasks: FifoConcurrentMap<TaskId, BackgroundTask> = FifoConcurrentMap(100)
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
@@ -97,14 +100,14 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
 
         runningTasks.forEach { (_, task) -> task.interrupt() }
 
-        println("Waiting up to 30 seconds for all currently running tasks to complete")
+        logger.info { "Waiting up to 30 seconds for all currently running tasks to complete" }
 
         executor.awaitTermination(30, SECONDS)
     }
 
     private fun startAsync(task: BackgroundTask, onComplete: () -> Unit): TaskId? {
         if (executor.isShutdown) {
-            println("Not starting task of type ${task::class} because the server is being shut down")
+            logger.info { "Not starting task of type ${task::class} because the server is being shut down" }
             return null
         }
 
@@ -120,7 +123,7 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
                     onComplete()
                 }
         } catch (e: RejectedExecutionException) {
-            println("The task was rejected by the executor service: ${e.message}")
+            logger.error { "The task was rejected by the executor service: ${e.message}" }
             runningTasks.remove(id)
             return null
         }

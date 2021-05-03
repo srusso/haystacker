@@ -1,5 +1,6 @@
 package net.sr89.haystacker.filesystem
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTask
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
@@ -10,12 +11,13 @@ import java.nio.file.Path
 import java.time.Duration
 
 class VolumeManager(taskManager: BackgroundTaskManager, private val indexManagerProvider: IndexManagerProvider) {
+    private val logger = KotlinLogging.logger {}
     private val volumes = mutableSetOf<Path>()
 
     init {
         volumes.addAll(detectMountedVolumes())
 
-        println("Found volumes $volumes")
+        logger.info { "Found volumes $volumes" }
 
         taskManager.submitEternally(object : BackgroundTask {
             override fun run() {
@@ -48,16 +50,16 @@ class VolumeManager(taskManager: BackgroundTaskManager, private val indexManager
     private fun detectMountedVolumes() = FileSystems.getDefault().rootDirectories
 
     private fun onVolumeMounted(volume: Path) {
-        println("Volume mounted: $volume")
+        logger.info { "Volume mounted: $volume" }
 
         indexManagerProvider.getAll()
-            .forEach{indexManager -> indexManager.onVolumeMounted(volume)}
+            .forEach { indexManager -> indexManager.onVolumeMounted(volume) }
     }
 
     private fun onVolumeUnmounted(volume: Path) {
-        println("Volume unmounted: $volume")
+        logger.info { "Volume unmounted: $volume" }
 
         indexManagerProvider.getAll()
-            .forEach{indexManager -> indexManager.onVolumeUnmounted(volume)}
+            .forEach { indexManager -> indexManager.onVolumeUnmounted(volume) }
     }
 }

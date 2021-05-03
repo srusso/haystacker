@@ -1,5 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.Trigger.COMMAND
 import net.sr89.haystacker.index.IndexDirectoryTask
@@ -19,11 +20,14 @@ import java.nio.file.Paths
 class DirectoryIndexHandler(
     private val indexManagerProvider: IndexManagerProvider,
     private val taskManager: BackgroundTaskManager): HttpHandler {
+
+    private val logger = KotlinLogging.logger {}
+
     override fun invoke(request: Request): Response {
         val indexPath: String = indexPathQuery(request)
         val directoryToIndex = Paths.get(directoryQuery(request))
 
-        println("Received request to add directory $directoryToIndex to index $indexPath")
+        logger.info { "Received request to add directory $directoryToIndex to index $indexPath" }
 
         return if (!directoryToIndex.toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Directory $directoryToIndex not found")

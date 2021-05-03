@@ -1,5 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.Trigger.COMMAND
 import net.sr89.haystacker.index.DeindexDirectoryTask
@@ -18,12 +19,16 @@ import java.nio.file.Paths
 
 class DirectoryDeindexHandler(
     val taskManager: BackgroundTaskManager,
-    val indexManagerProvider: IndexManagerProvider): HttpHandler {
+    val indexManagerProvider: IndexManagerProvider
+) : HttpHandler {
+
+    private val logger = KotlinLogging.logger {}
+
     override fun invoke(request: Request): Response {
         val indexPath: String = indexPathQuery(request)
         val directoryToDeindex = Paths.get(directoryQuery(request))
 
-        println("Received request to remove directory $directoryToDeindex from index $indexPath")
+        logger.info { "Received request to remove directory $directoryToDeindex from index $indexPath" }
 
         return if (!directoryToDeindex.toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Directory $directoryToDeindex not found")

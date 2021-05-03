@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
 import net.sr89.haystacker.async.task.TaskStatus
@@ -24,6 +25,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val status: AtomicReference<TaskStatus>) :
     SimpleFileVisitor<Path>() {
+    private val logger = KotlinLogging.logger {}
+
     private val indexPath = Paths.get(indexPathStr)
     private var visitedFiles = 0
 
@@ -33,11 +36,11 @@ class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val sta
                 FileVisitResult.CONTINUE
             }
             indexPath == dir -> {
-                println("Will not index the index directory itself ($dir)")
+                logger.info { "Will not index the index directory itself ($dir)" }
                 FileVisitResult.SKIP_SUBTREE
             }
             else -> {
-                println("Skipping unreadable directory $dir")
+                logger.info { "Skipping unreadable directory $dir" }
                 FileVisitResult.SKIP_SUBTREE
             }
         }
@@ -60,7 +63,7 @@ class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val sta
     }
 
     override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
-        println("Could not visit $file: ${exc.message}")
+        logger.info { "Could not visit $file: ${exc.message}" }
         return FileVisitResult.CONTINUE
     }
 

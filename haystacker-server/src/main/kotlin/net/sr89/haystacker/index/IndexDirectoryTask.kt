@@ -1,5 +1,6 @@
 package net.sr89.haystacker.index
 
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTask
 import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.async.task.TaskExecutionState.ERROR
@@ -16,6 +17,7 @@ class IndexDirectoryTask(
     val indexManager: IndexManager,
     val directoryToIndex: Path
 ) : BackgroundTask {
+    private val logger = KotlinLogging.logger {}
 
     val latestStatus = AtomicReference(TaskStatus(NOT_STARTED, "Ready to start"))
 
@@ -32,7 +34,7 @@ class IndexDirectoryTask(
     }
 
     override fun interrupt(): Boolean {
-        println("Interrupting task to index $directoryToIndex")
+        logger.info { "Interrupting task to index $directoryToIndex"}
         latestStatus.set(TaskStatus(INTERRUPTED, "Interrupt command received"))
         return true
     }

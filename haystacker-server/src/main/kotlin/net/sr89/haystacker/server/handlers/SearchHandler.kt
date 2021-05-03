@@ -1,5 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
+import mu.KotlinLogging
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.lang.parser.HslParser
 import net.sr89.haystacker.server.api.hslStringQuery
@@ -17,6 +18,8 @@ import java.nio.file.Paths
 private val hslParser = HslParser()
 
 class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : HttpHandler {
+    private val logger = KotlinLogging.logger {}
+
     override fun invoke(request: Request): Response {
         val hslQuery: String = hslStringQuery(request)
 
@@ -25,7 +28,7 @@ class SearchHandler(private val indexManagerProvider: IndexManagerProvider) : Ht
         val indexPath: String = indexPathQuery(request)
         val indexManager = indexManagerProvider.forPath(indexPath)
 
-        println("Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results")
+        logger.info { "Received request to search '$hslQuery' on index $indexPath, returning a maximum of $maxResults results" }
 
         return if (!Paths.get(indexPath).toFile().exists()) {
             Response(Status.NOT_FOUND).with(stringBody of "Index at $indexPath not found")

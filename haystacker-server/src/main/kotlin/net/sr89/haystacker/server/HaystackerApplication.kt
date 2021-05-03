@@ -1,5 +1,6 @@
 package net.sr89.haystacker.server
 
+import mu.KotlinLogging
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.cmdline.CmdLineArgs
@@ -12,25 +13,27 @@ import org.kodein.di.instance
 import org.kodein.di.newInstance
 import java.nio.file.Paths
 
+private val logger = KotlinLogging.logger {}
+
 class HaystackerApplication(
     private val restServer: Http4kServer,
     private val indexManagerProvider: IndexManagerProvider,
     private val settingsManager: SettingsManager
 ) {
     fun run() {
-        println("Using settings directory '${settingsManager.config.settingsDirectory}'")
+        logger.info { "Using settings directory '${settingsManager.config.settingsDirectory}'" }
 
-        println("Setting up filesystem watchers for existing indexes")
+        logger.info { "Setting up filesystem watchers for existing indexes" }
 
         settingsManager.indexes()
             .map(indexManagerProvider::forPath)
             .forEach(IndexManager::startWatchingFileSystemChanges)
 
-        println("Starting REST server on port ${restServer.port()}")
+        logger.info { "Starting REST server on port ${restServer.port()}" }
 
         restServer.start()
 
-        println("Haystacker REST server started on port ${restServer.port()}")
+        logger.info { "Haystacker REST server started on port ${restServer.port()}" }
     }
 
     companion object {

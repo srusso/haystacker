@@ -1,6 +1,7 @@
 package net.sr89.haystacker.index
 
 import com.sun.jna.platform.FileMonitor
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.filesystem.IndexUpdatingListener
@@ -131,6 +132,7 @@ internal class IndexManagerImpl(
     taskManager: BackgroundTaskManager,
     private val indexPath: String
 ) : IndexManager {
+    private val logger = KotlinLogging.logger {}
 
     private val analyzer: Analyzer = StandardAnalyzer()
 
@@ -194,7 +196,7 @@ internal class IndexManagerImpl(
             }
         }
 
-        println("Done indexing $path")
+        logger.info { "Done indexing $path" }
 
         if (addDirectoryToWatchedList) {
             startWatching(path)
@@ -216,7 +218,7 @@ internal class IndexManagerImpl(
                 startWatching(indexedDirectory)
             }
         } catch (e: IndexNotFoundException) {
-            println("WARN: Ignoring missing index $indexPath")
+            logger.info { "WARN: Ignoring missing index $indexPath" }
         }
     }
 
@@ -280,14 +282,14 @@ internal class IndexManagerImpl(
     private fun setWatch(directory: Path) {
         try {
             fileMonitor.addWatch(directory.toFile(), observedEvents)
-            println("Watching $directory")
+            logger.info { "Watching $directory" }
         } catch (e: FileNotFoundException) {
-            println("Not watching $directory (indexed in $indexPath) because it's not currently mounted")
+            logger.info { "Not watching $directory (indexed in $indexPath) because it's not currently mounted" }
         }
     }
 
     private fun stopWatch(directory: Path) {
-        println("Stopped watching $directory")
+        logger.info { "Stopped watching $directory" }
         fileMonitor.removeWatch(directory.toFile())
     }
 

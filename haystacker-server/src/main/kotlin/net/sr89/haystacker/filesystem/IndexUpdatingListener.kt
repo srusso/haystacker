@@ -6,6 +6,7 @@ import com.sun.jna.platform.FileMonitor.FILE_DELETED
 import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_NEW
 import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_OLD
 import com.sun.jna.platform.FileMonitor.FILE_SIZE_CHANGED
+import mu.KotlinLogging
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.Trigger.FS_UPDATE
 import net.sr89.haystacker.index.DeindexDirectoryTask
@@ -16,14 +17,15 @@ import java.io.File
 class IndexUpdatingListener(
     val indexManager: IndexManager,
     val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
+    private val logger = KotlinLogging.logger {}
 
     private fun fileCreated(file: File) {
-        println("File $file was created")
+        logger.info { "File $file was created"}
         taskManager.submit(IndexDirectoryTask(FS_UPDATE, indexManager, file.toPath()))
     }
 
     private fun fileDeleted(file: File) {
-        println("File $file was deleted")
+        logger.info { "File $file was deleted"}
         taskManager.submit(DeindexDirectoryTask(FS_UPDATE, indexManager, file.toPath()))
     }
 

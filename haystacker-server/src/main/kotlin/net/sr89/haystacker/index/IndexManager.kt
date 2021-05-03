@@ -107,9 +107,9 @@ interface IndexManager {
      */
     fun startWatchingFileSystemChanges()
 
-    fun onDriveMounted(volume: Path)
+    fun onVolumeMounted(volume: Path)
 
-    fun onDriveUnmounted(volume: Path)
+    fun onVolumeUnmounted(volume: Path)
 
 }
 
@@ -220,14 +220,14 @@ internal class IndexManagerImpl(
         }
     }
 
-    override fun onDriveMounted(volume: Path) {
+    override fun onVolumeMounted(volume: Path) {
         watchedDirectories
             .map(File::toPath)
             .filter { watchedDirectory -> volume.isParentOf(watchedDirectory) }
             .forEach(this::setWatch)
     }
 
-    override fun onDriveUnmounted(volume: Path) {
+    override fun onVolumeUnmounted(volume: Path) {
         watchedDirectories
             .map(File::toPath)
             .filter { watchedDirectory -> volume.isParentOf(watchedDirectory) }

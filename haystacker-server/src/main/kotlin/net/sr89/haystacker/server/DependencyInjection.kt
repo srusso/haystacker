@@ -71,7 +71,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
 fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
     bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager(instance()) }
     bind<SettingsManager>() with singleton { SettingsManager(conf) }
-    bind<DriveManager>() with eagerSingleton { DriveManager(instance()) }
+    bind<DriveManager>() with eagerSingleton { DriveManager(instance(), instance()) }
     bind<IndexManagerProvider>() with singleton { IndexManagerProvider(instance()) }
     bind<Http4kServer>() with singleton { buildRestServer(instance(), conf.httpPort) }
     bind<Duration>(tag = "shutdownDelay") with singleton { Duration.ofSeconds(5) }

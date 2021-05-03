@@ -102,7 +102,7 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
         executor.awaitTermination(30, SECONDS)
     }
 
-    fun startAsync(task: BackgroundTask, onComplete: () -> Unit): TaskId? {
+    private fun startAsync(task: BackgroundTask, onComplete: () -> Unit): TaskId? {
         if (executor.isShutdown) {
             println("Not starting task of type ${task::class} because the server is being shut down")
             return null

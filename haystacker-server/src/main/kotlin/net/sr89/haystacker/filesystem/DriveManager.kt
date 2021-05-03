@@ -4,21 +4,20 @@ import net.sr89.haystacker.async.task.BackgroundTask
 import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
 import net.sr89.haystacker.async.task.TaskStatus
+import net.sr89.haystacker.index.IndexManagerProvider
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.time.Duration
 
-class DriveManager(taskManager: BackgroundTaskManager) {
+class DriveManager(taskManager: BackgroundTaskManager, private val indexManagerProvider: IndexManagerProvider) {
     private val drives = mutableSetOf<Path>()
 
     init {
-        drives.addAll(
-            FileSystems.getDefault().rootDirectories
-        )
+        drives.addAll(detectMountedDrives())
 
         println("Found drives $drives")
 
-        taskManager.submitEternally(object :  BackgroundTask {
+        taskManager.submitEternally(object : BackgroundTask {
             override fun run() {
                 updateDriveList()
             }
@@ -27,11 +26,11 @@ class DriveManager(taskManager: BackgroundTaskManager) {
 
             override fun currentStatus(): TaskStatus = TaskStatus(RUNNING, "Monitoring drives")
 
-        }, Duration.ofSeconds(5))
+        }, Duration.ofSeconds(1))
     }
 
     fun updateDriveList() {
-        val newDrives = FileSystems.getDefault().rootDirectories
+        val newDrives = detectMountedDrives()
 
         var driveAddedOrRemoved = false
 
@@ -52,18 +51,24 @@ class DriveManager(taskManager: BackgroundTaskManager) {
         println("Drives to remove: $drivesToRemove")
         drives.removeAll(drivesToRemove)
 
-//        if (driveAddedOrRemoved) {
-            println("New set of drives: $drives")
-//        }
+        if (driveAddedOrRemoved) {
+            println("Mounted drives: $drives")
+        }
     }
+
+    private fun detectMountedDrives() = FileSystems.getDefault().rootDirectories
 
     private fun onDriveMounted(drive: Path) {
         println("New drive mounted: $drive")
-        TODO("Start file system watcher if needed (any index watches it or subdirectories)")
+
+        indexManagerProvider.getAll()
+            .filter { i -> i. }
+
+        //TODO "Start file system watcher if needed (any index watches it or subdirectories)"
     }
 
     private fun onDriveUnmounted(drive: Path) {
         println("Drive unmounted: $drive")
-        TODO("Stop any file system watchers on this drive or subdirectories")
+        //TODO "Stop any file system watchers on this drive or subdirectories"
     }
 }

@@ -1,13 +1,11 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.filter.ExceptionHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.test.common.NoOpServer
-import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.assertSearchResult
 import net.sr89.haystacker.test.common.createServerTestFiles
 import org.http4k.core.Status
@@ -18,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.kodein.di.DI
 import org.kodein.di.bind
 import org.kodein.di.instance
+import org.kodein.di.provider
 import org.kodein.di.singleton
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,6 +25,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneOffset
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.test.assertEquals
 
 internal class HaystackerApplicationKtTest {
@@ -50,11 +51,12 @@ internal class HaystackerApplicationKtTest {
         val config = ServerConfig(0, Paths.get("."))
 
         val testOverrides = DI.Module("DITestOverrides") {
-            bind<BackgroundTaskManager>(overrides = true) with singleton { SingleThreadTaskManager() }
+            bind<ExecutorService>(overrides = true) with provider { Executors.newSingleThreadExecutor() }
             bind<Http4kServer>(overrides = true) with singleton { NoOpServer() }
         }
 
         val testDI = DI {
+            import(utilModule)
             import(handlersModule)
             import(managerModule(config))
 

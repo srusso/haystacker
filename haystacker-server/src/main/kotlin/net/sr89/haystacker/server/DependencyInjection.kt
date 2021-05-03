@@ -2,6 +2,7 @@ package net.sr89.haystacker.server
 
 import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.async.task.BackgroundTaskManager
+import net.sr89.haystacker.filesystem.VolumeManager
 import net.sr89.haystacker.index.IndexManagerProvider
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
@@ -22,6 +23,7 @@ import org.http4k.server.Jetty
 import org.http4k.server.asServer
 import org.kodein.di.DI
 import org.kodein.di.bind
+import org.kodein.di.eagerSingleton
 import org.kodein.di.instance
 import org.kodein.di.provider
 import org.kodein.di.singleton
@@ -69,6 +71,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
 fun managerModule(conf: ServerConfig) = DI.Module("Managers") {
     bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager(instance()) }
     bind<SettingsManager>() with singleton { SettingsManager(conf) }
+    bind<VolumeManager>() with eagerSingleton { VolumeManager(instance(), instance()) }
     bind<IndexManagerProvider>() with singleton { IndexManagerProvider(instance()) }
     bind<Http4kServer>() with singleton { buildRestServer(instance(), conf.httpPort) }
     bind<Duration>(tag = "shutdownDelay") with singleton { Duration.ofSeconds(5) }

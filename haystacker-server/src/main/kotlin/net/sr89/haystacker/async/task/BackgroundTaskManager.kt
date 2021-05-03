@@ -4,11 +4,14 @@ import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.server.api.TaskInterruptResponse
 import net.sr89.haystacker.server.collection.FifoConcurrentMap
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletableFuture.delayedExecutor
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 data class TaskId(val id: UUID) {
@@ -39,6 +42,8 @@ interface BackgroundTaskManager {
      */
     fun submit(task: BackgroundTask): TaskId?
 
+    fun submitEternally(task: BackgroundTask, interval: Duration): TaskId?
+
     fun status(taskId: TaskId): TaskStatus
 
     /**
@@ -55,28 +60,16 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
     private val runningTasks = ConcurrentHashMap<TaskId, BackgroundTask>()
 
     override fun submit(task: BackgroundTask): TaskId? {
-        if (executor.isShutdown) {
-            println("Not starting task of type ${task::class} because the server is being shut down")
-            return null
+        return startAsync(task) { }
+    }
+
+    override fun submitEternally(task: BackgroundTask, interval: Duration): TaskId? {
+        return startAsync(task) {
+            CompletableFuture.runAsync(
+                { submitEternally(task, interval) },
+                delayedExecutor(interval.toNanos(), NANOSECONDS, executor)
+            )
         }
-
-        val id = TaskId(UUID.randomUUID())
-
-        runningTasks[id] = task
-
-        try {
-            CompletableFuture.runAsync(task::run, executor)
-                .whenComplete { _, _ ->
-                    runningTasks.remove(id)
-                    finishedTasks.put(id, task)
-                }
-        } catch (e: RejectedExecutionException) {
-            println("The task was rejected by the executor service: ${e.message}")
-            runningTasks.remove(id)
-            return null
-        }
-
-        return id
     }
 
     override fun status(taskId: TaskId): TaskStatus {
@@ -107,5 +100,31 @@ class AsyncBackgroundTaskManager(private val executor: ExecutorService) : Backgr
         println("Waiting up to 30 seconds for all currently running tasks to complete")
 
         executor.awaitTermination(30, SECONDS)
+    }
+
+    private fun startAsync(task: BackgroundTask, onComplete: () -> Unit): TaskId? {
+        if (executor.isShutdown) {
+            println("Not starting task of type ${task::class} because the server is being shut down")
+            return null
+        }
+
+        val id = TaskId(UUID.randomUUID())
+
+        runningTasks[id] = task
+
+        try {
+            CompletableFuture.runAsync(task::run, executor)
+                .whenComplete { _, _ ->
+                    runningTasks.remove(id)
+                    finishedTasks.put(id, task)
+                    onComplete()
+                }
+        } catch (e: RejectedExecutionException) {
+            println("The task was rejected by the executor service: ${e.message}")
+            runningTasks.remove(id)
+            return null
+        }
+
+        return id
     }
 }

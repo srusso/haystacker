@@ -62,13 +62,13 @@ class DriveManager(taskManager: BackgroundTaskManager, private val indexManagerP
         println("New drive mounted: $drive")
 
         indexManagerProvider.getAll()
-            .filter { i -> i. }
-
-        //TODO "Start file system watcher if needed (any index watches it or subdirectories)"
+            .forEach{indexManager -> indexManager.onDriveMounted(drive)}
     }
 
     private fun onDriveUnmounted(drive: Path) {
         println("Drive unmounted: $drive")
-        //TODO "Stop any file system watchers on this drive or subdirectories"
+
+        indexManagerProvider.getAll()
+            .forEach{indexManager -> indexManager.onDriveUnmounted(drive)}
     }
 }

@@ -105,6 +105,11 @@ interface IndexManager {
      * Start observing changes to the directories that belong to this index, in order to keep the index up to date in almost real time.
      */
     fun startWatchingFileSystemChanges()
+
+    fun onDriveMounted(dive: Path)
+
+    fun onDriveUnmounted(drive: Path)
+
 }
 
 private val indexedRootDirectoriesId = Term("indexedRootDirectories")
@@ -207,12 +212,27 @@ internal class IndexManagerImpl(
             fileMonitor.addFileListener(fileSystemListener)
 
             for (indexedDirectory in indexedDirectories) {
-                println("Watching $indexedDirectory")
                 startWatching(indexedDirectory)
             }
         } catch (e: IndexNotFoundException) {
             println("WARN: Ignoring missing index $indexPath")
         }
+    }
+
+    override fun onDriveMounted(dive: Path) {
+        val indexedDirectories = indexedDirectories()
+
+        watchedDirectories
+
+        ///...
+    }
+
+    override fun onDriveUnmounted(drive: Path) {
+        val indexedDirectories = indexedDirectories()
+
+        watchedDirectories
+
+        ///...
     }
 
     override fun fileIsRelevantForIndex(file: File): Boolean {
@@ -254,6 +274,7 @@ internal class IndexManagerImpl(
         getSetValue(excludedRootSubDirectoriesId).second.map { dir -> Paths.get(dir) }.toSet()
 
     private fun startWatching(directory: Path) {
+        println("Watching $directory")
         val directoryFile = directory.toFile()
 
         watchedDirectories.add(directoryFile)

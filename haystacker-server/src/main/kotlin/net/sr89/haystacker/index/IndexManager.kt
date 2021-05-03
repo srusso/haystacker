@@ -2,8 +2,6 @@ package net.sr89.haystacker.index
 
 import com.sun.jna.platform.FileMonitor
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.BackgroundTaskManager
-import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.filesystem.IndexUpdatingListener
 import net.sr89.haystacker.lang.ToLuceneClauseVisitor
 import net.sr89.haystacker.lang.ast.HslQuery
@@ -11,6 +9,8 @@ import net.sr89.haystacker.lang.ast.HslSortField
 import net.sr89.haystacker.lang.ast.SortOrder
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.SearchResult
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
+import net.sr89.haystacker.server.async.task.TaskStatus
 import net.sr89.haystacker.server.file.isParentOf
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer

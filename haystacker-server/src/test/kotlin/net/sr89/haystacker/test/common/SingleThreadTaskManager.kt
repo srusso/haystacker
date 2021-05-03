@@ -1,11 +1,11 @@
 package net.sr89.haystacker.test.common
 
-import net.sr89.haystacker.async.task.BackgroundTask
-import net.sr89.haystacker.async.task.BackgroundTaskManager
-import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
-import net.sr89.haystacker.async.task.TaskId
-import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.server.api.TaskInterruptResponse
+import net.sr89.haystacker.server.async.task.BackgroundTask
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
+import net.sr89.haystacker.server.async.task.TaskExecutionState.COMPLETED
+import net.sr89.haystacker.server.async.task.TaskId
+import net.sr89.haystacker.server.async.task.TaskStatus
 import java.time.Duration
 import java.util.UUID
 

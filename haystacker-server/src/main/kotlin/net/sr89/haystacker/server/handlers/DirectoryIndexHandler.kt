@@ -1,7 +1,6 @@
 package net.sr89.haystacker.server.handlers
 
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.Trigger.COMMAND
 import net.sr89.haystacker.index.IndexDirectoryTask
 import net.sr89.haystacker.index.IndexManagerProvider
@@ -10,6 +9,7 @@ import net.sr89.haystacker.server.api.directoryQuery
 import net.sr89.haystacker.server.api.indexPathQuery
 import net.sr89.haystacker.server.api.stringBody
 import net.sr89.haystacker.server.api.taskIdResponse
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -19,7 +19,8 @@ import java.nio.file.Paths
 
 class DirectoryIndexHandler(
     private val indexManagerProvider: IndexManagerProvider,
-    private val taskManager: BackgroundTaskManager): HttpHandler {
+    private val taskManager: BackgroundTaskManager
+): HttpHandler {
 
     private val logger = KotlinLogging.logger {}
 

@@ -14,6 +14,7 @@
         <module>haystacker-lang</module>
         <module>haystacker-server</module>
         <module>haystacker-shell</module>
+        <module>haystacker-ui</module>
     </modules>
 
     <properties>
@@ -96,6 +97,22 @@
                 <groupId>org.kodein.di</groupId>
                 <artifactId>kodein-di-jvm</artifactId>
                 <version>7.4.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.microutils</groupId>
+                <artifactId>kotlin-logging</artifactId>
+                <version>1.12.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.30</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>1.7.30</version>
+                <scope>runtime</scope>
             </dependency>
 
             <!--TEST-->

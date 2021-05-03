@@ -9,17 +9,34 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>haystacker-common</artifactId>
+    <artifactId>haystacker-ui</artifactId>
+
+    <properties>
+    </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>16</version>
+        </dependency>
+        <dependency>
+            <artifactId>haystacker-common</artifactId>
+            <groupId>net.sr89</groupId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
+            <artifactId>http4k-client-apache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.microutils</groupId>
@@ -34,13 +51,16 @@
             <artifactId>slf4j-log4j12</artifactId>
             <scope>runtime</scope>
         </dependency>
-
-        <!--        TEST -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
+            <groupId>org.kodein.di</groupId>
+            <artifactId>kodein-di-jvm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test</artifactId>
@@ -72,7 +92,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <jvmTarget>13</jvmTarget>
+                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
             </plugin>
         </plugins>

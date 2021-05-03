@@ -32,11 +32,8 @@ class DriveManager(taskManager: BackgroundTaskManager, private val indexManagerP
     fun updateDriveList() {
         val newDrives = detectMountedDrives()
 
-        var driveAddedOrRemoved = false
-
         newDrives.forEach { newDrive ->
             if (drives.add(newDrive)) {
-                driveAddedOrRemoved = true
                 onDriveMounted(newDrive)
             }
         }
@@ -44,22 +41,16 @@ class DriveManager(taskManager: BackgroundTaskManager, private val indexManagerP
         val drivesToRemove = drives.filterNot { drive -> newDrives.contains(drive) }
 
         drivesToRemove.forEach { removedDrive ->
-            driveAddedOrRemoved = true
             onDriveUnmounted(removedDrive)
         }
 
-        println("Drives to remove: $drivesToRemove")
         drives.removeAll(drivesToRemove)
-
-        if (driveAddedOrRemoved) {
-            println("Mounted drives: $drives")
-        }
     }
 
     private fun detectMountedDrives() = FileSystems.getDefault().rootDirectories
 
     private fun onDriveMounted(drive: Path) {
-        println("New drive mounted: $drive")
+        println("Drive mounted: $drive")
 
         indexManagerProvider.getAll()
             .forEach{indexManager -> indexManager.onDriveMounted(drive)}

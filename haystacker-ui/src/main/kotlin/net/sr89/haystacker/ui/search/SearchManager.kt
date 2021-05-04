@@ -2,11 +2,14 @@ package net.sr89.haystacker.ui.search
 
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import mu.KotlinLogging
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 
 class SearchManager {
+    private val logger = KotlinLogging.logger {}
+
     // TODO make this configurable - this should be a KODEIN app
     private val restClient = HaystackerRestClient("http://localhost:9000", ApacheClient())
     val actualResults: ObservableList<String> = FXCollections.observableArrayList()
@@ -19,7 +22,7 @@ class SearchManager {
             return
         }
 
-        println("searching $filenameQuery ...")
+        logger.info { "searching $filenameQuery ..." }
 
         val response = restClient.search(
             generateHslFromFilenameQuery(filenameQuery),
@@ -28,10 +31,10 @@ class SearchManager {
         )
 
         if (response.status != Status.OK) {
-            println("Search error: ${response.rawBody()}")
+            logger.info { "Search error: ${response.rawBody()}" }
         } else {
             val (totalResults, returnedResults, results) = response.responseBody()
-            println("Results: $totalResults")
+            logger.info { "Results: $totalResults" }
 
             actualResults.clear()
             actualResults.addAll(

@@ -14,14 +14,25 @@ import javafx.stage.Stage
 
 class UIStart: Application() {
     override fun start(stage: Stage) {
-        val startLabel = Label("Search")
+        val searchBoxPanel = searchBoxPanel()
+
+        val scene = Scene(searchBoxPanel, 480.0, 320.0)
+
+        stage.scene = scene
+
+        stage.title = "Haystacker"
+        stage.show()
+    }
+
+    private fun searchBoxPanel(): VBox {
+        val searchLabel = Label("Search")
         val searchTestBox = TextField()
         searchTestBox.textProperty().bind(
             Bindings.format("HSL query here")
         )
 
         val gp = GridPane()
-        gp.add(startLabel, 0, 0)
+        gp.add(searchLabel, 0, 0)
         gp.add(searchTestBox, 1, 0)
         gp.hgap = 10.0
         gp.vgap = 10.0
@@ -31,13 +42,7 @@ class UIStart: Application() {
 
         val vbox = VBox(hbox)
         vbox.alignment = Pos.TOP_CENTER
-
-        val scene = Scene(vbox, 480.0, 320.0)
-
-        stage.scene = scene
-
-        stage.title = "Haystacker"
-        stage.show()
+        return vbox
     }
 
     companion object {

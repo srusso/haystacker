@@ -1,8 +1,8 @@
 package net.sr89.haystacker.ui.app
 
 import net.sr89.haystacker.server.api.HaystackerRestClient
-import net.sr89.haystacker.ui.UIStageBuilder
 import net.sr89.haystacker.ui.search.SearchManager
+import net.sr89.haystacker.ui.uicomponents.MainWindow
 import org.http4k.client.ApacheClient
 import org.http4k.core.HttpHandler
 import org.kodein.di.DI
@@ -19,5 +19,5 @@ fun managerModule() = DI.Module("Managers") {
 fun uiApplicationModule() = DI {
     import(managerModule())
 
-    bind<UIStageBuilder>() with singleton { UIStageBuilder(instance()) }
+    bind<MainWindow>() with singleton { MainWindow(instance()) }
 }

@@ -12,14 +12,15 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
+import net.sr89.haystacker.ui.app.uiApplicationModule
 import net.sr89.haystacker.ui.search.SearchManager
+import org.kodein.di.instance
+import org.kodein.di.newInstance
 
+private lateinit var stageBuilder: UIStageBuilder
 
-class UIStart: Application() {
-
-    private val searchManager = SearchManager()
-
-    override fun start(stage: Stage) {
+class UIStageBuilder(private val searchManager: SearchManager) {
+    fun buildStage(stage: Stage) {
         val vbox = VBox(searchBoxPanel(), resultsListView())
         vbox.alignment = Pos.TOP_CENTER
 
@@ -55,10 +56,24 @@ class UIStart: Application() {
 
         return hbox
     }
+}
+
+class UIStart: Application() {
+
+    override fun start(stage: Stage) {
+        return stageBuilder.buildStage(stage)
+    }
 
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
+            val di = uiApplicationModule()
+            val appInstance by di.newInstance {
+                UIStageBuilder(searchManager = instance())
+            }
+
+            stageBuilder = appInstance
+
             launch(UIStart::class.java)
         }
     }

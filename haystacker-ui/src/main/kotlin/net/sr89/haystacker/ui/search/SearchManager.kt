@@ -4,14 +4,11 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import mu.KotlinLogging
 import net.sr89.haystacker.server.api.HaystackerRestClient
-import org.http4k.client.ApacheClient
 import org.http4k.core.Status
 
-class SearchManager {
+class SearchManager(private val restClient: HaystackerRestClient) {
     private val logger = KotlinLogging.logger {}
 
-    // TODO make this configurable - this should be a KODEIN app
-    private val restClient = HaystackerRestClient("http://localhost:9000", ApacheClient())
     val actualResults: ObservableList<String> = FXCollections.observableArrayList()
 
     /**

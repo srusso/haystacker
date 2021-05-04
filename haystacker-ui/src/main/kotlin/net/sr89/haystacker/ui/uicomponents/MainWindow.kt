@@ -13,6 +13,18 @@ import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import net.sr89.haystacker.ui.search.SearchManager
 
+/**
+ * TODO
+ * - Screen to add a new index
+ * - Index selector (dropdown, included in the main window)
+ * - Remove index button
+ * - Button to add directory to an index. How to display task progress? Running tasks tab?
+ * - Double click on a result opens windows explorer to it
+ * - Result list displays created, last modified, size
+ * - Result sorting
+ * - Switch to advanced search (HSL), which includes a link to the HSL guide
+ */
+
 class MainWindow(private val searchManager: SearchManager) {
     fun buildStage(stage: Stage) {
         val vbox = VBox(searchBoxPanel(), resultsListView())

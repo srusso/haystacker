@@ -2,21 +2,28 @@ package net.sr89.haystacker.ui
 
 import javafx.application.Application
 import javafx.beans.binding.Bindings
+import javafx.beans.property.SimpleListProperty
+import javafx.collections.FXCollections
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Label
+import javafx.scene.control.ListView
 import javafx.scene.control.TextField
-import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
+import javafx.scene.layout.Pane
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 
 
 class UIStart: Application() {
-    override fun start(stage: Stage) {
-        val searchBoxPanel = searchBoxPanel()
 
-        val scene = Scene(searchBoxPanel, 480.0, 320.0)
+    val actualResults = FXCollections.observableArrayList<String>()
+
+    override fun start(stage: Stage) {
+        val vbox = VBox(searchBoxPanel(), resultsListView())
+        vbox.alignment = Pos.TOP_CENTER
+
+        val scene = Scene(vbox, 480.0, 320.0)
 
         stage.scene = scene
 
@@ -24,25 +31,27 @@ class UIStart: Application() {
         stage.show()
     }
 
-    private fun searchBoxPanel(): VBox {
+    private fun searchBoxPanel(): Pane {
         val searchLabel = Label("Search")
         val searchTestBox = TextField()
         searchTestBox.textProperty().bind(
             Bindings.format("HSL query here")
         )
 
-        val gp = GridPane()
-        gp.add(searchLabel, 0, 0)
-        gp.add(searchTestBox, 1, 0)
-        gp.hgap = 10.0
-        gp.vgap = 10.0
+        val hbox = HBox(10.0, searchLabel, searchTestBox)
+        hbox.alignment = Pos.CENTER
 
-        val hbox = HBox(gp)
-        hbox.alignment = Pos.TOP_CENTER
+        return hbox
+    }
 
-        val vbox = VBox(hbox)
-        vbox.alignment = Pos.TOP_CENTER
-        return vbox
+    private fun resultsListView(): Pane {
+        val resultList = ListView<String>()
+        resultList.itemsProperty().bind(SimpleListProperty(actualResults))
+
+        val hbox = HBox(10.0, resultList)
+        hbox.alignment = Pos.CENTER
+
+        return hbox
     }
 
     companion object {

@@ -7,7 +7,9 @@ import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
+import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
+import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
@@ -16,6 +18,7 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import net.sr89.haystacker.ui.search.SearchManager
+
 
 /**
  * TODO
@@ -77,11 +80,47 @@ class MainWindow(private val searchManager: SearchManager) {
     }
 
     private fun bottomControls(): Pane {
+        val indexLabel = Label("Index")
+        val createIndexButton = Button("Create")
+        val leftBox = HBox(10.0, indexLabel, indexDropdown(), createIndexButton)
+        HBox.setHgrow(leftBox, Priority.NEVER)
+        leftBox.alignment = Pos.CENTER_LEFT
+
         val closeButton = Button("Close")
-        val hbox = HBox(10.0, closeButton)
+        val rightHBox = HBox(10.0, closeButton)
+        HBox.setHgrow(rightHBox, Priority.ALWAYS)
+        rightHBox.alignment = Pos.CENTER_RIGHT
+
+        val hbox = HBox(10.0, leftBox, rightHBox)
         hbox.alignment = Pos.BASELINE_RIGHT
         hbox.padding = Insets(0.0, 10.0, 10.0, 10.0)
 
         return hbox
+    }
+
+    private fun indexDropdown(): ChoiceBox<IndexDropdownEntry> {
+        val indexDropdown = ChoiceBox<IndexDropdownEntry>()
+        val none = IndexDropdownEntry("-")
+        val indexes = listOf(none, IndexDropdownEntry("C:\\index"), IndexDropdownEntry("C:\\index2"))
+        indexDropdown.items.addAll(indexes)
+        indexDropdown.value = none
+//        val factory: Callback<ListView<IndexDropdownEntry>, ListCell<IndexDropdownEntry>> =
+//            Callback<ListView<IndexDropdownEntry>, ListCell<IndexDropdownEntry>> { lv ->
+//                MyListCell()
+//            }
+//        indexDropdown.cellFactory = factory
+//        indexDropdown.buttonCell = factory.call(ListView(FXCollections.observableArrayList()))
+        return indexDropdown
+    }
+}
+
+class MyListCell: ListCell<IndexDropdownEntry>() {
+    override fun updateItem(item: IndexDropdownEntry, empty: Boolean) {
+        super.updateItem(item, empty)
+        text = if (empty) {
+            ""
+        } else {
+            item.indexPath
+        }
     }
 }

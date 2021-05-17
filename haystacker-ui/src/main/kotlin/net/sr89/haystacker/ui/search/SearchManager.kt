@@ -5,11 +5,22 @@ import javafx.collections.ObservableList
 import mu.KotlinLogging
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import org.http4k.core.Status
+import java.time.Duration
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 class SearchManager(private val restClient: HaystackerRestClient) {
     private val logger = KotlinLogging.logger {}
 
-    val actualResults: ObservableList<String> = FXCollections.observableArrayList()
+    private val minDurationBetweenSearches = Duration.ofMillis(50)
+
+    val searchResults: ObservableList<String> = FXCollections.observableArrayList()
+    val resultSearchStartedAt = AtomicLong(Long.MAX_VALUE)
+
+    val executor: ExecutorService = Executors.newCachedThreadPool()
+
+    var lastSearchTimestamp = System.nanoTime()
 
     /**
      * Called when using simple search mode (i.e. based on file name only, as opposed to full blown HSL).
@@ -19,6 +30,17 @@ class SearchManager(private val restClient: HaystackerRestClient) {
             return
         }
 
+        val nano = System.nanoTime()
+
+        if (Duration.ofNanos(nano - lastSearchTimestamp) < minDurationBetweenSearches) {
+            return
+        }
+
+        lastSearchTimestamp = nano
+        executor.submit { executeSearch(filenameQuery, nano) }
+    }
+
+    private fun executeSearch(filenameQuery: String, nano: Long) {
         logger.info { "searching $filenameQuery ..." }
 
         val response = restClient.search(
@@ -33,10 +55,15 @@ class SearchManager(private val restClient: HaystackerRestClient) {
             val (totalResults, returnedResults, results) = response.responseBody()
             logger.info { "Results: $totalResults" }
 
-            actualResults.clear()
-            actualResults.addAll(
+            if (resultSearchStartedAt.get() > nano) {
+                return
+            }
+
+            searchResults.clear()
+            searchResults.addAll(
                 results.map { res -> res.path }
             )
+            resultSearchStartedAt.set(nano)
         }
     }
 

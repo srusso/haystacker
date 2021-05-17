@@ -46,10 +46,10 @@ class MainWindow(private val searchManager: SearchManager) {
         val searchLabel = Label("Search")
         val searchTestBox = TextField()
         searchTestBox.promptText = "type file name.."
-        searchTestBox.isFocusTraversable = false
         searchTestBox.onKeyTyped = EventHandler {
             searchManager.onSimpleSearchUpdate(searchTestBox.text)
         }
+        searchTestBox.requestFocus()
 
         val advancedSearchToggle = CheckBox("Advanced search")
 
@@ -66,8 +66,8 @@ class MainWindow(private val searchManager: SearchManager) {
 
     private fun resultsListView(): Pane {
         val resultList = ListView<String>()
-        resultList.itemsProperty().bind(SimpleListProperty(searchManager.actualResults))
-
+        resultList.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
+        resultList.isFocusTraversable = false
         val hbox = HBox(10.0, resultList)
         hbox.padding = Insets(10.0)
         hbox.alignment = Pos.CENTER

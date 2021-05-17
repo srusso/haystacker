@@ -2,13 +2,16 @@ package net.sr89.haystacker.ui.uicomponents
 
 import javafx.beans.property.SimpleListProperty
 import javafx.event.EventHandler
+import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
+import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
+import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import net.sr89.haystacker.ui.search.SearchManager
@@ -27,8 +30,8 @@ import net.sr89.haystacker.ui.search.SearchManager
 
 class MainWindow(private val searchManager: SearchManager) {
     fun buildStage(stage: Stage) {
-        val vbox = VBox(searchBoxPanel(), resultsListView())
-        vbox.alignment = Pos.TOP_CENTER
+        val vbox = VBox(10.0, searchBoxPanel(), resultsListView(), bottomControls())
+        vbox.alignment = Pos.CENTER
 
         val scene = Scene(vbox, 480.0, 320.0)
 
@@ -49,6 +52,7 @@ class MainWindow(private val searchManager: SearchManager) {
 
         val hbox = HBox(10.0, searchLabel, searchTestBox)
         hbox.alignment = Pos.CENTER
+        VBox.setMargin(hbox, Insets(10.0))
 
         return hbox
     }
@@ -58,7 +62,18 @@ class MainWindow(private val searchManager: SearchManager) {
         resultList.itemsProperty().bind(SimpleListProperty(searchManager.actualResults))
 
         val hbox = HBox(10.0, resultList)
+        hbox.padding = Insets(10.0)
         hbox.alignment = Pos.CENTER
+        HBox.setHgrow(resultList, Priority.ALWAYS)
+        VBox.setVgrow(hbox,  Priority.ALWAYS)
+        return hbox
+    }
+
+    private fun bottomControls(): Pane {
+        val closeButton = Button("Close")
+        val hbox = HBox(10.0, closeButton)
+        hbox.alignment = Pos.BASELINE_RIGHT
+        hbox.padding = Insets(0.0, 10.0, 10.0, 10.0)
 
         return hbox
     }

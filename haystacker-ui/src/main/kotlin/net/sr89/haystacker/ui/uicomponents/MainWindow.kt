@@ -6,6 +6,7 @@ import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
@@ -50,8 +51,14 @@ class MainWindow(private val searchManager: SearchManager) {
             searchManager.onSimpleSearchUpdate(searchTestBox.text)
         }
 
-        val hbox = HBox(10.0, searchLabel, searchTestBox)
-        hbox.alignment = Pos.CENTER
+        val advancedSearchToggle = CheckBox("Advanced search")
+
+        val rightHBox = HBox(10.0, advancedSearchToggle)
+        HBox.setHgrow(rightHBox, Priority.ALWAYS)
+        rightHBox.alignment = Pos.CENTER_RIGHT
+
+        val hbox = HBox(10.0, searchLabel, searchTestBox, rightHBox)
+        hbox.alignment = Pos.CENTER_LEFT
         VBox.setMargin(hbox, Insets(10.0))
 
         return hbox

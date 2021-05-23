@@ -33,8 +33,7 @@ import java.time.Instant
  * - Remove index button
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
  * - Double click on a result opens windows explorer to it
- * - Result list displays created, last modified, size
- * - Result sorting
+ * - Result sorting (by re-executing the search!)
  * - Switch to advanced search (HSL), which includes a link to the HSL guide
  */
 
@@ -89,6 +88,7 @@ class MainWindow(private val searchManager: SearchManager) {
         resultTable.columns.addAll(filename, size, created, lastModified)
         resultTable.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
 
+        resultTable.columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         resultTable.isFocusTraversable = false
         val hbox = HBox(10.0, resultTable)
         hbox.padding = Insets(10.0)

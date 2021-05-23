@@ -32,6 +32,10 @@ class SearchManager(private val restClient: HaystackerRestClient) {
             return
         }
 
+        executor.submit { executeSearch(filenameQuery) }
+    }
+
+    private fun executeSearch(filenameQuery: TextField) {
         val nano = System.nanoTime()
 
         if (Duration.ofNanos(nano - lastSearchTimestamp) < minDurationBetweenSearches) {
@@ -39,10 +43,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
         }
 
         lastSearchTimestamp = nano
-        executor.submit { executeSearch(filenameQuery, nano) }
-    }
 
-    private fun executeSearch(filenameQuery: TextField, nano: Long) {
         val query = filenameQuery.text
         logger.info { "searching $filenameQuery ..." }
 

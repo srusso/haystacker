@@ -16,7 +16,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
     private val minDurationBetweenSearches = Duration.ofMillis(50)
 
     val searchResults: ObservableList<String> = FXCollections.observableArrayList()
-    val resultSearchStartedAt = AtomicLong(Long.MAX_VALUE)
+    val resultSearchStartedAt = AtomicLong(System.nanoTime())
 
     val executor: ExecutorService = Executors.newCachedThreadPool()
 
@@ -55,7 +55,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
             val (totalResults, returnedResults, results) = response.responseBody()
             logger.info { "Results: $totalResults" }
 
-            if (resultSearchStartedAt.get() > nano) {
+            if (nano < resultSearchStartedAt.get()) {
                 return
             }
 

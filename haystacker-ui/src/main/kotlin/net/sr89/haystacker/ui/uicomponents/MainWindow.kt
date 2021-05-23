@@ -9,7 +9,6 @@ import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
-import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
@@ -17,6 +16,7 @@ import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
+import javafx.util.StringConverter
 import net.sr89.haystacker.ui.search.SearchManager
 
 
@@ -75,7 +75,7 @@ class MainWindow(private val searchManager: SearchManager) {
         hbox.padding = Insets(10.0)
         hbox.alignment = Pos.CENTER
         HBox.setHgrow(resultList, Priority.ALWAYS)
-        VBox.setVgrow(hbox,  Priority.ALWAYS)
+        VBox.setVgrow(hbox, Priority.ALWAYS)
         return hbox
     }
 
@@ -104,23 +104,11 @@ class MainWindow(private val searchManager: SearchManager) {
         val indexes = listOf(none, IndexDropdownEntry("C:\\index"), IndexDropdownEntry("C:\\index2"))
         indexDropdown.items.addAll(indexes)
         indexDropdown.value = none
-//        val factory: Callback<ListView<IndexDropdownEntry>, ListCell<IndexDropdownEntry>> =
-//            Callback<ListView<IndexDropdownEntry>, ListCell<IndexDropdownEntry>> { lv ->
-//                MyListCell()
-//            }
-//        indexDropdown.cellFactory = factory
-//        indexDropdown.buttonCell = factory.call(ListView(FXCollections.observableArrayList()))
-        return indexDropdown
-    }
-}
+        indexDropdown.converter = object : StringConverter<IndexDropdownEntry>() {
+            override fun toString(entry: IndexDropdownEntry) = entry.indexPath
 
-class MyListCell: ListCell<IndexDropdownEntry>() {
-    override fun updateItem(item: IndexDropdownEntry, empty: Boolean) {
-        super.updateItem(item, empty)
-        text = if (empty) {
-            ""
-        } else {
-            item.indexPath
+            override fun fromString(indexPath: String) = IndexDropdownEntry(indexPath)
         }
+        return indexDropdown
     }
 }

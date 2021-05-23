@@ -1,6 +1,8 @@
 package net.sr89.haystacker.ui.uicomponents
 
+import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.property.SimpleListProperty
+import javafx.beans.value.ObservableValue
 import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -9,13 +11,15 @@ import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
-import javafx.scene.control.ListView
+import javafx.scene.control.TableColumn
+import javafx.scene.control.TableView
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
+import javafx.util.Callback
 import javafx.util.StringConverter
 import net.sr89.haystacker.ui.search.SearchManager
 
@@ -68,13 +72,26 @@ class MainWindow(private val searchManager: SearchManager) {
     }
 
     private fun resultsListView(): Pane {
-        val resultList = ListView<String>()
-        resultList.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
-        resultList.isFocusTraversable = false
-        val hbox = HBox(10.0, resultList)
+        val resultTable: TableView<UISearchResult> = TableView()
+
+        val filename: TableColumn<UISearchResult, String> = TableColumn("File")
+        val size: TableColumn<UISearchResult, String> = TableColumn("Size")
+        val created: TableColumn<UISearchResult, String> = TableColumn("Created")
+        val lastModified: TableColumn<UISearchResult, String> = TableColumn("Modified")
+
+        filename.cellValueFactory = SimpleCellValueFactory { p -> p.filename }
+        size.cellValueFactory = SimpleCellValueFactory { p -> p.size.toString() }
+        created.cellValueFactory = SimpleCellValueFactory { p -> p.created.toString() }
+        lastModified.cellValueFactory = SimpleCellValueFactory { p -> p.lastModified.toString() }
+
+        resultTable.columns.addAll(filename, size, created, lastModified)
+        resultTable.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
+
+        resultTable.isFocusTraversable = false
+        val hbox = HBox(10.0, resultTable)
         hbox.padding = Insets(10.0)
         hbox.alignment = Pos.CENTER
-        HBox.setHgrow(resultList, Priority.ALWAYS)
+        HBox.setHgrow(resultTable, Priority.ALWAYS)
         VBox.setVgrow(hbox, Priority.ALWAYS)
         return hbox
     }
@@ -111,4 +128,10 @@ class MainWindow(private val searchManager: SearchManager) {
         }
         return indexDropdown
     }
+}
+
+private class SimpleCellValueFactory(val converter: (UISearchResult) -> String) :
+    Callback<TableColumn.CellDataFeatures<UISearchResult, String>, ObservableValue<String>> {
+
+    override fun call(param: TableColumn.CellDataFeatures<UISearchResult, String>) = ReadOnlyObjectWrapper(converter.invoke(param.value))
 }

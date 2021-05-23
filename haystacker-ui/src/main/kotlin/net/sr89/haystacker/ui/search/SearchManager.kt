@@ -4,8 +4,11 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import mu.KotlinLogging
 import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.ui.uicomponents.UISearchResult
 import org.http4k.core.Status
+import org.springframework.util.unit.DataSize
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
@@ -15,7 +18,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
 
     private val minDurationBetweenSearches = Duration.ofMillis(50)
 
-    val searchResults: ObservableList<String> = FXCollections.observableArrayList()
+    val searchResults: ObservableList<UISearchResult> = FXCollections.observableArrayList()
     val resultSearchStartedAt = AtomicLong(System.nanoTime())
 
     val executor: ExecutorService = Executors.newCachedThreadPool()
@@ -61,7 +64,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
 
             searchResults.clear()
             searchResults.addAll(
-                results.map { res -> res.path }
+                results.map { res -> UISearchResult(res.path, DataSize.ofMegabytes(2), Instant.now(), Instant.now()) }
             )
             resultSearchStartedAt.set(nano)
         }

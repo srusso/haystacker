@@ -55,6 +55,11 @@
             <groupId>org.kodein.di</groupId>
             <artifactId>kodein-di-jvm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

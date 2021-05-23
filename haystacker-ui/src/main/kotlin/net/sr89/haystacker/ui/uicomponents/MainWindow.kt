@@ -55,7 +55,7 @@ class MainWindow(private val searchManager: SearchManager) {
         val searchTestBox = TextField()
         searchTestBox.promptText = "type file name.."
         searchTestBox.onKeyTyped = EventHandler {
-            searchManager.onSimpleSearchUpdate(searchTestBox.text)
+            searchManager.onSimpleSearchUpdate(searchTestBox)
         }
         searchTestBox.requestFocus()
 

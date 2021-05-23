@@ -22,6 +22,8 @@ import javafx.stage.Stage
 import javafx.util.Callback
 import javafx.util.StringConverter
 import net.sr89.haystacker.ui.search.SearchManager
+import org.springframework.util.unit.DataSize
+import java.time.Instant
 
 
 /**
@@ -75,14 +77,14 @@ class MainWindow(private val searchManager: SearchManager) {
         val resultTable: TableView<UISearchResult> = TableView()
 
         val filename: TableColumn<UISearchResult, String> = TableColumn("File")
-        val size: TableColumn<UISearchResult, String> = TableColumn("Size")
-        val created: TableColumn<UISearchResult, String> = TableColumn("Created")
-        val lastModified: TableColumn<UISearchResult, String> = TableColumn("Modified")
+        val size: TableColumn<UISearchResult, DataSize> = TableColumn("Size")
+        val created: TableColumn<UISearchResult, Instant> = TableColumn("Created")
+        val lastModified: TableColumn<UISearchResult, Instant> = TableColumn("Modified")
 
         filename.cellValueFactory = SimpleCellValueFactory { p -> p.filename }
-        size.cellValueFactory = SimpleCellValueFactory { p -> p.size.toString() }
-        created.cellValueFactory = SimpleCellValueFactory { p -> p.created.toString() }
-        lastModified.cellValueFactory = SimpleCellValueFactory { p -> p.lastModified.toString() }
+        size.cellValueFactory = SimpleCellValueFactory { p -> p.size }
+        created.cellValueFactory = SimpleCellValueFactory { p -> p.created }
+        lastModified.cellValueFactory = SimpleCellValueFactory { p -> p.lastModified }
 
         resultTable.columns.addAll(filename, size, created, lastModified)
         resultTable.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
@@ -130,8 +132,8 @@ class MainWindow(private val searchManager: SearchManager) {
     }
 }
 
-private class SimpleCellValueFactory(val converter: (UISearchResult) -> String) :
-    Callback<TableColumn.CellDataFeatures<UISearchResult, String>, ObservableValue<String>> {
+private class SimpleCellValueFactory<R>(val converter: (UISearchResult) -> R) :
+    Callback<TableColumn.CellDataFeatures<UISearchResult, R>, ObservableValue<R>> {
 
-    override fun call(param: TableColumn.CellDataFeatures<UISearchResult, String>) = ReadOnlyObjectWrapper(converter.invoke(param.value))
+    override fun call(param: TableColumn.CellDataFeatures<UISearchResult, R>) = ReadOnlyObjectWrapper(converter.invoke(param.value))
 }

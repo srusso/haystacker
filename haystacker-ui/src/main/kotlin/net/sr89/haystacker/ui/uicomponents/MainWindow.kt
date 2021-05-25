@@ -29,7 +29,7 @@ import java.time.Instant
 /**
  * TODO
  * - Screen to add a new index
- * - Index selector (dropdown, included in the main window)
+ * - Index selector populated by calling a REST API in the server
  * - Remove index button
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
  * - Double click on a result opens windows explorer to it

@@ -63,6 +63,7 @@ val handlersModule = DI.Module(name = "HandlersModule") {
             instance(),
             instance(),
             instance(),
+            instance(),
             instance()
         )
     }

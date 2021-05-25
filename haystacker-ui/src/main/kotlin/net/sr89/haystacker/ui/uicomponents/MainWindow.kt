@@ -3,16 +3,13 @@ package net.sr89.haystacker.ui.uicomponents
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.property.SimpleListProperty
 import javafx.beans.value.ObservableValue
-import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
-import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
-import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
@@ -28,7 +25,6 @@ import java.time.Instant
 /**
  * TODO
  * - Screen to add a new index
- * - Index selector populated by calling a REST API in the server
  * - Remove index button
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
  * - Double click on a result opens windows explorer to it
@@ -41,7 +37,7 @@ class MainWindow(
     private val indexDropdownManager: IndexDropdownManager
     ) {
     fun buildStage(stage: Stage) {
-        val vbox = VBox(10.0, searchBoxPanel(), resultsListView(), bottomControls())
+        val vbox = VBox(10.0, searchManager.searchBoxPanel, resultsListView(), bottomControls())
         vbox.alignment = Pos.CENTER
 
         val scene = Scene(vbox, 480.0, 320.0)
@@ -52,28 +48,6 @@ class MainWindow(
         stage.show()
 
         indexDropdownManager.start()
-    }
-
-    private fun searchBoxPanel(): Pane {
-        val searchLabel = Label("Search")
-        val searchTestBox = TextField()
-        searchTestBox.promptText = "type file name.."
-        searchTestBox.onKeyTyped = EventHandler {
-            searchManager.onSimpleSearchUpdate(searchTestBox)
-        }
-        searchTestBox.requestFocus()
-
-        val advancedSearchToggle = CheckBox("Advanced search")
-
-        val rightHBox = HBox(10.0, advancedSearchToggle)
-        HBox.setHgrow(rightHBox, Priority.ALWAYS)
-        rightHBox.alignment = Pos.CENTER_RIGHT
-
-        val hbox = HBox(10.0, searchLabel, searchTestBox, rightHBox)
-        hbox.alignment = Pos.CENTER_LEFT
-        VBox.setMargin(hbox, Insets(10.0))
-
-        return hbox
     }
 
     private fun resultsListView(): Pane {

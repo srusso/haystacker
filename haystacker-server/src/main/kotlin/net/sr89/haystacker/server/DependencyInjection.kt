@@ -1,9 +1,9 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.AsyncBackgroundTaskManager
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.filesystem.VolumeManager
 import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.async.task.AsyncBackgroundTaskManager
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
@@ -13,6 +13,7 @@ import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
 import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.server.handlers.InterruptBackgroundTaskHandler
+import net.sr89.haystacker.server.handlers.ListIndexesHandler
 import net.sr89.haystacker.server.handlers.QuitHandler
 import net.sr89.haystacker.server.handlers.SearchHandler
 import org.http4k.core.RequestContexts
@@ -47,6 +48,7 @@ val utilModule = DI.Module(name = "UtilsModule") {
 }
 
 val handlersModule = DI.Module(name = "HandlersModule") {
+    bind<ListIndexesHandler>() with singleton { ListIndexesHandler(instance()) }
     bind<SearchHandler>() with singleton { SearchHandler(instance()) }
     bind<CreateIndexHandler>() with singleton { CreateIndexHandler(instance(), instance()) }
     bind<DirectoryIndexHandler>() with singleton { DirectoryIndexHandler(instance(), instance()) }

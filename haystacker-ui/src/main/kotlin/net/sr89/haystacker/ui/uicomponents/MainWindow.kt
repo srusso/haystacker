@@ -9,7 +9,6 @@ import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
-import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
@@ -20,8 +19,8 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import javafx.util.Callback
-import javafx.util.StringConverter
 import net.sr89.haystacker.ui.search.SearchManager
+import net.sr89.haystacker.ui.uicomponents.model.UISearchResult
 import org.springframework.util.unit.DataSize
 import java.time.Instant
 
@@ -37,7 +36,10 @@ import java.time.Instant
  * - Switch to advanced search (HSL), which includes a link to the HSL guide
  */
 
-class MainWindow(private val searchManager: SearchManager) {
+class MainWindow(
+    private val searchManager: SearchManager,
+    private val indexDropdownManager: IndexDropdownManager
+    ) {
     fun buildStage(stage: Stage) {
         val vbox = VBox(10.0, searchBoxPanel(), resultsListView(), bottomControls())
         vbox.alignment = Pos.CENTER
@@ -48,6 +50,8 @@ class MainWindow(private val searchManager: SearchManager) {
 
         stage.title = "Haystacker"
         stage.show()
+
+        indexDropdownManager.start()
     }
 
     private fun searchBoxPanel(): Pane {
@@ -101,7 +105,7 @@ class MainWindow(private val searchManager: SearchManager) {
     private fun bottomControls(): Pane {
         val indexLabel = Label("Index")
         val createIndexButton = Button("Create")
-        val leftBox = HBox(10.0, indexLabel, indexDropdown(), createIndexButton)
+        val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton)
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT
 
@@ -115,20 +119,6 @@ class MainWindow(private val searchManager: SearchManager) {
         hbox.padding = Insets(0.0, 10.0, 10.0, 10.0)
 
         return hbox
-    }
-
-    private fun indexDropdown(): ChoiceBox<IndexDropdownEntry> {
-        val indexDropdown = ChoiceBox<IndexDropdownEntry>()
-        val none = IndexDropdownEntry("-")
-        val indexes = listOf(none, IndexDropdownEntry("C:\\index"), IndexDropdownEntry("C:\\index2"))
-        indexDropdown.items.addAll(indexes)
-        indexDropdown.value = none
-        indexDropdown.converter = object : StringConverter<IndexDropdownEntry>() {
-            override fun toString(entry: IndexDropdownEntry) = entry.indexPath
-
-            override fun fromString(indexPath: String) = IndexDropdownEntry(indexPath)
-        }
-        return indexDropdown
     }
 }
 

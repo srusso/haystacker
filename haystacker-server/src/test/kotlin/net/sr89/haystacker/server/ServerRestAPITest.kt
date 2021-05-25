@@ -1,7 +1,7 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.TaskExecutionState
 import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.server.async.task.TaskExecutionState
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.filter.ExceptionHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes

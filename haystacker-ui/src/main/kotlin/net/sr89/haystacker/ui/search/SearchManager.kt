@@ -5,22 +5,24 @@ import javafx.collections.ObservableList
 import javafx.scene.control.TextField
 import mu.KotlinLogging
 import net.sr89.haystacker.server.api.HaystackerRestClient
-import net.sr89.haystacker.ui.uicomponents.UISearchResult
+import net.sr89.haystacker.ui.uicomponents.IndexDropdownManager
+import net.sr89.haystacker.ui.uicomponents.model.IndexDropdownEntry
+import net.sr89.haystacker.ui.uicomponents.model.UISearchResult
 import org.http4k.core.Status
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
-class SearchManager(private val restClient: HaystackerRestClient) {
+class SearchManager(
+    private val indexDropdownManager: IndexDropdownManager,
+    private val restClient: HaystackerRestClient,
+    private val executor: ExecutorService) {
     private val logger = KotlinLogging.logger {}
 
     private val minDurationBetweenSearches = Duration.ofMillis(50)
 
     val searchResults: ObservableList<UISearchResult> = FXCollections.observableArrayList()
-
-    val executor: ExecutorService = Executors.newCachedThreadPool()
 
     var lastSearchTimestamp = System.nanoTime()
 
@@ -32,10 +34,17 @@ class SearchManager(private val restClient: HaystackerRestClient) {
             return
         }
 
-        executor.submit { executeSearch(filenameQuery) }
+        val selectedIndex = indexDropdownManager.selectedIndex()
+
+        if (selectedIndex == null) {
+            logger.warn { "No index selected!" }
+            return
+        }
+
+        executor.submit { executeSearch(filenameQuery, selectedIndex) }
     }
 
-    private fun executeSearch(filenameQuery: TextField) {
+    private fun executeSearch(filenameQuery: TextField, selectedIndex: IndexDropdownEntry) {
         val nano = System.nanoTime()
 
         if (Duration.ofNanos(nano - lastSearchTimestamp) < minDurationBetweenSearches) {
@@ -50,7 +59,7 @@ class SearchManager(private val restClient: HaystackerRestClient) {
         val response = restClient.search(
             generateHslFromFilenameQuery(query),
             100,
-            "D:\\index"
+            selectedIndex.indexPath
         )
 
         if (response.status != Status.OK) {

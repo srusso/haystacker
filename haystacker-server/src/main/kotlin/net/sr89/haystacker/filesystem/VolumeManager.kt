@@ -1,11 +1,11 @@
 package net.sr89.haystacker.filesystem
 
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.BackgroundTask
-import net.sr89.haystacker.async.task.BackgroundTaskManager
-import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
-import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.async.task.BackgroundTask
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
+import net.sr89.haystacker.server.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.server.async.task.TaskStatus
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.time.Duration

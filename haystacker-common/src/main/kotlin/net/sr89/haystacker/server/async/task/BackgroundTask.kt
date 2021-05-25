@@ -1,4 +1,4 @@
-package net.sr89.haystacker.async.task
+package net.sr89.haystacker.server.async.task
 
 interface BackgroundTask {
     fun run()

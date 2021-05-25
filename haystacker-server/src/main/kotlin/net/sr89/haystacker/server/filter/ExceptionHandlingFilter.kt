@@ -5,8 +5,8 @@ import net.sr89.haystacker.lang.exception.InvalidHslDateException
 import net.sr89.haystacker.lang.exception.InvalidHslGrammarException
 import net.sr89.haystacker.lang.exception.InvalidHslOperatorException
 import net.sr89.haystacker.lang.exception.InvalidHslOrderByClause
-import net.sr89.haystacker.lang.exception.InvalidTaskIdException
 import net.sr89.haystacker.lang.exception.SettingsUpdateException
+import net.sr89.haystacker.server.InvalidTaskIdException
 import net.sr89.haystacker.server.api.stringBody
 import org.apache.lucene.index.IndexNotFoundException
 import org.http4k.core.Filter

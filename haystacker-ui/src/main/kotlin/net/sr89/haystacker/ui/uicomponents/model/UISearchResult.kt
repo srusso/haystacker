@@ -1,4 +1,4 @@
-package net.sr89.haystacker.ui.uicomponents
+package net.sr89.haystacker.ui.uicomponents.model
 
 import org.springframework.util.unit.DataSize
 import java.time.Instant

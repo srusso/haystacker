@@ -19,7 +19,7 @@ class UIStart: Application() {
         fun main(args: Array<String>) {
             val di = uiApplicationModule()
             val appInstance by di.newInstance {
-                MainWindow(searchManager = instance())
+                MainWindow(searchManager = instance(), indexDropdownManager = instance())
             }
 
             stageBuilder = appInstance

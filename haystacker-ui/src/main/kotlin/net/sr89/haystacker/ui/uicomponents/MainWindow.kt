@@ -73,22 +73,7 @@ class MainWindow(
 
         resultTable.columns.addAll(filename, size, created, lastModified)
         resultTable.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
-        resultTable.rowFactory = Callback<TableView<UISearchResult>, TableRow<UISearchResult>> {
-            val row = TableRow<UISearchResult>()
-
-            row.onMouseClicked = EventHandler { mouseEvent: MouseEvent ->
-                if (mouseEvent.clickCount == 2 && !row.isEmpty) {
-                    val file = File(row.item.filename)
-                    try {
-                        Desktop.getDesktop().open(file.parentFile)
-                    } catch (e: IllegalArgumentException) {
-                        logger.warn { "Cannot navigate to directory ${file.parentFile}: ${e.message}" }
-                    }
-                }
-            }
-
-            row
-        }
+        resultTable.rowFactory = resultRowFactory()
 
         resultTable.columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         resultTable.isFocusTraversable = false
@@ -98,6 +83,23 @@ class MainWindow(
         HBox.setHgrow(resultTable, Priority.ALWAYS)
         VBox.setVgrow(hbox, Priority.ALWAYS)
         return hbox
+    }
+
+    private fun resultRowFactory() = Callback<TableView<UISearchResult>, TableRow<UISearchResult>> {
+        val row = TableRow<UISearchResult>()
+
+        row.onMouseClicked = EventHandler { mouseEvent: MouseEvent ->
+            if (mouseEvent.clickCount == 2 && !row.isEmpty) {
+                val file = File(row.item.filename)
+                try {
+                    Desktop.getDesktop().open(file.parentFile)
+                } catch (e: IllegalArgumentException) {
+                    logger.warn { "Cannot navigate to directory ${file.parentFile}: ${e.message}" }
+                }
+            }
+        }
+
+        row
     }
 
     private fun bottomControls(): Pane {

@@ -26,6 +26,10 @@ class IndexDropdownManager(
 
     val indexDropdown = indexDropdown()
 
+    init {
+        indexDropdown.value = none
+    }
+
     fun start() {
         backgroundTaskManager.submitEternally(object : BackgroundTask {
             override fun run() = updateIndexList()
@@ -65,10 +69,10 @@ class IndexDropdownManager(
             if (indexList != upToDateIndexes) {
                 val currentSelection = indexDropdown.value
                 indexList.setAll(upToDateIndexes)
-                if (indexList.contains(currentSelection)) {
-                    indexDropdown.value = currentSelection
-                } else {
-                    indexDropdown.value = none
+                indexDropdown.value = when {
+                    currentSelection == none -> indexList[0]
+                    indexList.contains(currentSelection) -> currentSelection
+                    else -> none
                 }
             }
         } else {

@@ -33,7 +33,6 @@ import java.time.Instant
  * - Screen to add a new index
  * - Remove index button
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
- * - Double click on a result opens windows explorer to it
  * - Result sorting (by re-executing the search!)
  * - Switch to advanced search (HSL), which includes a link to the HSL guide
  */

@@ -26,10 +26,6 @@ class IndexDropdownManager(
 
     val indexDropdown = indexDropdown()
 
-    init {
-        indexDropdown.value = none
-    }
-
     fun start() {
         backgroundTaskManager.submitEternally(object : BackgroundTask {
             override fun run() = updateIndexList()

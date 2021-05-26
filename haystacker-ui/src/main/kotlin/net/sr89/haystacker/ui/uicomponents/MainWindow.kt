@@ -20,6 +20,7 @@ import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import javafx.util.Callback
 import mu.KotlinLogging
+import net.sr89.haystacker.ui.app.onUIAppClose
 import net.sr89.haystacker.ui.search.SearchManager
 import net.sr89.haystacker.ui.uicomponents.model.UISearchResult
 import org.springframework.util.unit.DataSize
@@ -35,12 +36,13 @@ import java.time.Instant
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
  * - Result sorting (by re-executing the search!)
  * - Switch to advanced search (HSL), which includes a link to the HSL guide
+ * - Display server status in UI
  */
 
 class MainWindow(
     private val searchManager: SearchManager,
     private val indexDropdownManager: IndexDropdownManager
-    ) {
+) {
     private val logger = KotlinLogging.logger {}
 
     fun buildStage(stage: Stage) {
@@ -55,6 +57,8 @@ class MainWindow(
         stage.show()
 
         indexDropdownManager.start()
+
+        stage.onCloseRequest = EventHandler { onUIAppClose() }
     }
 
     private fun resultsListView(): Pane {
@@ -102,13 +106,14 @@ class MainWindow(
     }
 
     private fun bottomControls(): Pane {
-        val indexLabel = Label("Index")
+        val indexLabel = Label("Archive")
         val createIndexButton = Button("Create")
         val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton)
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT
 
         val closeButton = Button("Close")
+        closeButton.onMouseClicked = EventHandler { onUIAppClose() }
         val rightHBox = HBox(10.0, closeButton)
         HBox.setHgrow(rightHBox, Priority.ALWAYS)
         rightHBox.alignment = Pos.CENTER_RIGHT
@@ -124,5 +129,6 @@ class MainWindow(
 private class SimpleCellValueFactory<R>(val converter: (UISearchResult) -> R) :
     Callback<TableColumn.CellDataFeatures<UISearchResult, R>, ObservableValue<R>> {
 
-    override fun call(param: TableColumn.CellDataFeatures<UISearchResult, R>) = ReadOnlyObjectWrapper(converter.invoke(param.value))
+    override fun call(param: TableColumn.CellDataFeatures<UISearchResult, R>) =
+        ReadOnlyObjectWrapper(converter.invoke(param.value))
 }

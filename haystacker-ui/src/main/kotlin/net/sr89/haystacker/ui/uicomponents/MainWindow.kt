@@ -36,7 +36,7 @@ import java.time.Instant
  * - Button to add directory to an index. How to display task progress? Running tasks tab?
  * - Result sorting (by re-executing the search!)
  * - Switch to advanced search (HSL), which includes a link to the HSL guide
- * - Display server status in UI
+ * - Display server status in UI, with button to start/stop it?
  */
 
 class MainWindow(

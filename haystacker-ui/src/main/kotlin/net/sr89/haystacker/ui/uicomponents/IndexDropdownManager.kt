@@ -1,5 +1,6 @@
 package net.sr89.haystacker.ui.uicomponents
 
+import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.ChoiceBox
@@ -64,11 +65,13 @@ class IndexDropdownManager(
 
             if (indexList != upToDateIndexes) {
                 val currentSelection = indexDropdown.value
-                indexList.setAll(upToDateIndexes)
-                indexDropdown.value = when {
-                    currentSelection == none -> indexList[0]
-                    indexList.contains(currentSelection) -> currentSelection
-                    else -> none
+                Platform.runLater {
+                    indexList.setAll(upToDateIndexes)
+                    indexDropdown.value = when {
+                        currentSelection == none -> indexList[0]
+                        indexList.contains(currentSelection) -> currentSelection
+                        else -> none
+                    }
                 }
             }
         } else {

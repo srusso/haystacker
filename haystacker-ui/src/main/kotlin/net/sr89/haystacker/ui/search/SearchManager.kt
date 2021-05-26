@@ -1,5 +1,6 @@
 package net.sr89.haystacker.ui.search
 
+import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
@@ -26,7 +27,8 @@ import java.util.concurrent.ExecutorService
 class SearchManager(
     private val indexDropdownManager: IndexDropdownManager,
     private val restClient: HaystackerRestClient,
-    private val executor: ExecutorService) {
+    private val executor: ExecutorService
+) {
     private val logger = KotlinLogging.logger {}
 
     private val minDurationBetweenSearches = Duration.ofMillis(50)
@@ -78,7 +80,7 @@ class SearchManager(
 
         if (selectedIndex == null) {
             logger.warn { "No index selected!" }
-            searchResults.clear()
+            Platform.runLater { searchResults.clear() }
             return
         }
 
@@ -113,10 +115,19 @@ class SearchManager(
                 return
             }
 
-            searchResults.clear()
-            searchResults.addAll(
-                results.map { res -> UISearchResult(res.path, DataSize.ofMegabytes(2), Instant.now(), Instant.now()) }
-            )
+            Platform.runLater {
+                searchResults.clear()
+                searchResults.addAll(
+                    results.map { res ->
+                        UISearchResult(
+                            res.path,
+                            DataSize.ofMegabytes(2),
+                            Instant.now(),
+                            Instant.now()
+                        )
+                    }
+                )
+            }
         }
     }
 

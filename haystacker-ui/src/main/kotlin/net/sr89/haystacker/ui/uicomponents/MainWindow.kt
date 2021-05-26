@@ -3,22 +3,28 @@ package net.sr89.haystacker.ui.uicomponents
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.property.SimpleListProperty
 import javafx.beans.value.ObservableValue
+import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
+import javafx.scene.control.TableRow
 import javafx.scene.control.TableView
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import javafx.util.Callback
+import mu.KotlinLogging
 import net.sr89.haystacker.ui.search.SearchManager
 import net.sr89.haystacker.ui.uicomponents.model.UISearchResult
 import org.springframework.util.unit.DataSize
+import java.awt.Desktop
+import java.io.File
 import java.time.Instant
 
 
@@ -36,6 +42,8 @@ class MainWindow(
     private val searchManager: SearchManager,
     private val indexDropdownManager: IndexDropdownManager
     ) {
+    private val logger = KotlinLogging.logger {}
+
     fun buildStage(stage: Stage) {
         val vbox = VBox(10.0, searchManager.searchBoxPanel, resultsListView(), bottomControls())
         vbox.alignment = Pos.CENTER
@@ -65,6 +73,22 @@ class MainWindow(
 
         resultTable.columns.addAll(filename, size, created, lastModified)
         resultTable.itemsProperty().bind(SimpleListProperty(searchManager.searchResults))
+        resultTable.rowFactory = Callback<TableView<UISearchResult>, TableRow<UISearchResult>> {
+            val row = TableRow<UISearchResult>()
+
+            row.onMouseClicked = EventHandler { mouseEvent: MouseEvent ->
+                if (mouseEvent.clickCount == 2 && !row.isEmpty) {
+                    val file = File(row.item.filename)
+                    try {
+                        Desktop.getDesktop().open(file.parentFile)
+                    } catch (e: IllegalArgumentException) {
+                        logger.warn { "Cannot navigate to directory ${file.parentFile}: ${e.message}" }
+                    }
+                }
+            }
+
+            row
+        }
 
         resultTable.columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         resultTable.isFocusTraversable = false

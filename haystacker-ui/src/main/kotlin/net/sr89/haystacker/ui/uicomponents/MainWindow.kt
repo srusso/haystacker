@@ -41,7 +41,8 @@ import java.time.Instant
 
 class MainWindow(
     private val searchManager: SearchManager,
-    private val indexDropdownManager: IndexDropdownManager
+    private val indexDropdownManager: IndexDropdownManager,
+    val createArchiveWizard: CreateArchiveWizard
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -108,6 +109,7 @@ class MainWindow(
     private fun bottomControls(): Pane {
         val indexLabel = Label("Archive")
         val createIndexButton = Button("Create")
+        createIndexButton.onMouseClicked = EventHandler { createArchiveWizard.show() }
         val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton)
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT

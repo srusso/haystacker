@@ -9,7 +9,7 @@ import org.kodein.di.newInstance
 
 lateinit var stageBuilder: MainWindow
 
-class UIStart: Application() {
+class UIStart : Application() {
     override fun start(stage: Stage) {
         return stageBuilder.buildStage(stage)
     }
@@ -19,7 +19,11 @@ class UIStart: Application() {
         fun main(args: Array<String>) {
             val di = uiApplicationModule()
             val appInstance by di.newInstance {
-                MainWindow(searchManager = instance(), indexDropdownManager = instance())
+                MainWindow(
+                    searchManager = instance(),
+                    indexDropdownManager = instance(),
+                    createArchiveWizard = instance()
+                )
             }
 
             stageBuilder = appInstance

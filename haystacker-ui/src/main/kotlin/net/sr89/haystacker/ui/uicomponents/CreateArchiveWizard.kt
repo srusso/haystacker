@@ -10,14 +10,22 @@ import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
+import javafx.scene.layout.Background
+import javafx.scene.layout.BackgroundFill
+import javafx.scene.layout.CornerRadii
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
+import javafx.scene.paint.Color.LIGHTSEAGREEN
 import javafx.stage.Stage
 import net.sr89.haystacker.server.api.HaystackerRestClient
 
 class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
+
+    private val selectedModeColor = Color(LIGHTSEAGREEN.red, LIGHTSEAGREEN.green, LIGHTSEAGREEN.blue, 0.7)
+    private val selectedModeBackground = Background(BackgroundFill(selectedModeColor, CornerRadii(10.0), null))
 
     private val none = "-"
     private val driveList: ObservableList<String> = FXCollections.observableArrayList(none)
@@ -39,15 +47,37 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     }
 
     private fun selectionBox(): Pane {
-        val hbox = HBox(10.0, driveSelection(), folderSelection())
+        val driveDropdown = driveDropdown()
+        val driveSelection = driveSelection(driveDropdown)
+        val folderSelection = folderSelection()
+
+        driveSelection.onMousePressed = EventHandler {
+            driveSelection.background = selectedModeBackground
+            folderSelection.background = null
+        }
+
+        driveDropdown.onMouseClicked = EventHandler {
+            driveSelection.background = selectedModeBackground
+            folderSelection.background = null
+        }
+
+        folderSelection.onMousePressed = EventHandler {
+            driveSelection.background = null
+            folderSelection.background = selectedModeBackground
+            Platform.runLater {
+                driveDropdown.value = none
+            }
+        }
+
+        val hbox = HBox(10.0, driveSelection, folderSelection)
 //        hbox.alignment = Pos.BASELINE_RIGHT
         hbox.padding = Insets(0.0, 10.0, 10.0, 10.0)
 
         return hbox
     }
 
-    private fun driveSelection(): Pane {
-        val driveSelectionBox = VBox(10.0, Label("Archive a whole drive"), driveDropdown())
+    private fun driveSelection(driveDropdown: ChoiceBox<String>): Pane {
+        val driveSelectionBox = VBox(10.0, Label("Archive a whole drive"), driveDropdown)
         HBox.setHgrow(driveSelectionBox, Priority.ALWAYS)
         driveSelectionBox.alignment = Pos.CENTER_LEFT
         return driveSelectionBox

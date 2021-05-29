@@ -1,5 +1,6 @@
 package net.sr89.haystacker.ui.uicomponents
 
+import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
@@ -60,6 +61,13 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     private fun driveDropdown(): ChoiceBox<String> {
         val driveDropdown = ChoiceBox<String>()
         driveDropdown.items = driveList
+        Platform.runLater {
+            // todo implement "runUntilUpToTimes(task, condition, maxTimes) in BackgroundTaskManager
+            // and reimplement this to re-try the call until successful
+            val volumes = restClient.listVolumes().responseBody().volumes
+            driveDropdown.value = volumes[0]
+            driveList.setAll(volumes)
+        }
         return driveDropdown
     }
 

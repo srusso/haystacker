@@ -17,7 +17,8 @@ class HaystackerRoutes(
     val taskProcessHandler: GetBackgroundTaskProgressHandler,
     val interruptBackgroundTaskHandler: InterruptBackgroundTaskHandler,
     val quitHandler: QuitHandler,
-    val listIndexesHandler: ListIndexesHandler
+    val listIndexesHandler: ListIndexesHandler,
+    val fetchVolumesHandler: FetchVolumesHandler
 ) {
     fun routesHandler(): HttpHandler {
         return routes(
@@ -29,6 +30,7 @@ class HaystackerRoutes(
             "directory" bind DELETE to deindexHandler,
             "task" bind GET to taskProcessHandler,
             "task/interrupt" bind POST to interruptBackgroundTaskHandler,
+            "volume" bind GET to fetchVolumesHandler,
             "quit" bind POST to quitHandler
         )
     }

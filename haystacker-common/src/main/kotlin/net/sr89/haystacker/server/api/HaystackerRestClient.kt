@@ -27,6 +27,12 @@ class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandle
         return executeTimed(request, object: TypeReference<ListIndexesResponse>() {})
     }
 
+    fun listVolumes(): TimedHttpResponse<ListVolumesResponse> {
+        val request = Request(GET, "$baseUrl/volume")
+
+        return executeTimed(request, object: TypeReference<ListVolumesResponse>() {})
+    }
+
     fun indexDirectory(indexPath: String, dirPath: String): TimedHttpResponse<TaskIdResponse> {
         val request = Request(POST, "$baseUrl/directory")
             .with(

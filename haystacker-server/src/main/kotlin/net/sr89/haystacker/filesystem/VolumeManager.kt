@@ -31,6 +31,8 @@ class VolumeManager(taskManager: BackgroundTaskManager, private val indexManager
         }, Duration.ofSeconds(1))
     }
 
+    fun currentlyDetectedVolumes() = volumes.toList()
+
     fun updateVolumeList() {
         val newVolumes = detectMountedVolumes()
 

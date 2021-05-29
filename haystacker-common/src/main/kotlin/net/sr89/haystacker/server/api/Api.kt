@@ -14,6 +14,8 @@ data class Index(@JsonProperty("location") val location: String)
 
 data class ListIndexesResponse(@JsonProperty("indexes") val indexes: List<Index>)
 
+data class ListVolumesResponse(@JsonProperty("volumes") val volumes: List<String>)
+
 data class SearchResponse(
     @JsonProperty("totalResults") val totalResults: Long,
     @JsonProperty("returnedResults") val returnedResults: Int,
@@ -49,3 +51,4 @@ val backgroundTaskStatusResponse = Body.auto<BackgroundTaskStatusResponse>().toL
 val interruptBackgroundTaskResponse = Body.auto<TaskInterruptResponse>().toLens()
 val searchResponse = Body.auto<SearchResponse>().toLens()
 val listIndexesResponse = Body.auto<ListIndexesResponse>().toLens()
+val listVolumesResponse = Body.auto<ListVolumesResponse>().toLens()

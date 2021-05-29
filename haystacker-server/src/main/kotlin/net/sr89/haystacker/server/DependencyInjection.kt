@@ -10,6 +10,7 @@ import net.sr89.haystacker.server.filter.ExceptionHandlingFilter
 import net.sr89.haystacker.server.handlers.CreateIndexHandler
 import net.sr89.haystacker.server.handlers.DirectoryDeindexHandler
 import net.sr89.haystacker.server.handlers.DirectoryIndexHandler
+import net.sr89.haystacker.server.handlers.FetchVolumesHandler
 import net.sr89.haystacker.server.handlers.GetBackgroundTaskProgressHandler
 import net.sr89.haystacker.server.handlers.HaystackerRoutes
 import net.sr89.haystacker.server.handlers.InterruptBackgroundTaskHandler
@@ -55,10 +56,12 @@ val handlersModule = DI.Module(name = "HandlersModule") {
     bind<DirectoryDeindexHandler>() with singleton { DirectoryDeindexHandler(instance(), instance()) }
     bind<GetBackgroundTaskProgressHandler>() with singleton { GetBackgroundTaskProgressHandler(instance()) }
     bind<InterruptBackgroundTaskHandler>() with singleton { InterruptBackgroundTaskHandler(instance()) }
+    bind<FetchVolumesHandler>() with singleton { FetchVolumesHandler(instance()) }
     bind<QuitHandler>() with singleton { QuitHandler(instance(), instance(), instance(tag = "shutdownDelay")) }
 
     bind<HaystackerRoutes>() with singleton {
         HaystackerRoutes(
+            instance(),
             instance(),
             instance(),
             instance(),

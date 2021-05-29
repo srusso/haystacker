@@ -19,7 +19,8 @@ import net.sr89.haystacker.server.api.HaystackerRestClient
 
 class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
-    private val driveList: ObservableList<String> = FXCollections.observableArrayList()
+    private val none = "-"
+    private val driveList: ObservableList<String> = FXCollections.observableArrayList(none)
 
     fun show() {
         val stage = Stage()
@@ -61,13 +62,16 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     private fun driveDropdown(): ChoiceBox<String> {
         val driveDropdown = ChoiceBox<String>()
         driveDropdown.items = driveList
+        driveDropdown.value = none
+
+        // todo implement "runUntilUpToTimes(task, condition, maxTimes) in BackgroundTaskManager
+        // and reimplement this to re-try the call until successful
+        val volumes = restClient.listVolumes().responseBody().volumes
         Platform.runLater {
-            // todo implement "runUntilUpToTimes(task, condition, maxTimes) in BackgroundTaskManager
-            // and reimplement this to re-try the call until successful
-            val volumes = restClient.listVolumes().responseBody().volumes
-            driveDropdown.value = volumes[0]
-            driveList.setAll(volumes)
+            driveList.setAll(listOf(none).plus(volumes))
+            driveDropdown.value = none
         }
+
         return driveDropdown
     }
 

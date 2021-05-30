@@ -145,7 +145,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val driveSelectionBox = VBox(10.0, archiveDriveLabel, driveDropdown)
         HBox.setHgrow(driveSelectionBox, Priority.ALWAYS)
         driveSelectionBox.alignment = Pos.CENTER
-        driveSelectionBox.background = Background(BackgroundFill(unselectedColor, null, null))
+        driveSelectionBox.background = unselectedModeBackground
         return driveSelectionBox
     }
 
@@ -153,9 +153,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val folderSelectionBox = VBox(10.0, archiveFolderLabel, selectFolderButton)
         HBox.setHgrow(folderSelectionBox, Priority.ALWAYS)
         folderSelectionBox.alignment = Pos.CENTER
-
-        folderSelectionBox.background = Background(BackgroundFill(unselectedColor, null, null))
-
+        folderSelectionBox.background = unselectedModeBackground
         return folderSelectionBox
     }
 

@@ -13,13 +13,14 @@ import javafx.scene.control.Label
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
-import javafx.scene.layout.CornerRadii
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
+import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.paint.Color.LIGHTSEAGREEN
+import javafx.scene.shape.Rectangle
 import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
 import net.sr89.haystacker.server.api.HaystackerRestClient
@@ -35,15 +36,10 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     private val archiveFolderLabel = Label("Archive a single folder (more can be added later)")
 
     private val selectedModeColor = Color(LIGHTSEAGREEN.red, LIGHTSEAGREEN.green, LIGHTSEAGREEN.blue, 0.7)
-    private val selectedModeBackground = Background(
-        BackgroundFill(Color.BLACK, CornerRadii(8.0), null),
-        BackgroundFill(selectedModeColor, CornerRadii(10.0), null)
-    )
+    private val unselectedColor = Color(0.0, 0.0, 0.0, 0.0)
 
-    private val unselectedModeBackground = Background(
-        BackgroundFill(Color.BLACK, CornerRadii(8.0), null),
-        BackgroundFill(Color.GRAY, CornerRadii(10.0), null)
-    )
+    val driveRectangle = Rectangle(100.0, 100.0)
+    val folderRectangle = Rectangle(100.0, 100.0)
 
     private val none = "-"
     private val driveList: ObservableList<String> = FXCollections.observableArrayList(none)
@@ -75,12 +71,14 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
         val folderSelection = folderSelection(selectFolderButton)
 
-        driveSelection.background = unselectedModeBackground
-        folderSelection.background = selectedModeBackground
+        driveRectangle.fill = unselectedColor
+        folderRectangle.fill = unselectedColor
 
         val driveModeSelected = EventHandler<MouseEvent> {
-            driveSelection.background = selectedModeBackground
-            folderSelection.background = unselectedModeBackground
+            Platform.runLater {
+                driveRectangle.fill = selectedModeColor
+                folderRectangle.fill = unselectedColor
+            }
             archiveTarget = DRIVE
         }
 
@@ -90,15 +88,14 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
             dirToArchive = fileChooser.showDialog(stage)
 
             if (dirToArchive != null) {
-                driveSelection.background = unselectedModeBackground
-                folderSelection.background = selectedModeBackground
-
                 Platform.runLater {
+                    driveRectangle.fill = unselectedColor
+                    folderRectangle.fill = selectedModeColor
                     driveDropdown.value = none
+                    archiveFolderLabel.text = "Archive the \"${dirToArchive!!.name}\" directory"
                 }
 
                 archiveTarget = DIRECTORY
-                folderSelection.children.setAll(archiveFolderLabel, Label(dirToArchive!!.name), selectFolderButton)
             }
         }
 
@@ -106,9 +103,10 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         driveDropdown.onMouseClicked = driveModeSelected
 
         folderSelection.onMousePressed = EventHandler {
-            driveSelection.background = unselectedModeBackground
-            folderSelection.background = selectedModeBackground
-            if (dirToArchive == null) {
+            if (dirToArchive != null) {
+                driveRectangle.fill = unselectedColor
+                folderRectangle.fill = selectedModeColor
+            } else {
                 onFolderToArchiveSelection.handle(it)
             }
         }
@@ -121,17 +119,31 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     }
 
     private fun driveSelection(driveDropdown: ChoiceBox<String>): Pane {
-        val driveSelectionBox = VBox(10.0, archiveDriveLabel, driveDropdown)
+        driveRectangle.fill = unselectedColor
+        val driveSelectionBox = VBox(10.0, driveRectangle, archiveDriveLabel, driveDropdown)
         HBox.setHgrow(driveSelectionBox, Priority.ALWAYS)
+        driveRectangle.arcHeight = 10.0
+        driveRectangle.arcWidth = 10.0
         driveSelectionBox.alignment = Pos.CENTER
-        return driveSelectionBox
+        driveSelectionBox.background = Background(BackgroundFill(unselectedColor, null, null))
+        val stackPane = StackPane(driveRectangle, driveSelectionBox)
+        return stackPane
     }
 
     private fun folderSelection(selectFolderButton: Button): Pane {
+        folderRectangle.fill = unselectedColor
+
         val folderSelectionBox = VBox(10.0, archiveFolderLabel, selectFolderButton)
         HBox.setHgrow(folderSelectionBox, Priority.ALWAYS)
         folderSelectionBox.alignment = Pos.CENTER
-        return folderSelectionBox
+
+        folderRectangle.arcHeight = 10.0
+        folderRectangle.arcWidth = 10.0
+
+        folderSelectionBox.background = Background(BackgroundFill(unselectedColor, null, null))
+
+        val stackPane = StackPane(folderRectangle, folderSelectionBox)
+        return stackPane
     }
 
     private fun driveDropdown(): ChoiceBox<String> {

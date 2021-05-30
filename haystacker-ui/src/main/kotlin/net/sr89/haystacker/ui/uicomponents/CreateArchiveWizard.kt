@@ -53,11 +53,17 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
     private val none = "-"
     private val driveList: ObservableList<String> = FXCollections.observableArrayList(none)
 
+    // TODO remove these from here, create them in show() and pass them around as necessary
     private var dirToArchive: File? = null
-
     private var archiveTarget: ArchiveTarget? = null
 
     fun show() {
+        dirToArchive = null
+        archiveTarget = null
+
+        archiveDriveLabel.isWrapText = true
+        archiveFolderLabel.isWrapText = true
+
         val stage = Stage()
 
         val vbox = VBox(10.0, archiveModeChoice(stage), bottomControls(stage))
@@ -68,13 +74,19 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
         stage.scene = scene
 
+        archiveDriveLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
+        archiveFolderLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
+
         stage.title = "Create Archive"
-        stage.show()
         stage.minWidth = 480.0
         stage.minHeight = 320.0
         stage.isResizable = true
+        stage.show()
 
-//        stage.onCloseRequest = EventHandler {  }
+        archiveFolderLabel.minWidth = archiveFolderLabel.width
+        archiveDriveLabel.minWidth = archiveFolderLabel.width
+        archiveFolderLabel.alignment = Pos.CENTER
+        archiveDriveLabel.alignment = Pos.CENTER
     }
 
     private fun archiveModeChoice(stage: Stage): Pane {
@@ -86,6 +98,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
                 }
             }
         }
+        driveDropdown.selectionModel.select(none)
         val driveSelection = driveSelection(driveDropdown)
         val selectFolderButton = Button("Select")
         val folderSelection = folderSelection(selectFolderButton)
@@ -167,7 +180,6 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val volumes = restClient.listVolumes().responseBody().volumes
         Platform.runLater {
             driveList.setAll(listOf(none).plus(volumes))
-//            driveDropdown.value = none
         }
 
         return driveDropdown

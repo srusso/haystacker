@@ -23,20 +23,34 @@ import javafx.scene.paint.Color.LIGHTSEAGREEN
 import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
 import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.ui.uicomponents.CreateArchiveWizard.ArchiveTarget.DIRECTORY
+import net.sr89.haystacker.ui.uicomponents.CreateArchiveWizard.ArchiveTarget.DRIVE
 import java.io.File
 
 class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
+
+    enum class ArchiveTarget { DRIVE, DIRECTORY }
 
     private val archiveDriveLabel = Label("Archive a whole drive")
     private val archiveFolderLabel = Label("Archive a single folder (more can be added later)")
 
     private val selectedModeColor = Color(LIGHTSEAGREEN.red, LIGHTSEAGREEN.green, LIGHTSEAGREEN.blue, 0.7)
-    private val selectedModeBackground = Background(BackgroundFill(selectedModeColor, CornerRadii(10.0), null))
+    private val selectedModeBackground = Background(
+        BackgroundFill(Color.BLACK, CornerRadii(8.0), null),
+        BackgroundFill(selectedModeColor, CornerRadii(10.0), null)
+    )
+
+    private val unselectedModeBackground = Background(
+        BackgroundFill(Color.BLACK, CornerRadii(8.0), null),
+        BackgroundFill(Color.GRAY, CornerRadii(10.0), null)
+    )
 
     private val none = "-"
     private val driveList: ObservableList<String> = FXCollections.observableArrayList(none)
 
     private var dirToArchive: File? = null
+
+    private var archiveTarget: ArchiveTarget? = null
 
     fun show() {
         val stage = Stage()
@@ -61,9 +75,13 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
         val folderSelection = folderSelection(selectFolderButton)
 
+        driveSelection.background = unselectedModeBackground
+        folderSelection.background = selectedModeBackground
+
         val driveModeSelected = EventHandler<MouseEvent> {
             driveSelection.background = selectedModeBackground
-            folderSelection.background = null
+            folderSelection.background = unselectedModeBackground
+            archiveTarget = DRIVE
         }
 
         val onFolderToArchiveSelection = EventHandler<MouseEvent> {
@@ -72,13 +90,14 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
             dirToArchive = fileChooser.showDialog(stage)
 
             if (dirToArchive != null) {
-                driveSelection.background = null
+                driveSelection.background = unselectedModeBackground
                 folderSelection.background = selectedModeBackground
 
                 Platform.runLater {
                     driveDropdown.value = none
                 }
 
+                archiveTarget = DIRECTORY
                 folderSelection.children.setAll(archiveFolderLabel, Label(dirToArchive!!.name), selectFolderButton)
             }
         }
@@ -87,7 +106,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         driveDropdown.onMouseClicked = driveModeSelected
 
         folderSelection.onMousePressed = EventHandler {
-            driveSelection.background = null
+            driveSelection.background = unselectedModeBackground
             folderSelection.background = selectedModeBackground
             if (dirToArchive == null) {
                 onFolderToArchiveSelection.handle(it)

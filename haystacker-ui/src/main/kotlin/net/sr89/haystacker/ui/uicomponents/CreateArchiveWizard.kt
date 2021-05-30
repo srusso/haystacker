@@ -1,6 +1,7 @@
 package net.sr89.haystacker.ui.uicomponents
 
 import javafx.application.Platform
+import javafx.beans.value.ObservableValue
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
@@ -66,6 +67,13 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
     private fun archiveModeChoice(stage: Stage): Pane {
         val driveDropdown = driveDropdown()
+        driveDropdown.selectionModel.selectedItemProperty().addListener { _: ObservableValue<out String>?, _: String?, selectedDrive: String? ->
+            if (selectedDrive != null) {
+                Platform.runLater {
+                    archiveDriveLabel.text = "Archive the $selectedDrive drive"
+                }
+            }
+        }
         val driveSelection = driveSelection(driveDropdown)
         val selectFolderButton = Button("Select")
 
@@ -91,8 +99,8 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
                 Platform.runLater {
                     driveRectangle.fill = unselectedColor
                     folderRectangle.fill = selectedModeColor
-                    driveDropdown.value = none
                     archiveFolderLabel.text = "Archive the \"${dirToArchive!!.name}\" directory"
+                    selectFolderButton.text = "Change"
                 }
 
                 archiveTarget = DIRECTORY
@@ -156,7 +164,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val volumes = restClient.listVolumes().responseBody().volumes
         Platform.runLater {
             driveList.setAll(listOf(none).plus(volumes))
-            driveDropdown.value = none
+//            driveDropdown.value = none
         }
 
         return driveDropdown

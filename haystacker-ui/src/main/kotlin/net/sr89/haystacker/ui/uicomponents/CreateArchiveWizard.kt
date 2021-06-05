@@ -25,6 +25,7 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.paint.Color.LIGHTSKYBLUE
+import javafx.scene.text.TextAlignment
 import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
 import net.sr89.haystacker.server.api.HaystackerRestClient
@@ -77,10 +78,15 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         archiveDriveLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
         archiveFolderLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
 
+        archiveFolderLabel.maxWidth = 150.0
+        archiveDriveLabel.maxWidth = 150.0
+        archiveDriveLabel.textAlignment = TextAlignment.CENTER
+        archiveFolderLabel.textAlignment = TextAlignment.CENTER
+
         stage.title = "Create Archive"
-        stage.minWidth = 480.0
+        stage.minWidth = 520.0
         stage.minHeight = 320.0
-        stage.isResizable = true
+        stage.isResizable = false
         stage.show()
 
         archiveFolderLabel.minWidth = archiveFolderLabel.width
@@ -156,7 +162,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
     private fun driveSelection(driveDropdown: ChoiceBox<String>): Pane {
         val driveSelectionBox = VBox(10.0, archiveDriveLabel, driveDropdown)
-        HBox.setHgrow(driveSelectionBox, Priority.ALWAYS)
+//        HBox.setHgrow(driveSelectionBox, Priority.NEVER)
         driveSelectionBox.alignment = Pos.CENTER
         driveSelectionBox.background = unselectedModeBackground
         return driveSelectionBox
@@ -164,7 +170,7 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
     private fun folderSelection(selectFolderButton: Button): Pane {
         val folderSelectionBox = VBox(10.0, archiveFolderLabel, selectFolderButton)
-        HBox.setHgrow(folderSelectionBox, Priority.ALWAYS)
+//        HBox.setHgrow(folderSelectionBox, Priority.NEVER)
         folderSelectionBox.alignment = Pos.CENTER
         folderSelectionBox.background = unselectedModeBackground
         return folderSelectionBox

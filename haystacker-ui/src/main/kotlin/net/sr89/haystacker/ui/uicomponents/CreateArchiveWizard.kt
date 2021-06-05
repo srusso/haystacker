@@ -110,6 +110,8 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
             archiveTarget = DRIVE
         }
 
+        driveModeSelected.handle(null)
+
         val onFolderToArchiveSelection = EventHandler<MouseEvent> {
             val fileChooser = DirectoryChooser()
             fileChooser.title = "Folder to archive"

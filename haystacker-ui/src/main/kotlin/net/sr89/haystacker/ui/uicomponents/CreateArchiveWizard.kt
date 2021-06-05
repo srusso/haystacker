@@ -14,10 +14,6 @@ import javafx.scene.control.Label
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
-import javafx.scene.layout.Border
-import javafx.scene.layout.BorderStroke
-import javafx.scene.layout.BorderStrokeStyle.SOLID
-import javafx.scene.layout.BorderWidths
 import javafx.scene.layout.CornerRadii
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
@@ -75,9 +71,6 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
         stage.scene = scene
 
-        archiveDriveLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
-        archiveFolderLabel.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
-
         archiveFolderLabel.maxWidth = 150.0
         archiveDriveLabel.maxWidth = 150.0
         archiveDriveLabel.textAlignment = TextAlignment.CENTER
@@ -108,9 +101,6 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val driveSelection = driveSelection(driveDropdown)
         val selectFolderButton = Button("Select")
         val folderSelection = folderSelection(selectFolderButton)
-
-        driveSelection.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
-        folderSelection.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
 
         val driveModeSelected = EventHandler<MouseEvent> {
             Platform.runLater {
@@ -155,14 +145,12 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         val hbox = HBox(10.0, driveSelection, folderSelection)
         hbox.alignment = Pos.CENTER
         hbox.padding = Insets(10.0, 10.0, 10.0, 10.0)
-        hbox.border = Border(BorderStroke(Color.BLACK, SOLID, CornerRadii(10.0), BorderWidths(1.0)))
         VBox.setVgrow(hbox, Priority.ALWAYS)
         return hbox
     }
 
     private fun driveSelection(driveDropdown: ChoiceBox<String>): Pane {
         val driveSelectionBox = VBox(10.0, archiveDriveLabel, driveDropdown)
-//        HBox.setHgrow(driveSelectionBox, Priority.NEVER)
         driveSelectionBox.alignment = Pos.CENTER
         driveSelectionBox.background = unselectedModeBackground
         return driveSelectionBox
@@ -170,7 +158,6 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
 
     private fun folderSelection(selectFolderButton: Button): Pane {
         val folderSelectionBox = VBox(10.0, archiveFolderLabel, selectFolderButton)
-//        HBox.setHgrow(folderSelectionBox, Priority.NEVER)
         folderSelectionBox.alignment = Pos.CENTER
         folderSelectionBox.background = unselectedModeBackground
         return folderSelectionBox
@@ -185,7 +172,10 @@ class CreateArchiveWizard(private val restClient: HaystackerRestClient) {
         // and reimplement this to re-try the call until successful
         val volumes = restClient.listVolumes().responseBody().volumes
         Platform.runLater {
-            driveList.setAll(listOf(none).plus(volumes))
+            if (volumes.isNotEmpty()) {
+                driveList.setAll(volumes)
+                driveDropdown.value = volumes[0]
+            }
         }
 
         return driveDropdown

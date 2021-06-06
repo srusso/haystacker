@@ -28,17 +28,6 @@ import java.awt.Desktop
 import java.io.File
 import java.time.Instant
 
-
-/**
- * TODO
- * - Screen to add a new index
- * - Remove index button
- * - Button to add directory to an index. How to display task progress? Running tasks tab?
- * - Result sorting (by re-executing the search!)
- * - Switch to advanced search (HSL), which includes a link to the HSL guide
- * - Display server status in UI, with button to start/stop it?
- */
-
 class MainWindow(
     private val searchManager: SearchManager,
     private val indexDropdownManager: IndexDropdownManager,

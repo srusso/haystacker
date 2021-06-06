@@ -57,7 +57,7 @@ class SearchManager(
 
         val advancedSearchToggle = CheckBox("Advanced search")
 
-        val rightHBox = HBox(10.0, advancedSearchToggle)
+        val rightHBox = HBox(10.0) // TODO: re-add the advanced search toggle here in issue 62
         HBox.setHgrow(rightHBox, Priority.ALWAYS)
         rightHBox.alignment = Pos.CENTER_RIGHT
 

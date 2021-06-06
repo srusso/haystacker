@@ -22,7 +22,8 @@ class UIStart : Application() {
                 MainWindow(
                     searchManager = instance(),
                     indexDropdownManager = instance(),
-                    createArchiveWizard = instance()
+                    createArchiveWizard = instance(),
+                    addToArchiveWizard = instance()
                 )
             }
 

@@ -24,6 +24,14 @@ private fun normalizeValueToLuceneRepresentation(clause: HslNodeClause, analyzer
     return analyzer.normalize(clause.symbol.luceneQueryName, clause.value.str).utf8ToString()
 }
 
+private fun normalizeValueToLuceneRepresentation(
+    clauseSymbol: Symbol,
+    queryPart: String,
+    analyzer: Analyzer
+): String {
+    return analyzer.normalize(clauseSymbol.luceneQueryName, queryPart).utf8ToString()
+}
+
 private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query {
     return when (operator) {
         Operator.EQUALS -> LongPoint.newExactQuery(fieldName, bytes)
@@ -37,8 +45,20 @@ private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query
 private fun toFileNameQuery(clause: HslNodeClause, analyzer: Analyzer): Query {
     return when (clause.operator) {
         Operator.EQUALS -> {
-            val term = Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer))
-            TermQuery(term).or(PrefixQuery(term))
+
+            if (!clause.value.str.contains(' ')) {
+                val term = Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer))
+                TermQuery(term).or(PrefixQuery(term))
+            } else {
+                clause.value.str.split(" ")
+                    .map {
+                        val term = Term(
+                            clause.symbol.luceneQueryName,
+                            normalizeValueToLuceneRepresentation(clause.symbol, it, analyzer)
+                        )
+                        TermQuery(term).or(PrefixQuery(term))
+                    }.reduceRight(Query::and)
+            }
         }
         else -> throw InvalidHslOperatorException(clause.symbol, clause.operator, clause.value.str)
     }
@@ -55,7 +75,11 @@ private fun toDataSizeQuery(clause: HslNodeClause): Query {
 
 private fun toDateQuery(clause: HslNodeClause): Query {
     return when (val dateTime = parseHslDateTime(clause.symbol, clause.value.str)) {
-        is HslDate -> longQuery(clause.operator, clause.symbol.luceneQueryName, dateTime.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        is HslDate -> longQuery(
+            clause.operator,
+            clause.symbol.luceneQueryName,
+            dateTime.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
         is HslInstant -> longQuery(clause.operator, clause.symbol.luceneQueryName, dateTime.instant.toEpochMilli())
     }
 }

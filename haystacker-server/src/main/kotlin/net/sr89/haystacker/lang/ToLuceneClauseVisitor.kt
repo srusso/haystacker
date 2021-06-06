@@ -20,10 +20,6 @@ import org.apache.lucene.search.TermQuery
 import org.springframework.util.unit.DataSize
 import java.time.ZoneOffset
 
-private fun normalizeValueToLuceneRepresentation(clause: HslNodeClause, analyzer: Analyzer): String {
-    return analyzer.normalize(clause.symbol.luceneQueryName, clause.value.str).utf8ToString()
-}
-
 private fun normalizeValueToLuceneRepresentation(
     clauseSymbol: Symbol,
     queryPart: String,
@@ -45,11 +41,6 @@ private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query
 private fun toFileNameQuery(clause: HslNodeClause, analyzer: Analyzer): Query {
     return when (clause.operator) {
         Operator.EQUALS -> {
-
-            if (!clause.value.str.contains(' ')) {
-                val term = Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer))
-                TermQuery(term).or(PrefixQuery(term))
-            } else {
                 clause.value.str.split(" ")
                     .map {
                         val term = Term(
@@ -58,7 +49,6 @@ private fun toFileNameQuery(clause: HslNodeClause, analyzer: Analyzer): Query {
                         )
                         TermQuery(term).or(PrefixQuery(term))
                     }.reduceRight(Query::and)
-            }
         }
         else -> throw InvalidHslOperatorException(clause.symbol, clause.operator, clause.value.str)
     }

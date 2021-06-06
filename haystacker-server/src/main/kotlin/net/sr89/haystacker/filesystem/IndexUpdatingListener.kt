@@ -7,16 +7,17 @@ import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_NEW
 import com.sun.jna.platform.FileMonitor.FILE_NAME_CHANGED_OLD
 import com.sun.jna.platform.FileMonitor.FILE_SIZE_CHANGED
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.async.task.Trigger.FS_UPDATE
 import net.sr89.haystacker.index.DeindexDirectoryTask
 import net.sr89.haystacker.index.IndexDirectoryTask
 import net.sr89.haystacker.index.IndexManager
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
 import java.io.File
 
 class IndexUpdatingListener(
     val indexManager: IndexManager,
-    val taskManager: BackgroundTaskManager) : FileMonitor.FileListener {
+    val taskManager: BackgroundTaskManager
+) : FileMonitor.FileListener {
     private val logger = KotlinLogging.logger {}
 
     private fun fileCreated(file: File) {

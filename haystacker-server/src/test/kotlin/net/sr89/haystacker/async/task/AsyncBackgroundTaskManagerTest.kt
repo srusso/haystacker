@@ -1,9 +1,14 @@
 package net.sr89.haystacker.async.task
 
-import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
-import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
-import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
-import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.server.async.task.AsyncBackgroundTaskManager
+import net.sr89.haystacker.server.async.task.BackgroundTask
+import net.sr89.haystacker.server.async.task.TaskExecutionState
+import net.sr89.haystacker.server.async.task.TaskExecutionState.COMPLETED
+import net.sr89.haystacker.server.async.task.TaskExecutionState.INTERRUPTED
+import net.sr89.haystacker.server.async.task.TaskExecutionState.NOT_STARTED
+import net.sr89.haystacker.server.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.server.async.task.TaskId
+import net.sr89.haystacker.server.async.task.TaskStatus
 import net.sr89.haystacker.test.common.TaskRejectingExecutorService
 import net.sr89.haystacker.test.common.durationSince
 import org.junit.jupiter.api.BeforeEach

@@ -1,8 +1,8 @@
 package net.sr89.haystacker.index
 
-import net.sr89.haystacker.async.task.TaskExecutionState.NOT_STARTED
-import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.lang.parser.HslParser
+import net.sr89.haystacker.server.async.task.TaskExecutionState.NOT_STARTED
+import net.sr89.haystacker.server.async.task.TaskStatus
 import net.sr89.haystacker.test.common.SingleThreadTaskManager
 import net.sr89.haystacker.test.common.assertSortedSearchResult
 import net.sr89.haystacker.test.common.setTimes

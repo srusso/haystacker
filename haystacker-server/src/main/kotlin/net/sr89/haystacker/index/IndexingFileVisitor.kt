@@ -1,10 +1,10 @@
 package net.sr89.haystacker.index
 
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.TaskExecutionState.INTERRUPTED
-import net.sr89.haystacker.async.task.TaskExecutionState.RUNNING
-import net.sr89.haystacker.async.task.TaskStatus
 import net.sr89.haystacker.lang.ast.Symbol
+import net.sr89.haystacker.server.async.task.TaskExecutionState.INTERRUPTED
+import net.sr89.haystacker.server.async.task.TaskExecutionState.RUNNING
+import net.sr89.haystacker.server.async.task.TaskStatus
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint

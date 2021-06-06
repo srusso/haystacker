@@ -1,9 +1,9 @@
 package net.sr89.haystacker.server.handlers
 
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.BackgroundTaskManager
 import net.sr89.haystacker.index.IndexManager
 import net.sr89.haystacker.index.IndexManagerProvider
+import net.sr89.haystacker.server.async.task.BackgroundTaskManager
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response

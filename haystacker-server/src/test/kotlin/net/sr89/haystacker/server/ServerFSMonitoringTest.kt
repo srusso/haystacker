@@ -1,9 +1,9 @@
 package net.sr89.haystacker.server
 
-import net.sr89.haystacker.async.task.TaskExecutionState
-import net.sr89.haystacker.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.SearchResponse
+import net.sr89.haystacker.server.async.task.TaskExecutionState
+import net.sr89.haystacker.server.async.task.TaskExecutionState.COMPLETED
 import net.sr89.haystacker.server.config.ServerConfig
 import net.sr89.haystacker.server.config.SettingsManager
 import net.sr89.haystacker.test.common.assertSearchResult

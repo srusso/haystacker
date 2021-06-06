@@ -1,9 +1,9 @@
-package net.sr89.haystacker.async.task
+package net.sr89.haystacker.server.async.task
 
 import mu.KotlinLogging
-import net.sr89.haystacker.async.task.TaskExecutionState.NOT_FOUND
-import net.sr89.haystacker.lang.exception.InvalidTaskIdException
+import net.sr89.haystacker.server.InvalidTaskIdException
 import net.sr89.haystacker.server.api.TaskInterruptResponse
+import net.sr89.haystacker.server.async.task.TaskExecutionState.NOT_FOUND
 import net.sr89.haystacker.server.collection.FifoConcurrentMap
 import java.time.Duration
 import java.util.UUID

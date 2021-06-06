@@ -14,6 +14,7 @@ import net.sr89.haystacker.lang.parser.parseHslDateTime
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.index.Term
+import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TermQuery
 import org.springframework.util.unit.DataSize
@@ -35,7 +36,10 @@ private fun longQuery(operator: Operator, fieldName: String, bytes: Long): Query
 
 private fun toFileNameQuery(clause: HslNodeClause, analyzer: Analyzer): Query {
     return when (clause.operator) {
-        Operator.EQUALS -> TermQuery(Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer)))
+        Operator.EQUALS -> {
+            val term = Term(clause.symbol.luceneQueryName, normalizeValueToLuceneRepresentation(clause, analyzer))
+            TermQuery(term).or(PrefixQuery(term))
+        }
         else -> throw InvalidHslOperatorException(clause.symbol, clause.operator, clause.value.str)
     }
 }

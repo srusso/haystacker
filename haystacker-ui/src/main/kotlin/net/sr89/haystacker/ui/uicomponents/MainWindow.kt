@@ -28,21 +28,11 @@ import java.awt.Desktop
 import java.io.File
 import java.time.Instant
 
-
-/**
- * TODO
- * - Screen to add a new index
- * - Remove index button
- * - Button to add directory to an index. How to display task progress? Running tasks tab?
- * - Result sorting (by re-executing the search!)
- * - Switch to advanced search (HSL), which includes a link to the HSL guide
- * - Display server status in UI, with button to start/stop it?
- */
-
 class MainWindow(
     private val searchManager: SearchManager,
     private val indexDropdownManager: IndexDropdownManager,
-    val createArchiveWizard: CreateArchiveWizard
+    private val createArchiveWizard: CreateArchiveWizard,
+    private val addToArchiveWizard: AddToArchiveWizard
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -109,8 +99,14 @@ class MainWindow(
     private fun bottomControls(): Pane {
         val indexLabel = Label("Archive")
         val createIndexButton = Button("Create")
+        val addToArchiveButton = Button("+")
         createIndexButton.onMouseClicked = EventHandler { createArchiveWizard.show() }
-        val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton)
+        addToArchiveButton.onMouseClicked = EventHandler {
+            indexDropdownManager.selectedIndex()?.let {
+                selectedIndex -> addToArchiveWizard.show(File(selectedIndex.indexPath))
+            }
+        }
+        val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton, addToArchiveButton)
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT
 

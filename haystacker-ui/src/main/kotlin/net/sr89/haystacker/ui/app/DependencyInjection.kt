@@ -4,6 +4,7 @@ import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.async.task.AsyncBackgroundTaskManager
 import net.sr89.haystacker.server.async.task.BackgroundTaskManager
 import net.sr89.haystacker.ui.search.SearchManager
+import net.sr89.haystacker.ui.uicomponents.AddToArchiveWizard
 import net.sr89.haystacker.ui.uicomponents.CreateArchiveWizard
 import net.sr89.haystacker.ui.uicomponents.IndexDropdownManager
 import net.sr89.haystacker.ui.uicomponents.MainWindow
@@ -33,5 +34,6 @@ fun uiApplicationModule() = DI {
     import(managerModule())
 
     bind<CreateArchiveWizard>() with singleton { CreateArchiveWizard(instance()) }
-    bind<MainWindow>() with singleton { MainWindow(instance(), instance(), instance()) }
+    bind<AddToArchiveWizard>() with singleton { AddToArchiveWizard(instance()) }
+    bind<MainWindow>() with singleton { MainWindow(instance(), instance(), instance(), instance()) }
 }

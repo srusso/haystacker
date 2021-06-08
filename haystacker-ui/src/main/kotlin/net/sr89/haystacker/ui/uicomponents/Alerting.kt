@@ -1,7 +1,6 @@
 package net.sr89.haystacker.ui.uicomponents
 
 import javafx.application.Platform
-import javafx.geometry.Insets
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.Tooltip
@@ -36,12 +35,15 @@ fun showMainWindowTooltip(message: String, duration: Duration) {
     val tooltip = Popup()
     val text = Text(message)
 
-    text.font = Font.font ("Verdana", 15.0)
-    text.fill = Color.BLACK
+    val textPaint = Color(Color.BLACK.red, Color.BLACK.green, Color.BLACK.blue, 1.0)
+    val tooltipBackground = Color(Color.GREY.red, Color.GREY.green, Color.GREY.blue, 1.0)
 
-    val box = VBox(10.0, text)
+    text.font = Font.font("Verdana", 15.0)
+    text.fill = textPaint
 
-    box.background = Background(BackgroundFill(Color.GREY, CornerRadii(10.0), Insets(10.0)))
+    val box = VBox(15.0, text)
+
+    box.background = Background(BackgroundFill(tooltipBackground, CornerRadii(10.0), null))
 
     tooltip.content.setAll(box)
     tooltip.show(mainStage)

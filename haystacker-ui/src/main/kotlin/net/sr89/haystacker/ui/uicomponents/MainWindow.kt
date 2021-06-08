@@ -102,10 +102,16 @@ class MainWindow(
         val addToArchiveButton = Button("+")
         addToArchiveButton.onMouseClicked = EventHandler {
             indexDropdownManager.selectedIndex()?.let {
-                selectedIndex -> addToArchiveWizard.show(File(selectedIndex.indexPath))
+                addToArchiveWizard.show()
             }
         }
-        val leftBox = HBox(10.0, serverStatusComponent.getStatusComponent(), indexLabel, indexDropdownManager.indexDropdown, addToArchiveButton)
+        val leftBox = HBox(
+            10.0,
+            serverStatusComponent.getStatusComponent(),
+            indexLabel,
+            indexDropdownManager.indexDropdown,
+            addToArchiveButton
+        )
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT
 

@@ -29,13 +29,12 @@ import java.io.File
 class AddToArchiveWizard(private val restClient: HaystackerRestClient) {
     private val wizard = Wizard("Add to archive")
 
-    fun show(archiveLocation: File) {
-        wizard.start(AddToArchiveSelectTargetStep(archiveLocation, wizard, restClient))
+    fun show() {
+        wizard.start(AddToArchiveSelectTargetStep(wizard, restClient))
     }
 }
 
 private class AddToArchiveSelectTargetStep(
-    private val archiveLocation: File,
     private val wizard: Wizard,
     private val restClient: HaystackerRestClient
 ) : WizardStep {
@@ -216,7 +215,7 @@ private class AddToArchiveSelectArchiveLocationStep(
 ) : WizardStep {
     private val nextButton = Button("Add")
 
-    private val existingArchiveLabel = Label("Add to existing archive")
+    private val existingArchiveLabel = Label("Add to the archive at")
     private val newArchiveLabel = Label("Create new archive")
 
     private val none = "-"
@@ -253,14 +252,6 @@ private class AddToArchiveSelectArchiveLocationStep(
 
     private fun archiveModeChoice(stage: Stage): Pane {
         val driveDropdown = indexDropdown()
-        driveDropdown.selectionModel.selectedItemProperty()
-            .addListener { _: ObservableValue<out String>?, _: String?, selectedDrive: String? ->
-                if (selectedDrive != null) {
-                    Platform.runLater {
-                        existingArchiveLabel.text = "Archive the $selectedDrive drive"
-                    }
-                }
-            }
         driveDropdown.selectionModel.select(none)
         val addToExistingArchiveSelection = addToExistingArchiveSelection(driveDropdown)
         val selectNewArchiveFolderButton = Button("Select")
@@ -344,6 +335,15 @@ private class AddToArchiveSelectArchiveLocationStep(
                 indexDropdown.value = indexes[0]
             }
         }
+
+        indexDropdown.selectionModel.selectedItemProperty()
+            .addListener { _: ObservableValue<out String>?, _: String?, selectedIndex: String? ->
+                if (selectedIndex != null) {
+                    Platform.runLater {
+                        existingArchiveLabel.text = "Add to the archive at $selectedIndex"
+                    }
+                }
+            }
 
         return indexDropdown
     }

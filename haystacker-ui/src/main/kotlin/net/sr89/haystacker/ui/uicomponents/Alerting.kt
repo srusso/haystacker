@@ -12,6 +12,7 @@ import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.scene.text.Text
 import javafx.stage.Popup
+import net.sr89.haystacker.server.calc.boundValue
 import net.sr89.haystacker.ui.mainStage
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -32,24 +33,42 @@ fun showMainWindowToolti2p(message: String, duration: Duration) {
 }
 
 fun showMainWindowTooltip(message: String, duration: Duration) {
+    fun textPaint(opacity: Double) = Color(Color.BLACK.red, Color.BLACK.green, Color.BLACK.blue, opacity)
+    fun backgroundPaint(opacity: Double) =
+        Background(BackgroundFill(
+            Color(Color.GREY.red, Color.GREY.green, Color.GREY.blue, opacity),
+            CornerRadii(10.0),
+            null))
+
     val tooltip = Popup()
     val text = Text(message)
-
-    val textPaint = Color(Color.BLACK.red, Color.BLACK.green, Color.BLACK.blue, 1.0)
-    val tooltipBackground = Color(Color.GREY.red, Color.GREY.green, Color.GREY.blue, 1.0)
-
-    text.font = Font.font("Verdana", 15.0)
-    text.fill = textPaint
-
     val box = VBox(15.0, text)
 
-    box.background = Background(BackgroundFill(tooltipBackground, CornerRadii(10.0), null))
+    text.font = Font.font("Verdana", 15.0)
+    text.fill = textPaint(1.0)
+    box.background = backgroundPaint(1.0)
 
     tooltip.content.setAll(box)
-    tooltip.show(mainStage)
 
     Executors.newSingleThreadExecutor().submit {
-        Thread.sleep(duration.toMillis())
+        Platform.runLater { tooltip.show(mainStage) }
+        val durationNanos = duration.toNanos()
+        val start = System.nanoTime()
+        val end = start + durationNanos
+
+        while (true) {
+            Thread.sleep(10L)
+            val currentNanos = System.nanoTime()
+            val opacity: Double = (1.0 - ((currentNanos - start) / durationNanos.toDouble())).boundValue(0.0, 1.0)
+            Platform.runLater {
+                text.fill = textPaint(opacity)
+                box.background = backgroundPaint(opacity)
+            }
+            if (System.nanoTime() >= end) {
+                break
+            }
+        }
+
         Platform.runLater { tooltip.hide() }
     }
 }

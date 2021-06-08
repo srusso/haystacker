@@ -23,6 +23,7 @@ class UIStart : Application() {
                     searchManager = instance(),
                     indexDropdownManager = instance(),
                     createArchiveWizard = instance(),
+                    serverStatusComponent = instance(),
                     addToArchiveWizard = instance()
                 )
             }

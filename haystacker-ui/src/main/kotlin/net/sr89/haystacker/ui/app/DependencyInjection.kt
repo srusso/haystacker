@@ -8,6 +8,7 @@ import net.sr89.haystacker.ui.uicomponents.AddToArchiveWizard
 import net.sr89.haystacker.ui.uicomponents.CreateArchiveWizard
 import net.sr89.haystacker.ui.uicomponents.IndexDropdownManager
 import net.sr89.haystacker.ui.uicomponents.MainWindow
+import net.sr89.haystacker.ui.uicomponents.ServerStatusComponent
 import org.http4k.client.ApacheClient
 import org.http4k.core.HttpHandler
 import org.kodein.di.DI
@@ -24,6 +25,7 @@ val utilModule = DI.Module(name = "UtilsModule") {
 fun managerModule() = DI.Module("Managers") {
     bind<BackgroundTaskManager>() with singleton { AsyncBackgroundTaskManager(instance()) }
     bind<IndexDropdownManager>() with singleton { IndexDropdownManager(instance(), instance()) }
+    bind<ServerStatusComponent>() with singleton { ServerStatusComponent(instance(), instance()) }
     bind<SearchManager>() with singleton { SearchManager(instance(), instance(), instance()) }
     bind<HttpHandler>(tag = "apacheClient") with singleton { ApacheClient() }
     bind<HaystackerRestClient>() with singleton { HaystackerRestClient("http://localhost:9000", instance(tag = "apacheClient")) }
@@ -35,5 +37,11 @@ fun uiApplicationModule() = DI {
 
     bind<CreateArchiveWizard>() with singleton { CreateArchiveWizard(instance()) }
     bind<AddToArchiveWizard>() with singleton { AddToArchiveWizard(instance()) }
-    bind<MainWindow>() with singleton { MainWindow(instance(), instance(), instance(), instance()) }
+    bind<MainWindow>() with singleton { MainWindow(
+        instance(),
+        instance(),
+        instance(),
+        instance(),
+        instance()
+    ) }
 }

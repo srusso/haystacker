@@ -14,6 +14,13 @@ import java.net.SocketException
 import java.time.Duration
 
 class HaystackerRestClient(val baseUrl: String, val underlyingClient: HttpHandler) {
+
+    fun ping(): TimedHttpResponse<String> {
+        val request = Request(GET, "$baseUrl/ping")
+
+        return executeTimed(request, object: TypeReference<String>() {})
+    }
+
     fun createIndex(indexPath: String): TimedHttpResponse<String> {
         val request = Request(POST, "$baseUrl/index")
             .with(indexPathQuery of indexPath)

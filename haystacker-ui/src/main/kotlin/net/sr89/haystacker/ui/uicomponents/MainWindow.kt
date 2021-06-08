@@ -28,10 +28,12 @@ import java.awt.Desktop
 import java.io.File
 import java.time.Instant
 
+
 class MainWindow(
     private val searchManager: SearchManager,
     private val indexDropdownManager: IndexDropdownManager,
     private val createArchiveWizard: CreateArchiveWizard,
+    private val serverStatusComponent: ServerStatusComponent,
     private val addToArchiveWizard: AddToArchiveWizard
 ) {
     private val logger = KotlinLogging.logger {}
@@ -106,7 +108,7 @@ class MainWindow(
                 selectedIndex -> addToArchiveWizard.show(File(selectedIndex.indexPath))
             }
         }
-        val leftBox = HBox(10.0, indexLabel, indexDropdownManager.indexDropdown, createIndexButton, addToArchiveButton)
+        val leftBox = HBox(10.0, serverStatusComponent.getStatusComponent(), indexLabel, indexDropdownManager.indexDropdown, createIndexButton, addToArchiveButton)
         HBox.setHgrow(leftBox, Priority.NEVER)
         leftBox.alignment = Pos.CENTER_LEFT
 

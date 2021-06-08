@@ -25,6 +25,7 @@ import net.sr89.haystacker.server.api.HaystackerRestClient
 import net.sr89.haystacker.server.api.Index
 import org.http4k.core.Status
 import java.io.File
+import java.time.Duration
 
 class AddToArchiveWizard(private val restClient: HaystackerRestClient) {
     private val wizard = Wizard("Add to archive")
@@ -232,7 +233,7 @@ private class AddToArchiveSelectArchiveLocationStep(
         existingArchiveLabel.isWrapText = true
         newArchiveLabel.isWrapText = true
 
-        val vbox = VBox(10.0, archiveModeChoice(stage), bottomControls())
+        val vbox = VBox(10.0, archiveModeChoice(stage), bottomControls(stage))
         vbox.alignment = Pos.CENTER
         vbox.autosize()
 
@@ -348,7 +349,7 @@ private class AddToArchiveSelectArchiveLocationStep(
         return indexDropdown
     }
 
-    private fun bottomControls(): Pane {
+    private fun bottomControls(stage: Stage): Pane {
         val cancelButton = Button("Cancel")
         cancelButton.onMouseClicked = EventHandler { wizard.close() }
 
@@ -364,7 +365,7 @@ private class AddToArchiveSelectArchiveLocationStep(
             }
 
             if (success) {
-                showAlert("Archiving started", "The archive is being populated")
+                showMainWindowTooltip("The archive is being populated", Duration.ofSeconds(3))
                 wizard.close()
             } else {
                 showAlert("ERROR!", "Could not populate the archive. Is the haystacker server running?")

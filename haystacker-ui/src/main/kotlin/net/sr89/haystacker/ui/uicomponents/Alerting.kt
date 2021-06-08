@@ -3,10 +3,11 @@ package net.sr89.haystacker.ui.uicomponents
 import javafx.application.Platform
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
-import javafx.scene.control.Tooltip
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
-import javafx.scene.layout.CornerRadii
+import javafx.scene.layout.Border
+import javafx.scene.layout.BorderStroke
+import javafx.scene.layout.BorderStrokeStyle
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
@@ -25,20 +26,26 @@ fun showAlert(title: String, content: String) {
     alert.showAndWait()
 }
 
-fun showMainWindowToolti2p(message: String, duration: Duration) {
-    val tooltip = Tooltip(message)
-
-    tooltip.showDuration = javafx.util.Duration.millis(duration.toMillis().toDouble())
-    tooltip.show(mainStage)
-}
-
 fun showMainWindowTooltip(message: String, duration: Duration) {
     fun textPaint(opacity: Double) = Color(Color.BLACK.red, Color.BLACK.green, Color.BLACK.blue, opacity)
     fun backgroundPaint(opacity: Double) =
-        Background(BackgroundFill(
-            Color(Color.GREY.red, Color.GREY.green, Color.GREY.blue, opacity),
-            CornerRadii(10.0),
-            null))
+        Background(
+            BackgroundFill(
+                Color(Color.GREY.red, Color.GREY.green, Color.GREY.blue, opacity),
+                null,
+                null
+            )
+        )
+
+    fun border(opacity: Double) =
+        Border(
+            BorderStroke(
+                Color(Color.BLACK.red, Color.BLACK.green, Color.BLACK.blue, opacity),
+                BorderStrokeStyle.SOLID,
+                null,
+                null
+            )
+        )
 
     val tooltip = Popup()
     val text = Text(message)
@@ -47,11 +54,18 @@ fun showMainWindowTooltip(message: String, duration: Duration) {
     text.font = Font.font("Verdana", 15.0)
     text.fill = textPaint(1.0)
     box.background = backgroundPaint(1.0)
+    box.border = border(1.0)
 
     tooltip.content.setAll(box)
 
     Executors.newSingleThreadExecutor().submit {
-        Platform.runLater { tooltip.show(mainStage) }
+        Platform.runLater {
+            tooltip.show(
+                mainStage,
+                mainStage.x + mainStage.width / 2 - tooltip.width / 2,
+                mainStage.y + mainStage.height / 2 - tooltip.height / 2
+            )
+        }
         val durationNanos = duration.toNanos()
         val start = System.nanoTime()
         val end = start + durationNanos
@@ -63,6 +77,7 @@ fun showMainWindowTooltip(message: String, duration: Duration) {
             Platform.runLater {
                 text.fill = textPaint(opacity)
                 box.background = backgroundPaint(opacity)
+                box.border = border(opacity)
             }
             if (System.nanoTime() >= end) {
                 break

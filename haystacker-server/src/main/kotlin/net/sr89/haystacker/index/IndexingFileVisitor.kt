@@ -9,6 +9,7 @@ import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.LongPoint
 import org.apache.lucene.document.NumericDocValuesField
+import org.apache.lucene.document.StoredField
 import org.apache.lucene.document.StringField
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.IndexWriter
@@ -99,15 +100,18 @@ class IndexingFileVisitor(indexPathStr: String, val writer: IndexWriter, val sta
             )
             Symbol.SIZE -> listOf(
                 LongPoint(Symbol.SIZE.luceneQueryName, size),
-                NumericDocValuesField(Symbol.SIZE.luceneQueryName, size)
+                NumericDocValuesField(Symbol.SIZE.luceneQueryName, size),
+                StoredField(Symbol.SIZE.luceneQueryName, size)
             )
             Symbol.CREATED -> listOf<IndexableField>(
                 LongPoint(Symbol.CREATED.luceneQueryName, creationTime),
-                NumericDocValuesField(Symbol.CREATED.luceneQueryName, creationTime)
+                NumericDocValuesField(Symbol.CREATED.luceneQueryName, creationTime),
+                StoredField(Symbol.CREATED.luceneQueryName, creationTime)
             )
             Symbol.LAST_MODIFIED -> listOf(
                 LongPoint(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime),
-                NumericDocValuesField(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime)
+                NumericDocValuesField(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime),
+                StoredField(Symbol.LAST_MODIFIED.luceneQueryName, modifiedTime)
             )
         }
     }

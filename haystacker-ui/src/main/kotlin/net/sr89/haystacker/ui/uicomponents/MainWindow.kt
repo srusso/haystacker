@@ -101,9 +101,7 @@ class MainWindow(
         val indexLabel = Label("Archive")
         val addToArchiveButton = Button("+")
         addToArchiveButton.onMouseClicked = EventHandler {
-            indexDropdownManager.selectedIndex()?.let {
-                addToArchiveWizard.show()
-            }
+            addToArchiveWizard.show()
         }
         val leftBox = HBox(
             10.0,

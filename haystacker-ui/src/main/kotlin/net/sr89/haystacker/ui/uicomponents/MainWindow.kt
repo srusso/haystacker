@@ -61,6 +61,7 @@ class MainWindow(
         val created: TableColumn<UISearchResult, Instant> = TableColumn("Created")
         val lastModified: TableColumn<UISearchResult, Instant> = TableColumn("Modified")
 
+        filename.isSortable = false
         filename.cellValueFactory = SimpleCellValueFactory { p -> p.filename }
         size.cellValueFactory = SimpleCellValueFactory { p -> p.size }
         created.cellValueFactory = SimpleCellValueFactory { p -> p.created }
@@ -72,6 +73,24 @@ class MainWindow(
 
         resultTable.columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         resultTable.isFocusTraversable = false
+        resultTable.setOnSort {
+            if (resultTable.sortOrder.isNotEmpty()) {
+                val sortColumn = resultTable.sortOrder[0]
+                val sortType = sortColumn.sortType!!
+
+                val orderByClause = when (sortColumn) {
+                    size -> "ORDER BY size"
+                    created -> "ORDER BY created"
+                    lastModified -> "ORDER BY last_modified"
+                    else -> ""
+                } + when (sortType) {
+                    TableColumn.SortType.ASCENDING -> " asc"
+                    TableColumn.SortType.DESCENDING -> " desc"
+                }
+
+                searchManager.onSimpleSearchUpdate(orderByClause)
+            }
+        }
         val hbox = HBox(10.0, resultTable)
         hbox.padding = Insets(10.0)
         hbox.alignment = Pos.CENTER

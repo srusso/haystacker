@@ -36,6 +36,7 @@ class SearchManager(
     val searchResults: ObservableList<UISearchResult> = FXCollections.observableArrayList()
 
     var lastSearchTimestamp = System.nanoTime()
+    var lastUsedSort: String? = null
 
     val searchTestBox = TextField()
     val searchBoxPanel = searchBoxPanel()
@@ -44,14 +45,14 @@ class SearchManager(
         indexDropdownManager.indexDropdown
             .valueProperty()
             // execute the current search when a new index is selected
-            .addListener { _, _, _ -> onSimpleSearchUpdate() }
+            .addListener { _, _, _ -> onSimpleSearchUpdate(lastUsedSort ?: "") }
     }
 
     private fun searchBoxPanel(): Pane {
         val searchLabel = Label("Search")
         searchTestBox.promptText = "type file name.."
         searchTestBox.onKeyTyped = EventHandler {
-            onSimpleSearchUpdate()
+            onSimpleSearchUpdate(lastUsedSort ?: "")
         }
         searchTestBox.requestFocus()
 
@@ -71,7 +72,8 @@ class SearchManager(
     /**
      * Called when using simple search mode (i.e. based on file name only, as opposed to full blown HSL).
      */
-    fun onSimpleSearchUpdate() {
+    fun onSimpleSearchUpdate(orderByClause: String) {
+        lastUsedSort = orderByClause
         if (searchTestBox.length < 3) {
             return
         }
@@ -84,10 +86,10 @@ class SearchManager(
             return
         }
 
-        executor.submit { executeSearch(searchTestBox, selectedIndex) }
+        executor.submit { executeSearch(orderByClause, searchTestBox, selectedIndex) }
     }
 
-    private fun executeSearch(searchTestBox: TextField, selectedIndex: IndexDropdownEntry) {
+    private fun executeSearch(orderByClause: String, searchTestBox: TextField, selectedIndex: IndexDropdownEntry) {
         val nano = System.nanoTime()
 
         if (Duration.ofNanos(nano - lastSearchTimestamp) < minDurationBetweenSearches) {
@@ -100,7 +102,7 @@ class SearchManager(
         logger.info { "searching $searchTestBox ..." }
 
         val response = restClient.search(
-            generateHslFromFilenameQuery(query),
+            generateHslFromFilenameQuery(query, orderByClause),
             100,
             selectedIndex.indexPath
         )
@@ -131,7 +133,7 @@ class SearchManager(
         }
     }
 
-    private fun generateHslFromFilenameQuery(filenameQuery: String): String {
-        return "name = \"$filenameQuery\""
+    private fun generateHslFromFilenameQuery(filenameQuery: String, orderByClause: String): String {
+        return "name = \"$filenameQuery\" $orderByClause"
     }
 }

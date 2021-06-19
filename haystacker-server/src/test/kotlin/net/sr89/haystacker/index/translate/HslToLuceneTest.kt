@@ -12,6 +12,7 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.BooleanClause.Occur.MUST
 import org.apache.lucene.search.BooleanClause.Occur.SHOULD
 import org.apache.lucene.search.BooleanQuery
+import org.apache.lucene.search.PrefixQuery
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.TermQuery
 import org.junit.jupiter.api.Test
@@ -32,9 +33,10 @@ internal class HslToLuceneTest {
 
     @Test
     internal fun parseSimpleStringTermQuery() {
+        val expectedQuery = toTextQuery("file.txt")
         val query = toLuceneQuery("name = \"file.txt\"")
 
-        assertEquals(TermQuery(Term(Symbol.NAME.luceneQueryName, "file.txt")), query)
+        assertEquals(expectedQuery, query)
     }
 
     @Test
@@ -82,10 +84,9 @@ internal class HslToLuceneTest {
     @Test
     internal fun andQuery() {
         val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
-        val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
-            BooleanQuery.Builder().add(createdClause, MUST).add(nameClause, MUST).build(),
+            BooleanQuery.Builder().add(createdClause, MUST).add(toTextQuery("file.txt"), MUST).build(),
             toLuceneQuery("created <= '$date' AND name = \"file.txt\"")
         )
     }
@@ -93,10 +94,9 @@ internal class HslToLuceneTest {
     @Test
     internal fun orQuery() {
         val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
-        val nameClause = TermQuery(Term("path", "file.txt"))
 
         assertEquals(
-            BooleanQuery.Builder().add(createdClause, SHOULD).add(nameClause, SHOULD).build(),
+            BooleanQuery.Builder().add(createdClause, SHOULD).add(toTextQuery("file.txt"), SHOULD).build(),
             toLuceneQuery("created <= '$date' OR name = \"file.txt\"")
         )
     }
@@ -105,14 +105,21 @@ internal class HslToLuceneTest {
     internal fun nestedQueries() {
         val createdClause = LongPoint.newRangeQuery(CREATED.luceneQueryName, Long.MIN_VALUE, dateToMillis(date))
         val lastModifiedClause = LongPoint.newRangeQuery(LAST_MODIFIED.luceneQueryName, dateToMillis(date), Long.MAX_VALUE)
-        val nameClause = TermQuery(Term("path", "file.txt"))
 
-        val innerClause = BooleanQuery.Builder().add(lastModifiedClause, SHOULD).add(nameClause, SHOULD).build()
+        val innerClause = BooleanQuery.Builder().add(lastModifiedClause, SHOULD).add(toTextQuery("file.txt"), SHOULD).build()
 
         assertEquals(
             BooleanQuery.Builder().add(createdClause, MUST).add(innerClause, MUST).build(),
             toLuceneQuery("created <= '$date' AND (last_modified >= '$date' OR name = \"file.txt\")")
         )
+    }
+
+    private fun toTextQuery(filename: String): BooleanQuery {
+        val term = Term(Symbol.NAME.luceneQueryName, filename)
+        return BooleanQuery.Builder()
+            .add(TermQuery(term), SHOULD)
+            .add(PrefixQuery(term), SHOULD)
+            .build()
     }
 
     private fun dateToMillis(date: String) = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()

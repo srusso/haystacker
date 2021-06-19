@@ -2,6 +2,8 @@
 
 A file indexer and search software.
 
+[Haystacker UI demo](assets/demo.mp4)
+
 ## Building the project
 
 Simply run:

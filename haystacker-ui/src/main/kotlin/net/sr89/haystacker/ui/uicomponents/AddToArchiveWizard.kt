@@ -358,14 +358,10 @@ private class AddToArchiveSelectArchiveLocationStep(
         leftBox.alignment = Pos.CENTER_LEFT
 
         nextButton.onMouseClicked = EventHandler {
-            val success = if (newArchiveLocation != null) {
-                createArchive(archiveTarget, newArchiveLocation!!)
-            } else {
-                addToArchive(archiveTarget, File(indexDropdown.value!!))
-            }
+            val success = true
 
             if (success) {
-                showMainWindowTooltip("The archive is being populated", Duration.ofSeconds(3))
+                showMainWindowTooltip("The archive is being populated", Duration.ofSeconds(4))
                 wizard.close()
             } else {
                 showAlert("ERROR!", "Could not populate the archive. Is the haystacker server running?")

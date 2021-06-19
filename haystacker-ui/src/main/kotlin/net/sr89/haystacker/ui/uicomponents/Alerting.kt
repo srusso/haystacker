@@ -68,12 +68,13 @@ fun showMainWindowTooltip(message: String, duration: Duration) {
         }
         val durationNanos = duration.toNanos()
         val start = System.nanoTime()
+        val maxOpacityNanos = start + durationNanos / 4
         val end = start + durationNanos
 
         while (true) {
             Thread.sleep(10L)
             val currentNanos = System.nanoTime()
-            val opacity: Double = (1.0 - ((currentNanos - start) / durationNanos.toDouble())).boundValue(0.0, 1.0)
+            val opacity: Double = calculateOpacity(currentNanos, maxOpacityNanos, start, durationNanos)
             Platform.runLater {
                 text.fill = textPaint(opacity)
                 box.background = backgroundPaint(opacity)
@@ -85,5 +86,13 @@ fun showMainWindowTooltip(message: String, duration: Duration) {
         }
 
         Platform.runLater { tooltip.hide() }
+    }
+}
+
+private fun calculateOpacity(currentNanos: Long, maxOpacityNanos: Long, start: Long, durationNanos: Long): Double {
+    return if (currentNanos < maxOpacityNanos) {
+        0.0
+    } else {
+        (1.0 - ((currentNanos - maxOpacityNanos) / durationNanos.toDouble())).boundValue(0.0, 1.0)
     }
 }

@@ -2,7 +2,7 @@
 
 A file indexer and search software.
 
-[Haystacker UI demo](assets/demo.mp4)
+https://user-images.githubusercontent.com/1757629/122649447-369ea700-d12e-11eb-9d12-f06e60a4170f.mp4
 
 ## Building the project
 

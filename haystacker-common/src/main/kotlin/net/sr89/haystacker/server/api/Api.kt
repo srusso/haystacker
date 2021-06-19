@@ -8,7 +8,12 @@ import org.http4k.lens.Query
 import org.http4k.lens.int
 import org.http4k.lens.string
 
-data class SearchResult(@JsonProperty("path") val path: String)
+data class SearchResult(
+    @JsonProperty("path") val path: String,
+    @JsonProperty("fileSizeBytes") val fileSizeBytes: Long,
+    @JsonProperty("createdTimestamp") val createdTimestamp: Long,
+    @JsonProperty("modifiedTimestamp") val modifiedTimestamp: Long
+)
 
 data class Index(@JsonProperty("location") val location: String)
 

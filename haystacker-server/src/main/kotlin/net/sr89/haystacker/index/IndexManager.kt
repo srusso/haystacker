@@ -7,6 +7,7 @@ import net.sr89.haystacker.lang.ToLuceneClauseVisitor
 import net.sr89.haystacker.lang.ast.HslQuery
 import net.sr89.haystacker.lang.ast.HslSortField
 import net.sr89.haystacker.lang.ast.SortOrder
+import net.sr89.haystacker.lang.ast.Symbol
 import net.sr89.haystacker.server.api.SearchResponse
 import net.sr89.haystacker.server.api.SearchResult
 import net.sr89.haystacker.server.async.task.BackgroundTaskManager
@@ -125,8 +126,16 @@ private const val observedEvents =
 private val fileMonitor = FileMonitor.getInstance()
 
 private fun toSearchResult(document: Document): SearchResult {
-    return SearchResult(document.getField("path").stringValue())
+    return SearchResult(
+        document.getField(Symbol.NAME.luceneQueryName).stringValue(),
+        numericFieldOrZero(document, Symbol.SIZE.luceneQueryName),
+        numericFieldOrZero(document, Symbol.CREATED.luceneQueryName),
+        numericFieldOrZero(document, Symbol.LAST_MODIFIED.luceneQueryName)
+    )
 }
+
+private fun numericFieldOrZero(document: Document, fieldName: String) =
+    document.getField(fieldName)?.numericValue()?.toLong() ?: 0L
 
 internal class IndexManagerImpl(
     taskManager: BackgroundTaskManager,

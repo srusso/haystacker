@@ -121,9 +121,9 @@ class SearchManager(
                     results.map { res ->
                         UISearchResult(
                             res.path,
-                            DataSize.ofMegabytes(2),
-                            Instant.now(),
-                            Instant.now()
+                            DataSize.ofBytes(res.fileSizeBytes),
+                            Instant.ofEpochMilli(res.createdTimestamp),
+                            Instant.ofEpochMilli(res.modifiedTimestamp)
                         )
                     }
                 )

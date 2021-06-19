@@ -358,7 +358,11 @@ private class AddToArchiveSelectArchiveLocationStep(
         leftBox.alignment = Pos.CENTER_LEFT
 
         nextButton.onMouseClicked = EventHandler {
-            val success = true
+            val success = if (newArchiveLocation != null) {
+                createArchive(archiveTarget, newArchiveLocation!!)
+            } else {
+                addToArchive(archiveTarget, File(indexDropdown.value!!))
+            }
 
             if (success) {
                 showMainWindowTooltip("The archive is being populated", Duration.ofSeconds(4))

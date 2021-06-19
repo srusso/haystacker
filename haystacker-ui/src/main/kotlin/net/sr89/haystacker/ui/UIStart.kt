@@ -8,10 +8,12 @@ import org.kodein.di.instance
 import org.kodein.di.newInstance
 
 lateinit var stageBuilder: MainWindow
+lateinit var mainStage: Stage
 
 class UIStart : Application() {
     override fun start(stage: Stage) {
-        return stageBuilder.buildStage(stage)
+        mainStage = stage
+        stageBuilder.buildStage(stage)
     }
 
     companion object {
@@ -22,7 +24,6 @@ class UIStart : Application() {
                 MainWindow(
                     searchManager = instance(),
                     indexDropdownManager = instance(),
-                    createArchiveWizard = instance(),
                     serverStatusComponent = instance(),
                     addToArchiveWizard = instance()
                 )

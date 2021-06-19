@@ -22,24 +22,25 @@ import javafx.scene.text.TextAlignment
 import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
 import net.sr89.haystacker.server.api.HaystackerRestClient
+import net.sr89.haystacker.server.api.Index
 import org.http4k.core.Status
 import java.io.File
+import java.time.Duration
 
 class AddToArchiveWizard(private val restClient: HaystackerRestClient) {
     private val wizard = Wizard("Add to archive")
 
-    fun show(archiveLocation: File) {
-        wizard.start(AddToArchiveSelectTargetStep(archiveLocation, wizard, restClient))
+    fun show() {
+        wizard.start(AddToArchiveSelectTargetStep(wizard, restClient))
     }
 }
 
 private class AddToArchiveSelectTargetStep(
-    private val archiveLocation: File,
     private val wizard: Wizard,
     private val restClient: HaystackerRestClient
 ) : WizardStep {
 
-    val addButton = Button("Add")
+    val addButton = Button("Next")
 
     private val archiveDriveLabel = Label("Archive a whole drive")
     private val archiveFolderLabel = Label("Archive a single folder (more can be added later)")
@@ -54,7 +55,11 @@ private class AddToArchiveSelectTargetStep(
 
     override fun scene(stage: Stage) = buildScene(stage)
 
-    override fun createNextStep(): WizardStep? = null
+    override fun createNextStep() = AddToArchiveSelectArchiveLocationStep(
+        ArchiveTarget(driveDropdown.value, dirToArchive, archiveTarget),
+        wizard,
+        restClient
+    )
 
     private fun buildScene(stage: Stage): Scene {
         archiveDriveLabel.isWrapText = true
@@ -190,14 +195,179 @@ private class AddToArchiveSelectTargetStep(
 
         addButton.isDisable = true
         addButton.onMouseClicked = EventHandler {
-            if (addToArchive(ArchiveTarget(driveDropdown.value, dirToArchive, archiveTarget), archiveLocation) ) {
-                showAlert("Archiving started", "The archive is being populated")
+            wizard.nextStage()
+        }
+        val rightHBox = HBox(10.0, addButton)
+        HBox.setHgrow(rightHBox, Priority.ALWAYS)
+        rightHBox.alignment = Pos.CENTER_RIGHT
+
+        val hbox = HBox(10.0, leftBox, rightHBox)
+        hbox.alignment = Pos.BASELINE_RIGHT
+        hbox.padding = Insets(0.0, 10.0, 10.0, 10.0)
+
+        return hbox
+    }
+}
+
+private class AddToArchiveSelectArchiveLocationStep(
+    private val archiveTarget: ArchiveTarget,
+    private val wizard: Wizard,
+    private val restClient: HaystackerRestClient
+) : WizardStep {
+    private val nextButton = Button("Add")
+
+    private val existingArchiveLabel = Label("Add to the archive at")
+    private val newArchiveLabel = Label("Create new archive")
+
+    private val none = "-"
+    private val indexDropdown = ChoiceBox<String>()
+    private val indexList: ObservableList<String> = FXCollections.observableArrayList(none)
+
+    private var newArchiveLocation: File? = null
+
+    override fun scene(stage: Stage) = buildScene(stage)
+
+    override fun createNextStep(): WizardStep? = null
+
+    private fun buildScene(stage: Stage): Scene {
+        existingArchiveLabel.isWrapText = true
+        newArchiveLabel.isWrapText = true
+
+        val vbox = VBox(10.0, archiveModeChoice(stage), bottomControls(stage))
+        vbox.alignment = Pos.CENTER
+        vbox.autosize()
+
+        val scene = Scene(vbox, 480.0, 320.0)
+
+        newArchiveLabel.maxWidth = 150.0
+        existingArchiveLabel.maxWidth = 150.0
+        existingArchiveLabel.textAlignment = TextAlignment.CENTER
+        newArchiveLabel.textAlignment = TextAlignment.CENTER
+
+        newArchiveLabel.minWidth = existingArchiveLabel.width
+        existingArchiveLabel.minWidth = existingArchiveLabel.width
+        newArchiveLabel.alignment = Pos.CENTER
+        existingArchiveLabel.alignment = Pos.CENTER
+        return scene
+    }
+
+    private fun archiveModeChoice(stage: Stage): Pane {
+        val driveDropdown = indexDropdown()
+        driveDropdown.selectionModel.select(none)
+        val addToExistingArchiveSelection = addToExistingArchiveSelection(driveDropdown)
+        val selectNewArchiveFolderButton = Button("Select")
+        val createNewArchiveSelection = createNewArchiveSelection(selectNewArchiveFolderButton)
+
+        val driveModeSelected = EventHandler<MouseEvent> {
+            Platform.runLater {
+                addToExistingArchiveSelection.background = selectedModeBackground
+                createNewArchiveSelection.background = unselectedModeBackground
+            }
+        }
+
+        driveModeSelected.handle(null)
+
+        val onCreateNewArchiveSelected = EventHandler<MouseEvent> {
+            val fileChooser = DirectoryChooser()
+            fileChooser.title = "Archive location"
+            newArchiveLocation = fileChooser.showDialog(stage)
+
+            if (newArchiveLocation != null) {
+                Platform.runLater {
+                    nextButton.isDisable = false
+                    newArchiveLabel.text = "Create new archive at: ${newArchiveLocation!!.absolutePath}"
+                    selectNewArchiveFolderButton.text = "Change"
+                    addToExistingArchiveSelection.background = unselectedModeBackground
+                    createNewArchiveSelection.background = selectedModeBackground
+                }
+            }
+        }
+
+        addToExistingArchiveSelection.onMousePressed = driveModeSelected
+        driveDropdown.onMouseClicked = driveModeSelected
+
+        createNewArchiveSelection.onMousePressed = EventHandler {
+            if (newArchiveLocation != null) {
+                addToExistingArchiveSelection.background = unselectedModeBackground
+                createNewArchiveSelection.background = selectedModeBackground
+            } else {
+                onCreateNewArchiveSelected.handle(it)
+            }
+        }
+        selectNewArchiveFolderButton.onMouseClicked = onCreateNewArchiveSelected
+
+        HBox.setHgrow(addToExistingArchiveSelection, Priority.ALWAYS)
+        HBox.setHgrow(createNewArchiveSelection, Priority.ALWAYS)
+
+        val separator = Separator()
+        separator.orientation = Orientation.VERTICAL
+
+        val hbox = HBox(10.0, addToExistingArchiveSelection, separator, createNewArchiveSelection)
+        hbox.alignment = Pos.CENTER
+        hbox.padding = Insets(10.0, 10.0, 10.0, 10.0)
+        VBox.setVgrow(hbox, Priority.ALWAYS)
+        return hbox
+    }
+
+    private fun addToExistingArchiveSelection(driveDropdown: ChoiceBox<String>): Pane {
+        val driveSelectionBox = VBox(10.0, existingArchiveLabel, driveDropdown)
+        driveSelectionBox.alignment = Pos.CENTER
+        driveSelectionBox.background = unselectedModeBackground
+        return driveSelectionBox
+    }
+
+    private fun createNewArchiveSelection(selectFolderButton: Button): Pane {
+        val folderSelectionBox = VBox(10.0, newArchiveLabel, selectFolderButton)
+        folderSelectionBox.alignment = Pos.CENTER
+        folderSelectionBox.background = unselectedModeBackground
+        return folderSelectionBox
+    }
+
+    private fun indexDropdown(): ChoiceBox<String> {
+        indexDropdown.items = indexList
+        indexDropdown.value = none
+
+        // todo implement "runUntilUpToTimes(task, condition, maxTimes) in BackgroundTaskManager
+        // and reimplement this to re-try the call until successful
+        val indexes = restClient.listIndexes().responseBody().indexes.map(Index::location)
+        Platform.runLater {
+            if (indexes.isNotEmpty()) {
+                indexList.setAll(indexes)
+                indexDropdown.value = indexes[0]
+            }
+        }
+
+        indexDropdown.selectionModel.selectedItemProperty()
+            .addListener { _: ObservableValue<out String>?, _: String?, selectedIndex: String? ->
+                if (selectedIndex != null) {
+                    Platform.runLater {
+                        existingArchiveLabel.text = "Add to the archive at $selectedIndex"
+                    }
+                }
+            }
+
+        return indexDropdown
+    }
+
+    private fun bottomControls(stage: Stage): Pane {
+        val cancelButton = Button("Cancel")
+        cancelButton.onMouseClicked = EventHandler { wizard.close() }
+
+        val leftBox = HBox(10.0, cancelButton)
+        HBox.setHgrow(leftBox, Priority.NEVER)
+        leftBox.alignment = Pos.CENTER_LEFT
+
+        nextButton.onMouseClicked = EventHandler {
+            val success = true
+
+            if (success) {
+                showMainWindowTooltip("The archive is being populated", Duration.ofSeconds(4))
                 wizard.close()
             } else {
                 showAlert("ERROR!", "Could not populate the archive. Is the haystacker server running?")
             }
         }
-        val rightHBox = HBox(10.0, addButton)
+        val rightHBox = HBox(10.0, nextButton)
         HBox.setHgrow(rightHBox, Priority.ALWAYS)
         rightHBox.alignment = Pos.CENTER_RIGHT
 
@@ -211,6 +381,21 @@ private class AddToArchiveSelectTargetStep(
     private fun addToArchive(archiveTarget: ArchiveTarget, archiveLocation: File): Boolean {
         val dirToIndex: String =
             if (archiveTarget.type == ArchiveTargetType.DIRECTORY) archiveTarget.dirToArchive!!.toString() else archiveTarget.driveToArchive!!
+
+        val indexDirectoryResult = restClient.indexDirectory(archiveLocation.toString(), dirToIndex)
+
+        return indexDirectoryResult.status == Status.OK
+    }
+
+    private fun createArchive(archiveTarget: ArchiveTarget, archiveLocation: File): Boolean {
+        val dirToIndex: String =
+            if (archiveTarget.type == ArchiveTargetType.DIRECTORY) archiveTarget.dirToArchive!!.toString() else archiveTarget.driveToArchive!!
+
+        val createIndexResult = restClient.createIndex(archiveLocation.toString())
+
+        if (createIndexResult.status != Status.OK) {
+            return false
+        }
 
         val indexDirectoryResult = restClient.indexDirectory(archiveLocation.toString(), dirToIndex)
 
